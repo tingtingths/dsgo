@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'const.dart';
 import 'context.dart';
 
 class AuthAPI {
@@ -19,7 +20,7 @@ class AuthAPI {
       'format': format,
       'otp_code': otpCode,
       'version': version.toString(),
-      'api': 'SYNO.API.Auth',
+      'api': Syno.API.Auth,
       'method': 'login'
     };
     param.removeWhere((key, value) => value == null);
@@ -30,7 +31,7 @@ class AuthAPI {
 
   logout(String session) async {
     final param = {
-      'api': 'SYNO.API.Auth',
+      'api': Syno.API.Auth,
       'version': '1',
       'method': 'logout',
       'session': session,

@@ -55,6 +55,7 @@ class APIContext {
     var respObj = jsonDecode(resp.data);
     if (respObj['success']) {
       _appSid[app] = respObj['data']['sid'];
+      // get api info
       return true;
     }
     return false;
