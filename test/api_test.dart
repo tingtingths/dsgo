@@ -4,6 +4,9 @@ import 'package:synodownloadstation/syno/api/auth.dart';
 import 'package:synodownloadstation/syno/api/const.dart';
 import 'package:synodownloadstation/syno/api/context.dart';
 import 'package:synodownloadstation/syno/api/downloadstation.dart';
+import 'package:synodownloadstation/syno/api/mapped/downloadstation_mapped.dart';
+import 'package:synodownloadstation/syno/api/mapped/model.dart';
+import 'package:synodownloadstation/syno/api/mapped/query_mapped.dart';
 import 'package:synodownloadstation/syno/api/query.dart';
 import 'package:test/test.dart';
 
@@ -22,33 +25,64 @@ void main() {
     expect(Syno.API.Auth, 'SYNO.API.Auth');
   });
 
+  test('Test Json typing', () async {
+    var cntx = APIContext('itdog.me', port: 8443);
+
+    var queryApi = QueryAPI(cntx);
+    APIResponse<Map<String, APIInfo>> info = await queryApi.apiInfo();
+    if (info.success) {
+      info.data.forEach((key, value) {
+        print(
+            '$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
+      });
+    }
+
+    var authApi = AuthAPIRaw(cntx);
+    var authOk = await cntx.authApp('DownloadStation', user, passwd);
+    var dsApi = DownloadStationAPI(cntx);
+
+    if (false) {
+      await dsApi.taskCreateRaw(uris: [
+        'magnet:?xt=urn:btih:f95c371d5609d15f6615139be84edbb5b94a79bc&dn=archlinux-2020.05.01-x86_64.iso&tr=udp://tracker.archlinux.org:6969&tr=http://tracker.archlinux.org:6969/announce'
+      ]);
+    }
+
+    APIResponse<ListTaskInfo> taskResp = await dsApi.taskList();
+    if (taskResp.success) {
+      var info = taskResp.data;
+      print('total=${info.total}');
+      info.tasks.forEach((e) {
+        print('id=${e.id},type=${e.type},title=${e.title}');
+      });
+    }
+  });
+
   test('Test Syno Api', () async {
     var jsonEncoder = JsonEncoder.withIndent('  ');
     var jsonDecoder = JsonDecoder();
     var cntx = APIContext('itdog.me', port: 8443);
 
-    var queryApi = QueryAPI(cntx);
-    var resp = await queryApi.apiInfo();
+    var queryApi = QueryAPIRaw(cntx);
+    var resp = await queryApi.apiInfoRaw();
     Map obj = jsonDecode(resp.data);
 
-    var authApi = AuthAPI(cntx);
-    var authOk =
-        await cntx.authApp('DownloadStation', user, passwd);
-    var dsApi = DownloadStationAPI(cntx);
+    var authApi = AuthAPIRaw(cntx);
+    var authOk = await cntx.authApp('DownloadStation', user, passwd);
+    var dsApi = DownloadStationAPIRaw(cntx);
 
-    await dsApi.infoGetInfo();
-    resp = await dsApi.taskList(additional: ['detail']);
+    await dsApi.infoGetInfoRaw();
+    resp = await dsApi.taskListRaw(additional: ['detail']);
     obj = jsonDecoder.convert(resp.data) ?? {};
     Map data = obj['data'] ?? {};
     List tasks = data['tasks'] ?? [];
     if (tasks.isNotEmpty) {
       Map task = tasks[0];
-      await dsApi.taskGetInfo([task['id']]);
+      await dsApi.taskGetInfoRaw([task['id']]);
     }
 
     // add task
     //var r = await dsApi.taskCreate(file: File('D:/test.torrent'));
-    var r = await dsApi.taskCreate(uris: [
+    var r = await dsApi.taskCreateRaw(uris: [
       'magnet:?xt=urn:btih:f95c371d5609d15f6615139be84edbb5b94a79bc&dn=archlinux-2020.05.01-x86_64.iso&tr=udp://tracker.archlinux.org:6969&tr=http://tracker.archlinux.org:6969/announce'
     ]);
 

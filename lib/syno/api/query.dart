@@ -3,15 +3,15 @@ import 'package:synodownloadstation/syno/api/context.dart';
 
 import 'const.dart';
 
-class QueryAPI {
+class QueryAPIRaw {
   final endpoint = '/webapi/query.cgi';
   APIContext _cntx;
 
-  QueryAPI(APIContext cntx) {
+  QueryAPIRaw(APIContext cntx) {
     _cntx = cntx;
   }
 
-  Future<Response<String>> apiInfo(
+  Future<Response<String>> apiInfoRaw(
       {int version: 1, String query: 'all'}) async {
     final param = {
       'api': Syno.API.Info,

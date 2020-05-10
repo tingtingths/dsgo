@@ -1,9 +1,8 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:http_interceptor/http_client_with_interceptor.dart';
-import 'package:http_interceptor/http_interceptor.dart';
 import 'package:synodownloadstation/syno/api/auth.dart';
+import 'package:synodownloadstation/syno/api/query.dart';
 
 class CustomInterceptors extends InterceptorsWrapper {
   @override
@@ -51,11 +50,17 @@ class APIContext {
   }
 
   Future<bool> authApp(String app, String account, String passwd) async {
-    var resp = await AuthAPI(this).login(account, passwd, app, format: 'sid');
+    var resp = await AuthAPIRaw(this).login(account, passwd, app, format: 'sid');
     var respObj = jsonDecode(resp.data);
     if (respObj['success']) {
       _appSid[app] = respObj['data']['sid'];
       // get api info
+      /*resp = await QueryAPIRaw(this).apiInfo();
+      respObj = jsonDecode(resp.data);
+      if (!respObj['success']) throw Exception('Query API failed, error: ' + respObj['error']['code']);
+*/
+
+
       return true;
     }
     return false;

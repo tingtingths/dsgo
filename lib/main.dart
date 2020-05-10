@@ -42,14 +42,9 @@ class RandomWordState extends State<RandomWords> {
         if (i.isOdd) return Divider();
 
         var index = i ~/ 2;
-        index = index % 10;
-        if (index >= _suggestions.length - 1) {
+        if (index >= _suggestions.length) {
           var candidiates = generateWordPairs().take(10);
-          if (_suggestions.length > 0) {
-            _suggestions.removeRange(0, _suggestions.length);
-          }
           _suggestions.addAll(candidiates);
-          print('Gen [${candidiates.join(",")}]');
         }
         return _buildRow(_suggestions[index]);
       },

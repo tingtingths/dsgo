@@ -5,7 +5,7 @@ import 'package:synodownloadstation/syno/api/context.dart';
 
 import 'const.dart';
 
-class DownloadStationAPI {
+class DownloadStationAPIRaw {
   final session = 'DownloadStation';
   final endpoint = '/webapi/DownloadStation';
   final endpointInfo = '/info.cgi';
@@ -14,11 +14,11 @@ class DownloadStationAPI {
   final endpointStat = '/statistic.cgi';
   APIContext _cntx;
 
-  DownloadStationAPI(APIContext cntx) {
+  DownloadStationAPIRaw(APIContext cntx) {
     _cntx = cntx;
   }
 
-  Future<Response<String>> infoGetInfo({int version: 1}) async {
+  Future<Response<String>> infoGetInfoRaw({int version: 1}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
       'version': version.toString(),
@@ -30,7 +30,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> infoGetConfig({int version: 1}) async {
+  Future<Response<String>> infoGetConfigRaw({int version: 1}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
       'version': version.toString(),
@@ -42,7 +42,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> infoSetServerConfig(Map<String, String> config,
+  Future<Response<String>> infoSetServerConfigRaw(Map<String, String> config,
       {int version: 1}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
@@ -57,7 +57,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> scheduleGetConfig({int version: 1}) async {
+  Future<Response<String>> scheduleGetConfigRaw({int version: 1}) async {
     final param = {
       'api': Syno.DownloadStation.Schedule,
       'version': version.toString(),
@@ -69,7 +69,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> scheduleSetConfig(bool enabled, bool emuleEnabled,
+  Future<Response<String>> scheduleSetConfigRaw(bool enabled, bool emuleEnabled,
       {int version: 1}) async {
     final param = {
       'enabled': enabled.toString(),
@@ -84,7 +84,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskList(
+  Future<Response<String>> taskListRaw(
       {int version: 1,
       int offset: 0,
       int limit: -1,
@@ -110,7 +110,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskGetInfo(List<String> ids,
+  Future<Response<String>> taskGetInfoRaw(List<String> ids,
       {int version: 1,
       List<String> additional: const [
         'detail',
@@ -134,7 +134,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskCreate(
+  Future<Response<String>> taskCreateRaw(
       {int version: 3,
       List<String> uris,
       File file,
@@ -174,7 +174,7 @@ class DownloadStationAPI {
     return _cntx.c.postUri(uri, data: data, options: options);
   }
 
-  Future<Response<String>> taskDelete(List<String> ids, bool forceComplete,
+  Future<Response<String>> taskDeleteRaw(List<String> ids, bool forceComplete,
       {int version: 1}) async {
     final param = {
       'id': ids.join(","),
@@ -189,7 +189,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskPause(List<String> ids, {int version: 1}) async {
+  Future<Response<String>> taskPauseRaw(List<String> ids, {int version: 1}) async {
     final param = {
       'id': ids.join(","),
       'api': Syno.DownloadStation.Task,
@@ -202,7 +202,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskResume(List<String> ids,
+  Future<Response<String>> taskResumeRaw(List<String> ids,
       {int version: 1}) async {
     final param = {
       'id': ids.join(","),
@@ -216,7 +216,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskEdit(List<String> ids, {String destination, int version: 1}) async {
+  Future<Response<String>> taskEditRaw(List<String> ids, {String destination, int version: 1}) async {
     final param = {
       'id': ids.join(","),
       'destination': destination,
@@ -231,7 +231,7 @@ class DownloadStationAPI {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> statGetInfo({int version: 1}) async {
+  Future<Response<String>> statGetInfoRaw({int version: 1}) async {
     final param = {
       'api': Syno.DownloadStation.Statistic,
       'version': version.toString(),

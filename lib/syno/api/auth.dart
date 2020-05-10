@@ -3,11 +3,11 @@ import 'package:dio/dio.dart';
 import 'const.dart';
 import 'context.dart';
 
-class AuthAPI {
+class AuthAPIRaw {
   final endpoint = '/webapi/auth.cgi';
   APIContext _cntx;
 
-  AuthAPI(APIContext cntx) {
+  AuthAPIRaw(APIContext cntx) {
     _cntx = cntx;
   }
 
