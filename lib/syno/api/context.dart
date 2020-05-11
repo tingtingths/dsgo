@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:synodownloadstation/syno/api/auth.dart';
+import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
 import 'package:synodownloadstation/syno/api/query.dart';
 
 class CustomInterceptors extends InterceptorsWrapper {
@@ -30,6 +32,7 @@ class APIContext {
   String _endpoint;
   Dio _client;
   Map<String, String> _appSid = {};
+  Map<String, APIInfoQuery> _apiInfo = {};
 
   APIContext(String host,
       {String proto: 'https', int port: 443, String endpoint: ''}) {
@@ -50,16 +53,18 @@ class APIContext {
   }
 
   Future<bool> authApp(String app, String account, String passwd) async {
-    var resp = await AuthAPIRaw(this).login(account, passwd, app, format: 'sid');
+    var resp =
+        await AuthAPIRaw(this).login(account, passwd, app, format: 'sid');
     var respObj = jsonDecode(resp.data);
     if (respObj['success']) {
       _appSid[app] = respObj['data']['sid'];
-      // get api info
-      /*resp = await QueryAPIRaw(this).apiInfo();
-      respObj = jsonDecode(resp.data);
-      if (!respObj['success']) throw Exception('Query API failed, error: ' + respObj['error']['code']);
-*/
 
+      APIResponse<Map<String, APIInfoQuery>> apiInfo = await QueryAPI(this).apiInfo();
+      if (!apiInfo.success) {
+        throw Exception('Failed to query api info. error: ' +
+            apiInfo.error.entries.map((e) => '${e.key}=${e.value}').join(','));
+      }
+      _apiInfo = apiInfo.data;
 
       return true;
     }
@@ -75,4 +80,10 @@ class APIContext {
   Map<String, String> get appSid => _appSid;
 
   Dio get c => _client;
+
+  Map<String, APIInfoQuery> get apiInfo => _apiInfo;
+
+  int maxApiVersion(String apiName, {int defaultVersion}) => _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].maxVersion;
+
+  int minApiVersion(String apiName, {int defaultVersion}) => _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].minVersion;
 }

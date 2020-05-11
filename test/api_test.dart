@@ -4,9 +4,9 @@ import 'package:synodownloadstation/syno/api/auth.dart';
 import 'package:synodownloadstation/syno/api/const.dart';
 import 'package:synodownloadstation/syno/api/context.dart';
 import 'package:synodownloadstation/syno/api/downloadstation.dart';
-import 'package:synodownloadstation/syno/api/mapped/downloadstation_mapped.dart';
-import 'package:synodownloadstation/syno/api/mapped/model.dart';
-import 'package:synodownloadstation/syno/api/mapped/query_mapped.dart';
+import 'package:synodownloadstation/syno/api/modeled/downloadstation.dart';
+import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
 import 'package:synodownloadstation/syno/api/query.dart';
 import 'package:test/test.dart';
 
@@ -29,7 +29,7 @@ void main() {
     var cntx = APIContext('itdog.me', port: 8443);
 
     var queryApi = QueryAPI(cntx);
-    APIResponse<Map<String, APIInfo>> info = await queryApi.apiInfo();
+    APIResponse<Map<String, APIInfoQuery>> info = await queryApi.apiInfo();
     if (info.success) {
       info.data.forEach((key, value) {
         print(
@@ -53,7 +53,16 @@ void main() {
       print('total=${info.total}');
       info.tasks.forEach((e) {
         print('id=${e.id},type=${e.type},title=${e.title}');
+        print(
+            '\tST=${e.status},DL=${e.additional.transfer.speedDownload},PRG=${(100 * e.additional.transfer.sizeDownloaded / e.size).toStringAsFixed(1)}%');
       });
+    }
+
+    APIResponse<DownloadStationStatisticGetInfo> stats =
+        await dsApi.statGetInfo();
+    if (stats.success) {
+      print('Total download speed=${stats.data.speedDownload}');
+      print('Total upload speed=${stats.data.speedUpload}');
     }
   });
 
