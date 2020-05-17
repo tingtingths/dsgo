@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:synodownloadstation/syno/api/auth.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
 import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
-import 'package:synodownloadstation/syno/api/query.dart';
 
 class CustomInterceptors extends InterceptorsWrapper {
   @override
@@ -39,7 +38,8 @@ class APIContext {
     _proto = proto;
     _authority = '$host:$port';
     _endpoint = endpoint;
-    _client = Dio()..interceptors.add(CustomInterceptors());
+    //_client = Dio()..interceptors.add(CustomInterceptors());
+    _client = Dio();
   }
 
   Uri buildUri(String path, Map<String, String> queryParams) {
@@ -59,7 +59,8 @@ class APIContext {
     if (respObj['success']) {
       _appSid[app] = respObj['data']['sid'];
 
-      APIResponse<Map<String, APIInfoQuery>> apiInfo = await QueryAPI(this).apiInfo();
+      APIResponse<Map<String, APIInfoQuery>> apiInfo =
+          await QueryAPI(this).apiInfo();
       if (!apiInfo.success) {
         throw Exception('Failed to query api info. error: ' +
             apiInfo.error.entries.map((e) => '${e.key}=${e.value}').join(','));
@@ -83,7 +84,9 @@ class APIContext {
 
   Map<String, APIInfoQuery> get apiInfo => _apiInfo;
 
-  int maxApiVersion(String apiName, {int defaultVersion}) => _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].maxVersion;
+  int maxApiVersion(String apiName, {int defaultVersion}) =>
+      _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].maxVersion;
 
-  int minApiVersion(String apiName, {int defaultVersion}) => _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].minVersion;
+  int minApiVersion(String apiName, {int defaultVersion}) =>
+      _apiInfo[apiName] == null ? defaultVersion : _apiInfo[apiName].minVersion;
 }

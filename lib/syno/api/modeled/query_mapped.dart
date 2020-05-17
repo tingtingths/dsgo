@@ -10,7 +10,8 @@ class QueryAPI extends QueryAPIRaw {
   Future<APIResponse<Map<String, APIInfoQuery>>> apiInfo(
       {int version, String query: 'all'}) async {
     return super.apiInfoRaw(version: version).then((resp) {
-      return APIResponse<Map<String, APIInfoQuery>>.fromJson(jsonDecode(resp.data), (data) {
+      return APIResponse<Map<String, APIInfoQuery>>.fromJson(
+          jsonDecode(resp.data), (data) {
         Map<String, APIInfoQuery> result = {};
         data.forEach((key, value) {
           result[key] = APIInfoQuery.fromJson(value);

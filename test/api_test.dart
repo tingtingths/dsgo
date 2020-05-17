@@ -8,11 +8,31 @@ import 'package:synodownloadstation/syno/api/modeled/downloadstation.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
 import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
 import 'package:synodownloadstation/syno/api/query.dart';
+import 'package:synodownloadstation/util/format.dart';
 import 'package:test/test.dart';
 
-import 'confidential.dart';
+import '../lib/confidential.dart';
 
 void main() {
+  test('Test format', () {
+    print(humanifySize(952000000000));
+    print(humanifySize(952360000000));
+    print(humanifySize(9523600000000));
+    print(humanifySize(952360000000));
+    print(humanifySize(95236000000));
+    print(humanifySize(9523600000));
+    print(humanifySize(952360000));
+    print(humanifySize(95236000));
+    print(humanifySize(9523600));
+    print(humanifySize(952360));
+    print(humanifySize(95236));
+    print(humanifySize(9523));
+    print(humanifySize(952));
+    print(humanifySize(95));
+    print(humanifySize(9));
+    print(humanifySize(0));
+  });
+
   test('Test API name constant', () {
     expect(Syno.DownloadStation.Info, 'SYNO.DownloadStation.Info');
     expect(Syno.DownloadStation.Schedule, 'SYNO.DownloadStation.Schedule');
