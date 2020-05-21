@@ -43,7 +43,7 @@ class _AccountFormState extends State<AccountForm> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_connection == null ? 'Add Account' : 'Edit Account'),
+        title: Text(_idx == null ? 'Add Account' : 'Edit Account'),
       ),
       body: Form(
         key: _formKey,

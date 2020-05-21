@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart';
+import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
 
 class BlocLogDelegate extends BlocDelegate {
   @override
@@ -13,6 +14,10 @@ class BlocLogDelegate extends BlocDelegate {
           'active=${currState.activeConnection}, connections=[${currState.connections.length}]';
       to =
           'active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
+    }
+    if (currState is UiEventState) {
+      from = 'initiator=${currState.initiator}, event=${currState.event}';
+      to = 'initiator=${nextState.initiator}, event=${nextState.event}';
     }
 
     print('from => $to');

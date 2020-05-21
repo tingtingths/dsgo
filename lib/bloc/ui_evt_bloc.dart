@@ -1,13 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+enum UiEvent {
+  add_task,
+  task_fetching,
+  tasks_fetched,
+  tasks_filter_change,
+  close_slide_panel,
+  post_frame,
+}
+
 class UiEventState {
   dynamic initiator;
-  String name;
+  UiEvent event;
   List<dynamic> payload = [];
 
-  UiEventState(this.initiator, this.name, this.payload);
+  UiEventState(this.initiator, this.event, this.payload);
 
-  UiEventState.noPayload(this.initiator, this.name);
+  UiEventState.noPayload(this.initiator, this.event);
 
   UiEventState.empty();
 }

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:morpheus/morpheus.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/page/account.dart';
@@ -94,6 +96,7 @@ class _MyDrawerState extends State<MyDrawer> {
   var _connectionListItemIdx = [];
   var _connectionCntrListItemIdx = [];
   cBloc.ConnectionBloc bloc;
+  GlobalKey _addAcBtnKey = GlobalKey();
 
   @override
   void initState() {
@@ -153,15 +156,22 @@ class _MyDrawerState extends State<MyDrawer> {
             _insertItem(
                 ++itmidx,
                 ListTile(
+                  key: _addAcBtnKey,
                   leading: Icon(Icons.person_add),
                   title: Text('Add Account'),
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (cntx) {
-                      return BlocProvider.value(
-                        value: BlocProvider.of<cBloc.ConnectionBloc>(context),
-                        child: AccountForm.create(),
-                      );
-                    }));
+                    Navigator.push(
+                        context,
+                        MorpheusPageRoute(
+                          parentKey: _addAcBtnKey,
+                          builder: (context) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<cBloc.ConnectionBloc>(
+                                  context),
+                              child: AccountForm.create(),
+                            );
+                          },
+                        ));
                   },
                 ));
             _connectionCntrListItemIdx.add(itmidx);

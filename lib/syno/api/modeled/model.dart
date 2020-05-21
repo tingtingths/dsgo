@@ -191,6 +191,10 @@ class ListTaskInfo {
 
   List<Task> get tasks => _tasks;
 
+  set total(int value) {
+    _total = value;
+  }
+
   ListTaskInfo.fromJson(Map<String, dynamic> json) {
     _total = (json ?? {})['total'];
     _offset = (json ?? {})['offset'];
@@ -199,6 +203,14 @@ class ListTaskInfo {
       List<dynamic> tasks = (json ?? {})['tasks'];
       _tasks.addAll(tasks.map((e) => Task.fromJson(e)).toList());
     }
+  }
+
+  set offset(int value) {
+    _offset = value;
+  }
+
+  set tasks(List<Task> value) {
+    _tasks = value;
   }
 }
 
