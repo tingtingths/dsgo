@@ -1,13 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
-import 'package:synodownloadstation/event/event_model.dart';
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/provider/connection.dart';
-import 'file:///F:/git_repos/syno_downloadstation/lib/event/streams.dart';
-import 'package:synodownloadstation/util/const.dart';
 
 class AccountForm extends StatefulWidget {
   int _idx;
@@ -28,7 +23,7 @@ class _AccountFormState extends State<AccountForm> {
   final _formKey = GlobalKey<FormState>();
   int _idx;
   Connection _connection;
-  ConnectionProvider _connectionProvider = ConnectionProvider();
+  MobileConnectionProvider _connectionProvider = MobileConnectionProvider();
 
   _AccountFormState(this._idx, this._connection);
 

@@ -1,3 +1,35 @@
+import 'dart:convert';
+
+import 'package:synodownloadstation/util/extension.dart';
+
+enum TaskStatus {
+  waiting,
+  downloading,
+  paused,
+  finishing,
+  finished,
+  hash_checking,
+  seeding,
+  filehosting_waiting,
+  extracting,
+  error
+}
+
+extension TaskStatusMembers on TaskStatus {
+  String get name => const {
+        TaskStatus.waiting: 'waiting',
+        TaskStatus.downloading: 'downloading',
+        TaskStatus.paused: 'paused',
+        TaskStatus.finishing: 'finishing',
+        TaskStatus.finished: 'finished',
+        TaskStatus.hash_checking: 'hash_checking',
+        TaskStatus.seeding: 'seeding',
+        TaskStatus.filehosting_waiting: 'filehosting_waiting',
+        TaskStatus.extracting: 'extracting',
+        TaskStatus.error: 'error',
+      }[this];
+}
+
 class APIResponse<T> {
   bool _success;
   T _data;
@@ -204,14 +236,6 @@ class ListTaskInfo {
       _tasks.addAll(tasks.map((e) => Task.fromJson(e)).toList());
     }
   }
-
-  set offset(int value) {
-    _offset = value;
-  }
-
-  set tasks(List<Task> value) {
-    _tasks = value;
-  }
 }
 
 class Task {
@@ -234,7 +258,39 @@ class Task {
 
   int get size => _size;
 
-  String get status => _status;
+  TaskStatus get status {
+    if (_status.equalsIgnoreCase(TaskStatus.waiting.name)) {
+      return TaskStatus.waiting;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.downloading.name)) {
+      return TaskStatus.downloading;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.paused.name)) {
+      return TaskStatus.paused;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.finishing.name)) {
+      return TaskStatus.finishing;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.finished.name)) {
+      return TaskStatus.finished;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.hash_checking.name)) {
+      return TaskStatus.hash_checking;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.seeding.name)) {
+      return TaskStatus.seeding;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.filehosting_waiting.name)) {
+      return TaskStatus.filehosting_waiting;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.extracting.name)) {
+      return TaskStatus.extracting;
+    }
+    if (_status.equalsIgnoreCase(TaskStatus.error.name)) {
+      return TaskStatus.error;
+    }
+    return null;
+  }
 
   StatusExtra get statusExtra => _statusExtra;
 
@@ -300,23 +356,46 @@ class TaskDetail {
   String _destination;
   String _uri;
   DateTime _createTime;
+  DateTime _startedTime;
+  DateTime _completedTime;
   String _priority;
   int _totalPeers;
   int _connectedSeeders;
   int _connectedLeechers;
 
+  int _connectedPeers;
+  int _seedElapsed;
+  String _unzipPassword;
+  int _waitingSeconds;
+  int _totalPieces;
+
   TaskDetail.fromJson(Map<String, dynamic> json) {
     _destination = (json ?? {})['destination'];
     _uri = (json ?? {})['uri'];
     try {
-      String createTimeStr = (json ?? {})['create_time'];
-      _createTime =
-          DateTime.fromMillisecondsSinceEpoch(int.parse(createTimeStr) * 1000);
-    } catch (ignored) {}
+      int ts = (json ?? {})['create_time'];
+      if (ts != null && ts > 0)
+        _createTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+
+      ts = (json ?? {})['started_time'];
+      if (ts != null && ts > 0)
+        _startedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+
+      ts = (json ?? {})['completed_time'];
+      if (ts != null && ts > 0)
+        _completedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+    } catch (e) {
+      print(e);
+    }
     _priority = (json ?? {})['priority'];
     _totalPeers = (json ?? {})['total_peers'];
     _connectedSeeders = (json ?? {})['connected_seeders'];
     _connectedLeechers = (json ?? {})['connected_leechers'];
+    _connectedPeers = (json ?? {})['connected_peers'];
+    _seedElapsed = (json ?? {})['seedelapsed'];
+    _unzipPassword = (json ?? {})['unzip_password'];
+    _waitingSeconds = (json ?? {})['waiting_seconds'];
+    _totalPieces = (json ?? {})['total_pieces'];
   }
 
   int get connectedLeechers => _connectedLeechers;
@@ -329,9 +408,23 @@ class TaskDetail {
 
   DateTime get createTime => _createTime;
 
+  DateTime get startedTime => _startedTime;
+
   String get uri => _uri;
 
   String get destination => _destination;
+
+  DateTime get completedTime => _completedTime;
+
+  int get waitingSeconds => _waitingSeconds;
+
+  String get unzipPassword => _unzipPassword;
+
+  int get seedElapsed => _seedElapsed;
+
+  int get connectedPeers => _connectedPeers;
+
+  int get totalPieces => _totalPieces;
 }
 
 class TaskTransfer {
@@ -362,6 +455,7 @@ class TaskTransfer {
 
 class TaskFile {
   String _filename;
+  int _index;
   int _size;
   int _sizeDownloaded;
   String _priority;
@@ -369,6 +463,7 @@ class TaskFile {
 
   TaskFile.fromJson(Map<String, dynamic> json) {
     _filename = (json ?? {})['filename'];
+    _index = (json ?? {})['index'];
     _size = (json ?? {})['size'];
     _sizeDownloaded = (json ?? {})['size_downloaded'];
     _priority = (json ?? {})['priority'];

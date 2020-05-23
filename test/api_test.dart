@@ -31,6 +31,17 @@ void main() {
     print(humanifySize(95));
     print(humanifySize(9));
     print(humanifySize(0));
+
+    print('------------------------------');
+    print(humanifySeconds(469386, accuracy: 60));
+    print(humanifySeconds(460000));
+    print(humanifySeconds(46000));
+    print(humanifySeconds(4600));
+    print(humanifySeconds(460));
+    print(humanifySeconds(46));
+    print(humanifySeconds(4));
+    print(humanifySeconds(1));
+    print(humanifySeconds(0));
   });
 
   test('Test API name constant', () {

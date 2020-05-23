@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/provider/connection.dart';
 import 'package:tuple/tuple.dart';
+
 
 enum Action { add, remove, removeAll, edit, select }
 
@@ -20,13 +22,19 @@ class ConnectionState {
 }
 
 class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
-  ConnectionProvider _provider = ConnectionProvider();
+  ConnectionProvider _provider;
   List<Connection> _connections = [];
   Connection _active = null;
   ConnectionState currentState;
 
   @override
   ConnectionState get initialState {
+    if (kIsWeb) {
+      //_provider = WebConnectionProvider();
+    } else {
+      _provider = MobileConnectionProvider();
+    }
+
     _provider.getAll().then((connections) async {
       _connections = connections;
       return await _provider.getDefaultConnection();

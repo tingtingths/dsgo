@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:synodownloadstation/syno/api/context.dart';
 import 'package:synodownloadstation/syno/api/downloadstation.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
-import 'package:synodownloadstation/syno/api/const.dart';
 
 class DownloadStationAPI extends DownloadStationAPIRaw {
   APIContext _cntx;
