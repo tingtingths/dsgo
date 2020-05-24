@@ -232,12 +232,14 @@ class TransferInfoTabState extends State<TransferInfoTab> {
         (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size;
     progress = progress.isFinite ? progress : 0;
 
+    String remainingTime = '-';
     double remainingSeconds;
     if (_task.status == TaskStatus.downloading) {
       remainingSeconds =
           (_task.size - _task.additional?.transfer?.sizeDownloaded) /
               _task.additional?.transfer?.speedDownload;
       remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
+      remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 2, defaultStr: "-");
     }
 
     return ListView(
@@ -273,7 +275,7 @@ class TransferInfoTabState extends State<TransferInfoTab> {
         ),
         ListTile(
           title: Text(
-              '${humanifySeconds(_task.additional?.detail?.seedElapsed, accuracy: 60)}'),
+              '${humanifySeconds(_task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
           subtitle: Text('Seeding Duration'),
         ),
         ListTile(
@@ -288,7 +290,7 @@ class TransferInfoTabState extends State<TransferInfoTab> {
           subtitle: Text('Started Time'),
         ),
         ListTile(
-          title: Text(humanifySeconds(remainingSeconds?.round(), maxUnits: 2)),
+          title: Text(remainingTime),
           subtitle: Text('Time left'),
         ),
       ],
@@ -381,7 +383,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
                       subtitle: Text('Tracker Url'),
                     ),
                     ListTile(
-                      title: Text(tracker.status),
+                      title: Text(tracker.status.isEmpty ? UNKNOWN : tracker.status),
                       subtitle: Text('Status'),
                     ),
                     ListTile(

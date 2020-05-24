@@ -21,9 +21,8 @@ String humanifySize(int sizeBytes, {int p: 1}) {
   return '?';
 }
 
-String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int currentUnit: 1}) {
-  if (duration == null || duration <= 0) return '0 Second';
-  if (duration <= accuracy) return '';
+String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int currentUnit: 1, String defaultStr: ''}) {
+  if (duration == null || duration <= 0 || duration <= accuracy) return defaultStr;
 
   var unit = [
     {86400, 'Day'},
