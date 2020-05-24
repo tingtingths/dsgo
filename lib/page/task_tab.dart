@@ -34,7 +34,6 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          Navigator.of(context).pop();
           return;
         }
 
@@ -138,12 +137,6 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                         _task.additional?.detail?.completedTime ?? UNKNOWN)),
                 subtitle: Text('Completed Time'),
               ),
-              ListTile(
-                title: Text(
-                    _task.additional?.detail?.waitingSeconds?.toString() ??
-                        UNKNOWN),
-                subtitle: Text('Waiting Seconds'),
-              ),
             ],
           ),
         ),
@@ -198,7 +191,6 @@ class TransferInfoTabState extends State<TransferInfoTab> {
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          Navigator.of(context).pop();
           return;
         }
 
@@ -239,7 +231,8 @@ class TransferInfoTabState extends State<TransferInfoTab> {
           (_task.size - _task.additional?.transfer?.sizeDownloaded) /
               _task.additional?.transfer?.speedDownload;
       remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-      remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 2, defaultStr: "-");
+      remainingTime = humanifySeconds(remainingSeconds?.round(),
+          maxUnits: 2, defaultStr: "-");
     }
 
     return ListView(
@@ -323,7 +316,6 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          Navigator.of(context).pop();
           return;
         }
 
@@ -383,7 +375,8 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
                       subtitle: Text('Tracker Url'),
                     ),
                     ListTile(
-                      title: Text(tracker.status.isEmpty ? UNKNOWN : tracker.status),
+                      title: Text(
+                          tracker.status.isEmpty ? UNKNOWN : tracker.status),
                       subtitle: Text('Status'),
                     ),
                     ListTile(
@@ -430,7 +423,6 @@ class PeerInfoTabState extends State<PeerInfoTab> {
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          Navigator.of(context).pop();
           return;
         }
 
@@ -534,7 +526,6 @@ class FileInfoTabState extends State<FileInfoTab> {
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          Navigator.of(context).pop();
           return;
         }
 

@@ -411,6 +411,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
+          if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
           return;
         }
 
