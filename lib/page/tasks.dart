@@ -27,8 +27,6 @@ class _TaskListState extends State<TaskList>
   var filter = '';
   bool _fetching = false;
   TextTheme textTheme;
-  AnimationController _pgsBarAnimController;
-  Animation<Color> _pgsBarAnim;
   List<GlobalKey> _cardKeys = [];
   List<StreamSubscription> _subscriptions = [];
 
@@ -41,20 +39,6 @@ class _TaskListState extends State<TaskList>
   @override
   void initState() {
     super.initState();
-
-    // animate color progress bar color
-    _pgsBarAnimController = AnimationController(
-        duration: Duration(milliseconds: FETCH_INTERVAL_MS), vsync: this)
-      ..repeat(reverse: true)
-      ..addListener(() {
-        if (mounted) setState(() {});
-      });
-    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-      _pgsBarAnim = ColorTween(
-              begin: Theme.of(context).primaryColor,
-              end: Theme.of(context).primaryColorLight)
-          .animate(_pgsBarAnimController);
-    });
 
     var uiBloc = BlocProvider.of<UiEventBloc>(context);
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
@@ -86,11 +70,6 @@ class _TaskListState extends State<TaskList>
         _fetching = false;
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    textTheme = Theme.of(context).textTheme;
 
     BlocProvider.of<UiEventBloc>(context).listen((state) {
       if (state.event == UiEvent.tasks_filter_change) {
@@ -102,6 +81,14 @@ class _TaskListState extends State<TaskList>
         }
       }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print('${DateTime.now()} build task page');
+    //return Center(child: Text('Hihi'));
+
+    textTheme = Theme.of(context).textTheme;
 
     return BlocConsumer<cBloc.ConnectionBloc, cBloc.ConnectionState>(
       bloc: BlocProvider.of<cBloc.ConnectionBloc>(context),
@@ -124,7 +111,10 @@ class _TaskListState extends State<TaskList>
         }
 
         if (info.total == 0) {
-          return Text('Empty...', style: TextStyle(color: Colors.grey),);
+          return Text(
+            'Empty...',
+            style: TextStyle(color: Colors.grey),
+          );
         }
 
         return ListView.builder(
@@ -168,31 +158,10 @@ class _TaskListState extends State<TaskList>
                   humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
             }
 
-            var progressBar;
-            if (false && TaskStatus.seeding == task.status) {
-              progressBar = Stack(
-                children: [
-                  LinearProgressIndicator(
-                    backgroundColor: Colors.white,
-                    value: progress,
-                  ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return ConstrainedBox(
-                        constraints: BoxConstraints(
-                            maxWidth: constraints.maxWidth * progress),
-                        child: LinearProgressIndicator(),
-                      );
-                    },
-                  ),
-                ],
-              );
-            } else {
-              progressBar = LinearProgressIndicator(
-                backgroundColor: Colors.white,
-                value: progress,
-              );
-            }
+            var progressBar = LinearProgressIndicator(
+              backgroundColor: Colors.white,
+              value: progress,
+            );
 
             var statusIcon = _getStatusIcon(task.status, () {
               print('icon selected');
@@ -411,7 +380,8 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+          if (mounted && Navigator.of(context).canPop())
+            Navigator.of(context).pop();
           return;
         }
 

@@ -23,9 +23,8 @@ class BlocLogDelegate extends BlocDelegate {
     if (currState is SynoApiState) {
       from = 'SynoApiState | request_type=${currState.event?.requestType}';
       to = 'SynoApiState | request_type=${nextState.event?.requestType}';
-      print('from => $to');
     }
-
+    print('from => $to');
     super.onTransition(bloc, transition);
   }
 }
