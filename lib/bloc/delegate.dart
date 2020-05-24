@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart';
+import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
 
 class BlocLogDelegate extends BlocDelegate {
@@ -11,16 +12,20 @@ class BlocLogDelegate extends BlocDelegate {
 
     if (currState is ConnectionState) {
       from =
-          'active=${currState.activeConnection}, connections=[${currState.connections.length}]';
+          'ConnectionState | active=${currState.activeConnection}, connections=[${currState.connections.length}]';
       to =
-          'active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
+          'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
     }
     if (currState is UiEventState) {
-      from = 'initiator=${currState.initiator}, event=${currState.event}';
-      to = 'initiator=${nextState.initiator}, event=${nextState.event}';
+      from = 'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
+      to = 'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
+    }
+    if (currState is SynoApiState) {
+      from = 'SynoApiState | request_type=${currState.event?.requestType}';
+      to = 'SynoApiState | request_type=${nextState.event?.requestType}';
+      print('from => $to');
     }
 
-    print('from => $to');
     super.onTransition(bloc, transition);
   }
 }

@@ -1,5 +1,3 @@
-
-
 class ConnectionMenuItem {
   var _type = 1;
   dynamic _value;

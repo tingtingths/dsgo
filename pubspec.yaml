@@ -32,6 +32,7 @@ dependencies:
   tuple: any
   morpheus: ^1.2.2+1
   intl: any
+  uuid: ^2.0.0
 
 
 dev_dependencies:

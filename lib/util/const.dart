@@ -1,3 +1,5 @@
+const int FETCH_INTERVAL_MS = 5000;
+
 enum StorageKey { Connections, DefaultConnectionIndex }
 
 extension StorageKeyMembers on StorageKey {

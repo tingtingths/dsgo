@@ -4,11 +4,19 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/util/const.dart';
+import 'package:tuple/tuple.dart';
 
 abstract class ConnectionProvider {
   ConnectionProvider();
 
-  Future<String> getDefaultConnection();
+  Future<String> getDefaultConnectionUri();
+
+  Future<Connection> getDefaultConnection() async {
+    String uri = await getDefaultConnectionUri();
+    var connections = await getAll();
+
+    return _findByUri(uri, connections).item2;
+  }
 
   Future<void> setDefaultConnection(String uri);
 
@@ -42,10 +50,18 @@ abstract class ConnectionProvider {
     });
     return jsonEncode(lst);
   }
+
+  Tuple2<int, Connection> _findByUri(String uri, List<Connection> connections) {
+    return Tuple2(
+        connections.indexWhere((e) => uri == e.buildUri()),
+        connections?.firstWhere((e) => uri == e.buildUri(),
+            orElse: () => null));
+  }
 }
 
 class MobileConnectionProvider extends ConnectionProvider {
-  static MobileConnectionProvider _instance = MobileConnectionProvider._internal();
+  static MobileConnectionProvider _instance =
+      MobileConnectionProvider._internal();
   final FlutterSecureStorage _storage = FlutterSecureStorage();
   static final String _key = StorageKey.Connections.key;
 
@@ -56,7 +72,7 @@ class MobileConnectionProvider extends ConnectionProvider {
   MobileConnectionProvider._internal();
 
   @override
-  Future<String> getDefaultConnection() async {
+  Future<String> getDefaultConnectionUri() async {
     String ret;
 
     String value =

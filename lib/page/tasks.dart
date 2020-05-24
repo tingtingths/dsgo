@@ -5,26 +5,15 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
+import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/page/task_tab.dart';
-import 'package:synodownloadstation/syno/api/context.dart';
-import 'package:synodownloadstation/syno/api/modeled/downloadstation.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:synodownloadstation/util/const.dart';
 import 'package:synodownloadstation/util/extension.dart';
 import 'package:synodownloadstation/util/format.dart';
-
-Future<ListTaskInfo> fetchTaskInfo(Connection conn) async {
-  var cntx = APIContext(conn.host, proto: conn.proto, port: conn.port);
-
-  if (!cntx.appSid.containsKey('DownloadStation') ||
-      cntx.appSid['DownloadStation'] == null) {
-    await cntx.authApp('DownloadStation', conn.user, conn.password);
-  }
-  var dsApi = DownloadStationAPI(cntx);
-
-  return dsApi.taskList().then((value) => value.data);
-}
+import 'package:uuid/uuid.dart';
 
 class TaskList extends StatefulWidget {
   @override
@@ -34,7 +23,6 @@ class TaskList extends StatefulWidget {
 class _TaskListState extends State<TaskList>
     with SingleTickerProviderStateMixin {
   ListTaskInfo futureTaskInfo = null;
-  Stream fetchStream;
   Connection _connection;
   var filter = '';
   bool _fetching = false;
@@ -42,18 +30,25 @@ class _TaskListState extends State<TaskList>
   AnimationController _pgsBarAnimController;
   Animation<Color> _pgsBarAnim;
   List<GlobalKey> _cardKeys = [];
+  List<StreamSubscription> _subscriptions = [];
+
+  @override
+  void dispose() {
+    _subscriptions.forEach((e) => e.cancel());
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
 
     // animate color progress bar color
-    _pgsBarAnimController =
-        AnimationController(duration: Duration(seconds: 1), vsync: this)
-          ..repeat(reverse: true)
-          ..addListener(() {
-            if (mounted) setState(() {});
-          });
+    _pgsBarAnimController = AnimationController(
+        duration: Duration(milliseconds: FETCH_INTERVAL_MS), vsync: this)
+      ..repeat(reverse: true)
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
       _pgsBarAnim = ColorTween(
               begin: Theme.of(context).primaryColor,
@@ -62,21 +57,34 @@ class _TaskListState extends State<TaskList>
     });
 
     var uiBloc = BlocProvider.of<UiEventBloc>(context);
-    fetchStream = Stream.periodic(Duration(seconds: 1));
-    fetchStream.listen((event) async {
+    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+
+    _subscriptions.add(
+        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+            .listen((event) async {
       if (_connection == null || _fetching) return;
 
       _fetching = true;
       uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
-      var fetched = await fetchTaskInfo(_connection);
-      if (mounted) {
-        setState(() {
-          futureTaskInfo = fetched;
-        });
-        BlocProvider.of<UiEventBloc>(context)
-            .add(UiEventState(null, UiEvent.tasks_fetched, [DateTime.now(), fetched]));
+      apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
+        'additional': ['transfer']
+      }));
+    }));
+
+    apiBloc.listen((state) {
+      if (state.event != null &&
+          state.event.requestType == RequestType.task_list) {
+        APIResponse<ListTaskInfo> info = state.resp;
+
+        if (mounted && info.success) {
+          setState(() {
+            futureTaskInfo = info.data;
+          });
+          BlocProvider.of<UiEventBloc>(context).add(UiEventState(
+              null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
+        }
+        _fetching = false;
       }
-      _fetching = false;
     });
   }
 
@@ -98,9 +106,11 @@ class _TaskListState extends State<TaskList>
     return BlocConsumer<cBloc.ConnectionBloc, cBloc.ConnectionState>(
       bloc: BlocProvider.of<cBloc.ConnectionBloc>(context),
       listener: (cntx, state) {
-        setState(() {
-          _connection = state.activeConnection;
-        });
+        if (mounted) {
+          setState(() {
+            _connection = state.activeConnection;
+          });
+        }
       },
       builder: (cntx, state) {
         var info = futureTaskInfo;
@@ -114,7 +124,7 @@ class _TaskListState extends State<TaskList>
         }
 
         if (info.total == 0) {
-          return Text('No tasks');
+          return Text('Empty...', style: TextStyle(color: Colors.grey),);
         }
 
         return ListView.builder(
@@ -146,6 +156,17 @@ class _TaskListState extends State<TaskList>
                     p: 0) +
                 '/s';
             var progressText = fmtNum(progress * 100, p: 0);
+
+            String remainingTime;
+            if (task.status == TaskStatus.downloading) {
+              var remainingSeconds =
+                  (task.size - task.additional?.transfer?.sizeDownloaded) /
+                      task.additional?.transfer?.speedDownload;
+              remainingSeconds =
+                  remainingSeconds.isFinite ? remainingSeconds : 0;
+              remainingTime =
+                  humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
+            }
 
             var progressBar;
             if (false && TaskStatus.seeding == task.status) {
@@ -228,7 +249,10 @@ class _TaskListState extends State<TaskList>
                                     .contains(task.status.name.toLowerCase())
                                 ? ''
                                 : ' $progressText') +
-                            ' | $downloaded of $totalSize'),
+                            ' | $downloaded of $totalSize' +
+                            (remainingTime == null
+                                ? ''
+                                : ' | ~$remainingTime')),
                         Row(
                           children: [
                             Icon(
@@ -261,6 +285,9 @@ class _TaskListState extends State<TaskList>
     Icon icon = Icon(Icons.info_outline);
 
     switch (status) {
+      case TaskStatus.paused:
+        icon = Icon(Icons.pause);
+        break;
       case TaskStatus.downloading:
         color = Colors.green;
         icon = Icon(Icons.file_download);
@@ -332,11 +359,24 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
   Task _task;
   List<Tab> tabs;
   TabController tabController;
+  bool _fetching = false;
+  String _fetchingId;
+  Uuid _uuid;
+  List<StreamSubscription> _subscriptions = [];
 
   TaskDetailsPageState(this._task) : assert(_task != null);
 
   @override
+  void dispose() {
+    _subscriptions.forEach((e) => e.cancel());
+    super.dispose();
+  }
+
+  @override
   void initState() {
+    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    _uuid = Uuid();
+
     tabs = <Tab>[
       Tab(icon: Icon(Icons.info)), // general info
       Tab(icon: Icon(Icons.import_export)), // transfer
@@ -344,6 +384,46 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
       Tab(icon: Icon(Icons.people)), // peers
       Tab(icon: Icon(Icons.folder)), // files
     ];
+
+    _fetchingId = _uuid.v4();
+    apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
+      'ids': [_task.id],
+      '_fetchingId': _fetchingId
+    }));
+
+    _subscriptions.add(
+        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+            .listen((event) {
+      if (!_fetching) {
+        _fetchingId = _uuid.v4();
+        apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
+          'ids': [_task.id],
+          '_fetchingId': _fetchingId
+        }));
+      }
+    }));
+
+    apiBloc.listen((state) {
+      if (state.event.requestType == RequestType.task_info &&
+          (state.event.params ?? {})['_fetchingId'] == _fetchingId) {
+        _fetching = false;
+
+        List<Task> tasks = state.resp.data ?? [];
+        List<String> ids = tasks.map((e) => e.id).toList();
+        if (ids == null || !ids.contains(_task.id)) {
+          return;
+        }
+
+        Task task =
+            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+
+        if (task != null && mounted) {
+          setState(() {
+            _task = task;
+          });
+        }
+      }
+    });
 
     tabController = TabController(
       vsync: this,
@@ -366,9 +446,9 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
         children: [
           GeneralTaskInfoTab(_task),
           TransferInfoTab(_task),
-          Text('Trackers'),
-          Text('Peers'),
-          Text('Files'),
+          TrackerInfoTab(_task),
+          PeerInfoTab(_task),
+          FileInfoTab(_task),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+const String UNKNOWN = "Unknown";
+
 class Syno {
   static final _name = 'SYNO';
 

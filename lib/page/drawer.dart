@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
+import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/page/account.dart';
 
@@ -254,6 +255,7 @@ class _MyDrawerState extends State<MyDrawer> {
     var bg = Theme.of(context).accentColor.withOpacity(0.2);
     var fg = Theme.of(context).primaryColor;
     cBloc.ConnectionBloc bloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    SynoApiBloc apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     var tile = ListTile(
       leading: Icon(

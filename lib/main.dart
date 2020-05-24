@@ -4,8 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:synodownloadstation/bloc/connection_bloc.dart';
+import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
 import 'package:synodownloadstation/bloc/delegate.dart';
+import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
 import 'package:synodownloadstation/page/panel.dart';
 import 'package:synodownloadstation/page/tasks.dart';
@@ -21,11 +22,14 @@ class MyApp extends StatelessWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ConnectionBloc>(
-          create: (_) => ConnectionBloc(),
+        BlocProvider<cBloc.ConnectionBloc>(
+          create: (_) => cBloc.ConnectionBloc(),
         ),
         BlocProvider<UiEventBloc>(
           create: (_) => UiEventBloc(),
+        ),
+        BlocProvider<SynoApiBloc>(
+          create: (_) => SynoApiBloc(),
         )
       ],
       child: MaterialApp(
@@ -54,7 +58,11 @@ class MyScaffoldState extends State<MyScaffold> {
   @override
   void initState() {
     super.initState();
+
     var uiBloc = BlocProvider.of<UiEventBloc>(context);
+    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    var connBloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+
     uiBloc.listen((state) {
       if (state.initiator is SearchPanelState &&
           state.event == UiEvent.post_frame) {

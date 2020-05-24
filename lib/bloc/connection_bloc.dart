@@ -4,7 +4,6 @@ import 'package:synodownloadstation/model/model.dart';
 import 'package:synodownloadstation/provider/connection.dart';
 import 'package:tuple/tuple.dart';
 
-
 enum Action { add, remove, removeAll, edit, select }
 
 class ConnectionEvent {
@@ -27,6 +26,8 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
   Connection _active = null;
   ConnectionState currentState;
 
+  void dispose() {}
+
   @override
   ConnectionState get initialState {
     if (kIsWeb) {
@@ -38,9 +39,8 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
     _provider.getAll().then((connections) async {
       _connections = connections;
       return await _provider.getDefaultConnection();
-    }).then((uri) {
-      var found = _findByUri(uri);
-      _active = found.item2;
+    }).then((defaultConn) {
+      _active = defaultConn;
       this.add(ConnectionEvent(null, null));
     });
 

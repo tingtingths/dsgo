@@ -21,7 +21,7 @@ String humanifySize(int sizeBytes, {int p: 1}) {
   return '?';
 }
 
-String humanifySeconds(int duration, {int accuracy: 0}) {
+String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int currentUnit: 1}) {
   if (duration == null || duration <= 0) return '0 Second';
   if (duration <= accuracy) return '';
 
@@ -40,10 +40,13 @@ String humanifySeconds(int duration, {int accuracy: 0}) {
       int rem = duration - floored * unit[i].elementAt(0);
       String trailing = '';
       if (rem > 0) {
-        trailing = ' ' + humanifySeconds(rem, accuracy: accuracy);
+        if (maxUnits != null && currentUnit != null && maxUnits > currentUnit) {
+          trailing = ' ' + humanifySeconds(rem, accuracy: accuracy, maxUnits: maxUnits, currentUnit: ++currentUnit);
+        }
       }
 
-      return '$floored ${unit[i].elementAt(1)}${floored > 1 ? "s" : ""}' + trailing;
+      return '$floored ${unit[i].elementAt(1)}${floored > 1 ? "s" : ""}' +
+          trailing;
     }
     i += 1;
   }
