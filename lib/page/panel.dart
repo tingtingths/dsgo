@@ -1,6 +1,15 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:morpheus/morpheus.dart';
+import 'package:path/path.dart' as path;
+import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
+import 'package:synodownloadstation/util/format.dart';
+import 'package:synodownloadstation/util/utils.dart';
+import 'package:uuid/uuid.dart';
 
 class SearchPanel extends StatefulWidget {
   @override
@@ -8,6 +17,7 @@ class SearchPanel extends StatefulWidget {
 }
 
 class SearchPanelState extends State<SearchPanel> {
+  GlobalKey _addTaskBtnKey = GlobalKey();
   var _controller = TextEditingController();
 
   @override
@@ -54,6 +64,7 @@ class SearchPanelState extends State<SearchPanel> {
                 ),
               ),
               IconButton(
+                key: _addTaskBtnKey,
                 padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                 icon: Icon(
                   Icons.add,
@@ -61,12 +72,20 @@ class SearchPanelState extends State<SearchPanel> {
                 ),
                 iconSize: 30,
                 onPressed: () {
-                  //uiBloc.add(UiEventState.noPayload(this, UiEvent.add_task));
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (BuildContext context) {
-                      return AddTaskForm();
-                    }),
-                  );
+                  Navigator.push(
+                    context,
+                    MorpheusPageRoute(
+                        parentKey: _addTaskBtnKey,
+                        builder: (context) {
+                          return AddTaskForm();
+                        }),
+                  ).then((result) {
+                    var scaffold = Scaffold.of(context);
+                    scaffold.removeCurrentSnackBar();
+                    scaffold.showSnackBar(SnackBar(
+                      content: Text(result as String),
+                    ));
+                  });
                 },
               ),
             ],
@@ -106,6 +125,42 @@ class AddTaskForm extends StatefulWidget {
 class AddTaskFormState extends State<AddTaskForm> {
   final _formKey = GlobalKey<FormState>();
   var _formModel = {};
+  Map<String, MapEntry<File, int>> _torrentFiles = {};
+  SynoApiBloc apiBloc;
+  String _reqId;
+  Uuid _uuid;
+  bool _submitBtn = true;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    _uuid = Uuid();
+
+    // listen add_task event feedback
+    apiBloc.listen((state) {
+      if (state.event?.requestType != RequestType.add_task ||
+          state.event?.params['_req_id'] != _reqId) {
+        return;
+      }
+
+      if (state.resp?.success ?? false) {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context, 'Task submitted.');
+        }
+      } else {
+        setState(() {
+          _submitBtn = true;
+        });
+        Scaffold.of(context).showSnackBar(SnackBar(
+          duration: Duration(seconds: 5),
+          content: Text('Failed to create task...'),
+        ));
+      }
+    });
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,103 +174,181 @@ class AddTaskFormState extends State<AddTaskForm> {
 
     var urlCount = _formModel['url']?.length ?? 0;
 
-    return Container(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Stack(
-            alignment: Alignment.center,
+    _submitBtn = _torrentFiles.isNotEmpty ||
+        (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
+
+    var scaffold = Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text('New Task'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.done),
+            onPressed: _submitBtn
+                ? () {
+                    _scaffoldKey.currentState
+                        .showSnackBar(loadingSnackBar('Submitting tasks...'));
+
+                    // submit task
+                    _reqId = _uuid.v4();
+                    var params = {
+                      '_req_id': _reqId,
+                      'uris': _formModel['url'],
+                      'torrent_files': _torrentFiles.values
+                          .map((entry) => entry.key)
+                          .toList(),
+                    };
+                    apiBloc
+                        .add(SynoApiEvent.params(RequestType.add_task, params));
+                    setState(() {
+                      _submitBtn = false;
+                    });
+                  }
+                : null,
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(10),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Center(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    GestureDetector(
-                      child: Text(
-                        'Cancel',
-                        style: textBtnStyle,
-                        textAlign: TextAlign.center,
+                    TextFormField(
+                      maxLines: 10,
+                      decoration: InputDecoration(
+                        icon: Icon(Icons.link),
+                        labelText: 'Paste the URL(s) here',
+                        hintStyle: TextStyle(),
+                        hintText: 'Separate with new line...',
+                        counterText: '$urlCount URL${urlCount > 1 ? 's' : ''}',
+                        alignLabelWithHint: true,
                       ),
-                      onTap: () {
-                        uiBloc.add(UiEventState.noPayload(
-                            null, UiEvent.close_slide_panel));
+                      onChanged: (val) {
+                        _formModel['url'] = _splitAndTrim('\n', val);
+                        setState(() {});
+                      },
+                      onSaved: (val) {
+                        _formModel['url'] = _splitAndTrim('\n', val);
+                        setState(() {});
                       },
                     ),
-                    GestureDetector(
-                      child: Text(
-                        'Done',
-                        style: textBtnStyle,
-                        textAlign: TextAlign.center,
-                      ),
-                      onTap: () {
-                        uiBloc.add(UiEventState.noPayload(
-                            null, UiEvent.close_slide_panel));
-                      },
-                    )
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${_torrentFiles.isEmpty ? '' : _torrentFiles.length.toString() + " "}Torrent File${_torrentFiles.length > 1 ? "s" : ""}',
+                              style: textSeparatorStyle,
+                            ),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                              icon: Icon(
+                                Icons.add,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              iconSize: 30,
+                              onPressed: () {
+                                _openFilePicker();
+                              },
+                            ),
+                          ],
+                        )),
+                    Divider(
+                      height: 0,
+                    ),
+                    ListView.separated(
+                        physics: NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: _torrentFiles.length,
+                        separatorBuilder: (context, idx) {
+                          return Divider(
+                            height: 0,
+                          );
+                        },
+                        itemBuilder: (context, idx) {
+                          var filepath = _torrentFiles.keys.toList()[idx];
+                          var entry = _torrentFiles[filepath];
+                          var len = entry.value;
+
+                          return Dismissible(
+                            direction: DismissDirection.horizontal,
+                            key: ValueKey(filepath),
+                            background: Container(
+                              alignment: Alignment.centerLeft,
+                              padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
+                              color: Colors.red,
+                              child: Icon(Icons.cancel),
+                            ),
+                            secondaryBackground: Container(
+                              margin: EdgeInsets.zero,
+                              alignment: Alignment.centerRight,
+                              padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+                              color: Colors.red,
+                              child: Icon(Icons.cancel),
+                            ),
+                            child: ListTile(
+                              focusColor: Colors.green,
+                              title: Text(path.basename(filepath)),
+                              subtitle: Text(humanifySize(len)),
+                            ),
+                            onDismissed: (direction) {
+                              setState(() {
+                                _torrentFiles.remove(filepath);
+                              });
+                            },
+                          );
+                        }),
                   ],
                 ),
               ),
-              Center(
-                child: Text(
-                  'Create Tasks',
-                  style: textHdrStyle,
-                  textAlign: TextAlign.center,
-                ),
-              )
             ],
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
-            child: Text(
-              'Url',
-              style: textSeparatorStyle,
-            ),
-          ),
-          Divider(),
-          Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: <Widget>[
-                TextFormField(
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                      icon: Icon(Icons.link),
-                      labelText: 'URL',
-                      hintStyle: TextStyle(),
-                      hintText: 'Separate by new line',
-                      counterText: '$urlCount URL${urlCount > 1 ? 's' : ''}',
-                      alignLabelWithHint: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15))),
-                  onChanged: (val) {
-                    _formModel['url'] = _splitAndTrim('\n', val);
-                    setState(() {});
-                  },
-                  onSaved: (val) {
-                    _formModel['url'] = _splitAndTrim('\n', val);
-                    setState(() {});
-                  },
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(0, 30, 0, 0),
-            child: Text(
-              'Torrent File',
-              style: textSeparatorStyle,
-            ),
-          ),
-          Divider(),
-        ],
+        ),
       ),
+    );
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: scaffold,
     );
   }
 
   List<String> _splitAndTrim(String delimiter, String s) {
     return s?.split(delimiter)?.where((e) => e.trim() != '')?.toList() ?? [];
+  }
+
+  void _openFilePicker() async {
+    try {
+      List<File> files = await FilePicker.getMultiFile(
+//        type: FileType.custom,
+//        allowedExtensions: ['torrent'],
+          );
+
+      if (mounted) {
+        setState(() {
+          _torrentFiles.addAll(
+              Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
+            var _f = f as File;
+            return _f.path;
+          }, value: (f) {
+            var _f = f as File;
+            return MapEntry(_f, _f.lengthSync());
+          }));
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 }

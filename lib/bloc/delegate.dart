@@ -17,8 +17,10 @@ class BlocLogDelegate extends BlocDelegate {
           'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
     }
     if (currState is UiEventState) {
-      from = 'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
-      to = 'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
+      from =
+          'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
+      to =
+          'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
     }
     if (currState is SynoApiState) {
       from = 'SynoApiState | request_type=${currState.event?.requestType}';

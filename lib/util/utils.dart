@@ -9,3 +9,19 @@ void copyToClipboard(String text, BuildContext context) {
     content: Text('Copied to clipboard'),
   ));
 }
+
+SnackBar loadingSnackBar(String text,
+    {Duration duration: const Duration(days: 365)}) {
+  return SnackBar(
+    duration: duration,
+    content: Row(
+      children: [
+        Padding(
+          child: CircularProgressIndicator(),
+          padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+        ),
+        Text(text)
+      ],
+    ),
+  );
+}

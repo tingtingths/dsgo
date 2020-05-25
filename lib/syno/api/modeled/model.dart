@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:synodownloadstation/util/extension.dart';
 
 enum TaskStatus {
@@ -41,8 +39,9 @@ class APIResponse<T> {
 
   bool get success => _success;
 
-  APIResponse.fromJson(
-      Map<String, dynamic> json, T create(Map<String, dynamic> data)) {
+  APIResponse(this._success, this._data, this._error);
+
+  APIResponse.fromJson(Map<String, dynamic> json, T create(dynamic data)) {
     _success = (json ?? {})['success'];
     _error = (json ?? {})['error'];
 
@@ -192,19 +191,30 @@ class _DownloadStationTaskActionResponse {
   String get id => _id;
 }
 
-class DownloadStationTaskDelete extends _DownloadStationTaskActionResponse {
-  DownloadStationTaskDelete.fromJson(Map<String, dynamic> json)
-      : super.fromJson(json);
+class _DownloadStationMultiTaskActionResponse {
+  List<_DownloadStationTaskActionResponse> _responses;
+
+  _DownloadStationMultiTaskActionResponse.fromJson(List<dynamic> json) {
+    _responses = json.map((el) {
+      return _DownloadStationTaskActionResponse.fromJson(el);
+    }).toList();
+  }
+
+  List<_DownloadStationTaskActionResponse> get responses => _responses;
 }
 
-class DownloadStationTaskPause extends _DownloadStationTaskActionResponse {
-  DownloadStationTaskPause.fromJson(Map<String, dynamic> json)
-      : super.fromJson(json);
+class DownloadStationTaskDelete
+    extends _DownloadStationMultiTaskActionResponse {
+  DownloadStationTaskDelete.fromJson(List<dynamic> json) : super.fromJson(json);
 }
 
-class DownloadStationTaskResume extends _DownloadStationTaskActionResponse {
-  DownloadStationTaskResume.fromJson(Map<String, dynamic> json)
-      : super.fromJson(json);
+class DownloadStationTaskPause extends _DownloadStationMultiTaskActionResponse {
+  DownloadStationTaskPause.fromJson(List<dynamic> json) : super.fromJson(json);
+}
+
+class DownloadStationTaskResume
+    extends _DownloadStationMultiTaskActionResponse {
+  DownloadStationTaskResume.fromJson(List<dynamic> json) : super.fromJson(json);
 }
 
 class DownloadStationTaskEdit extends _DownloadStationTaskActionResponse {
@@ -257,6 +267,10 @@ class Task {
   String get title => _title;
 
   int get size => _size;
+
+  set status(TaskStatus st) {
+    _status = st.name;
+  }
 
   TaskStatus get status {
     if (_status.equalsIgnoreCase(TaskStatus.waiting.name)) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,9 +7,125 @@ import 'package:intl/intl.dart';
 import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
 import 'package:synodownloadstation/syno/api/const.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:synodownloadstation/util/const.dart';
 import 'package:synodownloadstation/util/extension.dart';
 import 'package:synodownloadstation/util/format.dart';
 import 'package:synodownloadstation/util/utils.dart';
+import 'package:uuid/uuid.dart';
+
+class TaskDetailsPage extends StatefulWidget {
+  Task _task;
+
+  TaskDetailsPage(this._task) : assert(_task != null);
+
+  @override
+  State<StatefulWidget> createState() => TaskDetailsPageState(_task);
+}
+
+class TaskDetailsPageState extends State<TaskDetailsPage>
+    with TickerProviderStateMixin {
+  Task _task;
+  List<Tab> tabs;
+  TabController tabController;
+  bool _fetching = false;
+  String _fetchingId;
+  Uuid _uuid;
+  List<StreamSubscription> _subscriptions = [];
+
+  TaskDetailsPageState(this._task) : assert(_task != null);
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void dispose() {
+    _subscriptions.forEach((e) => e.cancel());
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    _uuid = Uuid();
+
+    tabs = <Tab>[
+      Tab(icon: Icon(Icons.info)), // general info
+      Tab(icon: Icon(Icons.import_export)), // transfer
+      Tab(icon: Icon(Icons.dns)), // trackers
+      Tab(icon: Icon(Icons.people)), // peers
+      Tab(icon: Icon(Icons.folder)), // files
+    ];
+
+    _fetchingId = _uuid.v4();
+    apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
+      'ids': [_task.id],
+      '_fetchingId': _fetchingId
+    }));
+
+    _subscriptions.add(
+        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+            .listen((event) {
+      if (!_fetching) {
+        _fetchingId = _uuid.v4();
+        apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
+          'ids': [_task.id],
+          '_fetchingId': _fetchingId
+        }));
+      }
+    }));
+
+    apiBloc.listen((state) {
+      if (state.event.requestType == RequestType.task_info &&
+          (state.event.params ?? {})['_fetchingId'] == _fetchingId) {
+        _fetching = false;
+
+        List<Task> tasks = state.resp.data ?? [];
+        List<String> ids = tasks.map((e) => e.id).toList();
+        if (ids == null || !ids.contains(_task.id)) {
+          if (mounted && Navigator.of(context).canPop())
+            Navigator.of(context).pop();
+          return;
+        }
+
+        Task task =
+            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+
+        if (task != null && mounted) {
+          setState(() {
+            _task = task;
+          });
+        }
+      }
+    });
+
+    tabController = TabController(
+      vsync: this,
+      length: tabs.length,
+    );
+
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text(_task.title),
+        bottom:
+            TabBar(isScrollable: false, tabs: tabs, controller: tabController),
+      ),
+      body: TabBarView(
+        controller: tabController,
+        children: [
+          GeneralTaskInfoTab(_task),
+          TransferInfoTab(_task),
+          TrackerInfoTab(_task),
+          PeerInfoTab(_task),
+          FileInfoTab(_task),
+        ],
+      ),
+    );
+  }
+}
 
 class GeneralTaskInfoTab extends StatefulWidget {
   Task _task;
@@ -23,12 +141,15 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
   DateFormat dtFmt = DateFormat.yMd().add_jm();
 
   GeneralTaskInfoTabState(this._task) : assert(_task != null);
+  SynoApiBloc apiBloc;
+  Uuid _uuid;
+  String _reqId;
 
   @override
   void initState() {
-    super.initState();
+    _uuid = Uuid();
 
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
       if (state.event.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp.data ?? [];
@@ -46,7 +167,38 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
           });
         }
       }
+
+      if (_reqId != null && state.event.params['_reqId'] == _reqId) {
+        Scaffold.of(context).removeCurrentSnackBar();
+
+        // paused
+        if (state.event.requestType == RequestType.pause_task &&
+            state.resp.success &&
+            mounted) {
+          setState(() {
+            _task.status = TaskStatus.paused;
+          });
+        }
+
+        // resumed
+        if (state.event?.requestType == RequestType.resume_task &&
+            state.resp.success &&
+            mounted) {
+          setState(() {
+            _task.status = TaskStatus.downloading;
+          });
+        }
+
+        if (state.event?.requestType == RequestType.remove_task &&
+            state.resp.success &&
+            mounted &&
+            Navigator.of(context).canPop()) {
+          Navigator.pop(context,
+              {'requestType': RequestType.remove_task, 'taskId': _task.id});
+        }
+      }
     });
+    super.initState();
   }
 
   @override
@@ -57,19 +209,43 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     if (_task.status == TaskStatus.downloading) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause),
           fillColor: Colors.amber, onPressed: () {
-        // TODO : pause the task
+        Scaffold.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(loadingSnackBar('Pausing...'));
+
+        _reqId = _uuid.v4();
+        apiBloc.add(SynoApiEvent.params(RequestType.pause_task, {
+          '_reqId': _reqId,
+          'ids': [_task.id]
+        }));
       });
     }
     if (_task.status == TaskStatus.paused) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow),
           fillColor: Colors.green, onPressed: () {
-        // TODO : resume the task
+        Scaffold.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(loadingSnackBar('Resuming...'));
+
+        _reqId = _uuid.v4();
+        apiBloc.add(SynoApiEvent.params(RequestType.resume_task, {
+          '_reqId': _reqId,
+          'ids': [_task.id]
+        }));
       });
     }
 
     Widget deleteBtn = _buildCircleIconBtn(Icon(Icons.delete),
         fillColor: Colors.red, onPressed: () {
-      // TODO : delete the task
+      Scaffold.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(loadingSnackBar('Removing...'));
+
+      _reqId = _uuid.v4();
+      apiBloc.add(SynoApiEvent.params(RequestType.remove_task, {
+        '_reqId': _reqId,
+        'ids': [_task.id]
+      }));
     });
 
     List<Widget> actionBtns = [playPauseBtn, deleteBtn];

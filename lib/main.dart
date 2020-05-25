@@ -94,9 +94,10 @@ class MyScaffoldState extends State<MyScaffold> {
     );
 
     return GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
-        child: scaffold);
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: scaffold,
+    );
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
@@ -13,7 +12,6 @@ import 'package:synodownloadstation/syno/api/modeled/model.dart';
 import 'package:synodownloadstation/util/const.dart';
 import 'package:synodownloadstation/util/extension.dart';
 import 'package:synodownloadstation/util/format.dart';
-import 'package:uuid/uuid.dart';
 
 class TaskList extends StatefulWidget {
   @override
@@ -22,7 +20,7 @@ class TaskList extends StatefulWidget {
 
 class _TaskListState extends State<TaskList>
     with SingleTickerProviderStateMixin {
-  ListTaskInfo futureTaskInfo = null;
+  ListTaskInfo taskInfo;
   Connection _connection;
   var filter = '';
   bool _fetching = false;
@@ -62,7 +60,7 @@ class _TaskListState extends State<TaskList>
 
         if (mounted && info.success) {
           setState(() {
-            futureTaskInfo = info.data;
+            taskInfo = info.data;
           });
           BlocProvider.of<UiEventBloc>(context).add(UiEventState(
               null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
@@ -100,7 +98,7 @@ class _TaskListState extends State<TaskList>
         }
       },
       builder: (cntx, state) {
-        var info = futureTaskInfo;
+        var info = taskInfo;
 
         if (_connection == null) {
           return Text('Select account first');
@@ -123,11 +121,15 @@ class _TaskListState extends State<TaskList>
           itemBuilder: (cntx, idx) {
             if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
 
-            var task = info.tasks[idx % info.total];
+            var task = info.tasks[idx];
 
             if (filter != null && filter.trim().isNotEmpty) {
-              if (!task.title.toUpperCase().contains(filter.toUpperCase())) {
-                return null;
+              var sanitizedTitle =
+                  task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+              var sanitizedMatcher =
+                  filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+              if (!sanitizedTitle.contains(sanitizedMatcher)) {
+                return SizedBox.shrink();
               }
             }
 
@@ -197,7 +199,22 @@ class _TaskListState extends State<TaskList>
                                       context),
                                   child: TaskDetailsPage(task),
                                 );
-                              }));
+                              })).then((result) {
+                        result = (result ?? {});
+                        if (result['requestType'] == RequestType.remove_task &&
+                            result['taskId'] != null) {
+                          var found = taskInfo.tasks.firstWhere(
+                              (t) => t.id == result['taskId'],
+                              orElse: () => null);
+
+                          if (found != null) {
+                            setState(() {
+                              taskInfo.tasks.remove(found);
+                              taskInfo.total -= 1;
+                            });
+                          }
+                        }
+                      });
                     },
                     title: Text(
                       task.title,
@@ -309,118 +326,6 @@ class _TaskListState extends State<TaskList>
         onPressed: onPressed,
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
-      ),
-    );
-  }
-}
-
-class TaskDetailsPage extends StatefulWidget {
-  Task _task;
-
-  TaskDetailsPage(this._task) : assert(_task != null);
-
-  @override
-  State<StatefulWidget> createState() => TaskDetailsPageState(_task);
-}
-
-class TaskDetailsPageState extends State<TaskDetailsPage>
-    with TickerProviderStateMixin {
-  Task _task;
-  List<Tab> tabs;
-  TabController tabController;
-  bool _fetching = false;
-  String _fetchingId;
-  Uuid _uuid;
-  List<StreamSubscription> _subscriptions = [];
-
-  TaskDetailsPageState(this._task) : assert(_task != null);
-
-  @override
-  void dispose() {
-    _subscriptions.forEach((e) => e.cancel());
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    _uuid = Uuid();
-
-    tabs = <Tab>[
-      Tab(icon: Icon(Icons.info)), // general info
-      Tab(icon: Icon(Icons.import_export)), // transfer
-      Tab(icon: Icon(Icons.dns)), // trackers
-      Tab(icon: Icon(Icons.people)), // peers
-      Tab(icon: Icon(Icons.folder)), // files
-    ];
-
-    _fetchingId = _uuid.v4();
-    apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
-      'ids': [_task.id],
-      '_fetchingId': _fetchingId
-    }));
-
-    _subscriptions.add(
-        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-            .listen((event) {
-      if (!_fetching) {
-        _fetchingId = _uuid.v4();
-        apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
-          'ids': [_task.id],
-          '_fetchingId': _fetchingId
-        }));
-      }
-    }));
-
-    apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info &&
-          (state.event.params ?? {})['_fetchingId'] == _fetchingId) {
-        _fetching = false;
-
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
-          if (mounted && Navigator.of(context).canPop())
-            Navigator.of(context).pop();
-          return;
-        }
-
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
-
-    tabController = TabController(
-      vsync: this,
-      length: tabs.length,
-    );
-
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_task.title),
-        bottom:
-            TabBar(isScrollable: false, tabs: tabs, controller: tabController),
-      ),
-      body: TabBarView(
-        controller: tabController,
-        children: [
-          GeneralTaskInfoTab(_task),
-          TransferInfoTab(_task),
-          TrackerInfoTab(_task),
-          PeerInfoTab(_task),
-          FileInfoTab(_task),
-        ],
       ),
     );
   }
