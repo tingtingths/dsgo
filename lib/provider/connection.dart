@@ -75,6 +75,11 @@ class MobileConnectionProvider extends ConnectionProvider {
   Future<String> getDefaultConnectionUri() async {
     String ret;
 
+    List<Connection> connections = await getAll();
+    if (connections != null && connections.length == 1) {
+      return connections[0].buildUri();
+    }
+
     String value =
         await _storage.read(key: StorageKey.DefaultConnectionIndex.key);
     try {

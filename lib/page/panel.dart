@@ -80,11 +80,13 @@ class SearchPanelState extends State<SearchPanel> {
                           return AddTaskForm();
                         }),
                   ).then((result) {
-                    var scaffold = Scaffold.of(context);
-                    scaffold.removeCurrentSnackBar();
-                    scaffold.showSnackBar(SnackBar(
-                      content: Text(result as String),
-                    ));
+                    if (result != null && result is String) {
+                      var scaffold = Scaffold.of(context);
+                      scaffold.removeCurrentSnackBar();
+                      scaffold.showSnackBar(SnackBar(
+                        content: Text(result as String),
+                      ));
+                    }
                   });
                 },
               ),
@@ -187,7 +189,7 @@ class AddTaskFormState extends State<AddTaskForm> {
             onPressed: _submitBtn
                 ? () {
                     _scaffoldKey.currentState
-                        .showSnackBar(loadingSnackBar('Submitting tasks...'));
+                        .showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task
                     _reqId = _uuid.v4();

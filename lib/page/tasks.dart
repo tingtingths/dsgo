@@ -12,6 +12,7 @@ import 'package:synodownloadstation/syno/api/modeled/model.dart';
 import 'package:synodownloadstation/util/const.dart';
 import 'package:synodownloadstation/util/extension.dart';
 import 'package:synodownloadstation/util/format.dart';
+import 'package:synodownloadstation/util/utils.dart';
 
 class TaskList extends StatefulWidget {
   @override
@@ -27,6 +28,10 @@ class _TaskListState extends State<TaskList>
   TextTheme textTheme;
   List<GlobalKey> _cardKeys = [];
   List<StreamSubscription> _subscriptions = [];
+  SynoApiBloc apiBloc;
+  UiEventBloc uiBloc;
+  List<Task> pendingRemove = [];
+  Timer pendingRemoveCountdown;
 
   @override
   void dispose() {
@@ -38,8 +43,8 @@ class _TaskListState extends State<TaskList>
   void initState() {
     super.initState();
 
-    var uiBloc = BlocProvider.of<UiEventBloc>(context);
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    uiBloc = BlocProvider.of<UiEventBloc>(context);
+    apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     _subscriptions.add(
         Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
@@ -67,6 +72,12 @@ class _TaskListState extends State<TaskList>
         }
         _fetching = false;
       }
+
+      if (state.event != null &&
+          state.event.requestType == RequestType.remove_task) {
+        pendingRemove
+            .removeWhere((task) => state.event.params['ids'].contains(task.id));
+      }
     });
 
     BlocProvider.of<UiEventBloc>(context).listen((state) {
@@ -84,7 +95,6 @@ class _TaskListState extends State<TaskList>
   @override
   Widget build(BuildContext context) {
     print('${DateTime.now()} build task page');
-    //return Center(child: Text('Hihi'));
 
     textTheme = Theme.of(context).textTheme;
 
@@ -108,6 +118,17 @@ class _TaskListState extends State<TaskList>
           return Center(child: CircularProgressIndicator());
         }
 
+        var count = info.tasks.length;
+        var tasks = List<Task>.from(info.tasks);
+        pendingRemove.forEach((pendingRemove) {
+          var found = tasks.firstWhere((task) => task.id == pendingRemove.id,
+              orElse: () => null);
+          if (found == null) return;
+
+          count -= 1;
+          tasks.remove(found);
+        });
+
         if (info.total == 0) {
           return Text(
             'Empty...',
@@ -117,11 +138,11 @@ class _TaskListState extends State<TaskList>
 
         return ListView.builder(
           addAutomaticKeepAlives: true,
-          itemCount: info.total,
+          itemCount: count,
           itemBuilder: (cntx, idx) {
             if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
 
-            var task = info.tasks[idx];
+            var task = tasks[idx];
 
             if (filter != null && filter.trim().isNotEmpty) {
               var sanitizedTitle =
@@ -167,101 +188,171 @@ class _TaskListState extends State<TaskList>
 
             var statusIcon = _getStatusIcon(task.status, () {
               print('icon selected');
-              // TODO : trigger next action statue here
+              var params = {'ids': [task.id]};
               /*
               i.e.
                 Downloading -> Pause
                 Pause -> Downloading
                 ..etc?
                */
+              if (TaskStatus.downloading == task.status) {
+                // pause it
+                apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
+                setState(() {
+                  task.status = TaskStatus.paused;
+                });
+              } else if (TaskStatus.paused == task.status) {
+                // resume it
+                apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
+                setState(() {
+                  task.status = TaskStatus.waiting;
+                });
+              }
             }, onLongPress: () {
               // TODO : trigger multiple selection here
             });
 
-            return Card(
-              key: _cardKeys[idx],
-              elevation: 5,
-              margin: EdgeInsets.fromLTRB(10, 5, 10, 5),
-              child: Column(
-                children: <Widget>[
-                  ListTile(
-                    dense: false,
-                    leading: statusIcon,
-                    //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MorpheusPageRoute(
-                              parentKey: _cardKeys[idx],
-                              builder: (context) {
-                                return BlocProvider.value(
-                                  value: BlocProvider.of<cBloc.ConnectionBloc>(
-                                      context),
-                                  child: TaskDetailsPage(task),
-                                );
-                              })).then((result) {
-                        result = (result ?? {});
-                        if (result['requestType'] == RequestType.remove_task &&
-                            result['taskId'] != null) {
-                          var found = taskInfo.tasks.firstWhere(
-                              (t) => t.id == result['taskId'],
-                              orElse: () => null);
-
-                          if (found != null) {
-                            setState(() {
-                              taskInfo.tasks.remove(found);
-                              taskInfo.total -= 1;
-                            });
-                          }
-                        }
-                      });
-                    },
-                    title: Text(
-                      task.title,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                      style: TextStyle(
-                          fontSize:
-                              Theme.of(context).textTheme.headline6.fontSize),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Divider(
-                          height: 5,
-                        ),
-                        Text('${task.status.name.capitalize()}' +
-                            (['seeding', 'finished']
-                                    .contains(task.status.name.toLowerCase())
-                                ? ''
-                                : ' $progressText') +
-                            ' | $downloaded of $totalSize' +
-                            (remainingTime == null
-                                ? ''
-                                : ' | ~$remainingTime')),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.arrow_downward,
-                              size: textTheme.bodyText1.fontSize,
-                            ),
-                            Text(downSpeed),
-                            Icon(Icons.arrow_upward,
-                                size: textTheme.bodyText1.fontSize),
-                            Text(upSpeed),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                  progressBar,
-                ],
+            return Dismissible(
+              direction: DismissDirection.horizontal,
+              key: ValueKey(task.id),
+              background: Container(
+                alignment: Alignment.centerLeft,
+                padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
+                color: Colors.red,
+                child: Icon(Icons.cancel),
               ),
+              secondaryBackground: Container(
+                margin: EdgeInsets.zero,
+                alignment: Alignment.centerRight,
+                padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+                color: Colors.red,
+                child: Icon(Icons.cancel),
+              ),
+              child: Card(
+                key: _cardKeys[idx],
+                elevation: 5,
+                margin: EdgeInsets.fromLTRB(10, 5, 10, 5),
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      dense: false,
+                      leading: statusIcon,
+                      //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MorpheusPageRoute(
+                                parentKey: _cardKeys[idx],
+                                builder: (context) {
+                                  return BlocProvider.value(
+                                    value:
+                                        BlocProvider.of<cBloc.ConnectionBloc>(
+                                            context),
+                                    child: TaskDetailsPage(task),
+                                  );
+                                })).then((result) {
+                          result = (result ?? {});
+                          if (result['requestType'] ==
+                                  RequestType.remove_task &&
+                              result['taskId'] != null) {
+                            removeTaskFromModel(result['taskId']);
+                          }
+                        });
+                      },
+                      title: Text(
+                        task.title,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                        style: TextStyle(
+                            fontSize:
+                                Theme.of(context).textTheme.headline6.fontSize),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Divider(
+                            height: 5,
+                          ),
+                          Text((['seeding', 'finished']
+                                  .contains(task.status.name.toLowerCase())
+                              ? '${task.status.name.capitalize()}'
+                              : '$progressText% | ${task.status.name.capitalize()}' +
+                                  (remainingTime == null ||
+                                          remainingTime.isEmpty
+                                      ? ''
+                                      : ' | ~$remainingTime'))),
+                          Text('$downloaded of $totalSize'),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_downward,
+                                size: textTheme.bodyText1.fontSize,
+                              ),
+                              Text(downSpeed),
+                              Icon(Icons.arrow_upward,
+                                  size: textTheme.bodyText1.fontSize),
+                              Text(upSpeed),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                    progressBar,
+                  ],
+                ),
+              ),
+              onDismissed: (direction) {
+                removeTaskFromModel(task.id);
+              },
             );
           },
         );
       },
     );
+  }
+
+  void removeTaskFromModel(String taskId) {
+    var found =
+        taskInfo.tasks.firstWhere((t) => t.id == taskId, orElse: () => null);
+
+    if (found != null) {
+      setState(() {
+        taskInfo.tasks.remove(found);
+        taskInfo.total -= 1;
+      });
+      pendingRemove.add(found);
+      var confirmDuration = Duration(seconds: 6);
+
+      // reset timer
+      if (pendingRemoveCountdown != null) {
+        pendingRemoveCountdown.cancel();
+      }
+      pendingRemoveCountdown = Timer(confirmDuration, () {
+        apiBloc.add(SynoApiEvent.params(RequestType.remove_task, {
+          'ids':  pendingRemove.map((task) => task.id).toList()
+        }));
+      });
+
+      Scaffold.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          buildSnackBar(
+            '${pendingRemove.length} Task${pendingRemove.length > 1 ? 's' : ''} removed.',
+            duration: confirmDuration,
+            showProgressIndicator: false,
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () {
+                pendingRemoveCountdown.cancel();
+                pendingRemoveCountdown = null;
+                setState(() {
+                  pendingRemove.clear();
+                });
+              },
+            ),
+          ),
+        );
+    }
   }
 
   Widget _getStatusIcon(TaskStatus status, Function onPressed,
@@ -277,10 +368,6 @@ class _TaskListState extends State<TaskList>
       case TaskStatus.downloading:
         color = Colors.green;
         icon = Icon(Icons.file_download);
-        break;
-      case TaskStatus.error:
-        color = Colors.amber;
-        icon = Icon(Icons.pause);
         break;
       case TaskStatus.finishing:
         color = Colors.blue;

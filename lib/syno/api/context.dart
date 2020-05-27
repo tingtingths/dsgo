@@ -5,7 +5,7 @@ import 'package:synodownloadstation/syno/api/auth.dart';
 import 'package:synodownloadstation/syno/api/modeled/model.dart';
 import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
 
-class CustomInterceptors extends InterceptorsWrapper {
+class LoggingInterceptor extends InterceptorsWrapper {
   @override
   Future onRequest(RequestOptions options) {
     print("> ${options?.method} ${options?.path}");
@@ -38,7 +38,7 @@ class APIContext {
     _proto = proto;
     _authority = '$host:$port';
     _endpoint = endpoint;
-    //_client = Dio()..interceptors.add(CustomInterceptors());
+    _client = Dio()..interceptors.add(LoggingInterceptor());
     _client = Dio();
   }
 

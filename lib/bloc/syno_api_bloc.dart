@@ -69,8 +69,10 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
       _provider = MobileConnectionProvider();
     }
     _provider.getDefaultConnection().then((value) {
-      _connection = value;
-      _initContext();
+      if (value != null) {
+        _connection = value;
+        _initContext();
+      }
     });
 
     return SynoApiState(null, null);

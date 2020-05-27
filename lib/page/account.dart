@@ -40,95 +40,97 @@ class _AccountFormState extends State<AccountForm> {
       appBar: AppBar(
         title: Text(_idx == null ? 'Add Account' : 'Edit Account'),
       ),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(15, 0, 15, 0),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              DropdownButtonFormField(
-                decoration: InputDecoration(icon: Icon(Icons.https)),
-                onChanged: (proto) {
-                  _connection.proto = proto;
-                  setState(() {});
-                },
-                items: <DropdownMenuItem>[
-                  DropdownMenuItem(
-                    value: 'https',
-                    child: Text('https'),
+      body: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(15, 0, 15, 0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                DropdownButtonFormField(
+                  decoration: InputDecoration(icon: Icon(Icons.https)),
+                  onChanged: (proto) {
+                    _connection.proto = proto;
+                    setState(() {});
+                  },
+                  items: <DropdownMenuItem>[
+                    DropdownMenuItem(
+                      value: 'https',
+                      child: Text('https'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'http',
+                      child: Text('http'),
+                    ),
+                  ],
+                  value: _connection.proto,
+                ),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Host',
+                    hintText: 'Server address',
                   ),
-                  DropdownMenuItem(
-                    value: 'http',
-                    child: Text('http'),
+                  initialValue: _connection?.host,
+                  onChanged: (host) {
+                    _connection.host = host.trim();
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Port',
                   ),
-                ],
-                value: _connection.proto,
-              ),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Host',
-                  hintText: 'Server address',
+                  initialValue: _connection?.port?.toString() ?? '',
+                  onChanged: (port) {
+                    try {
+                      _connection.port = int.parse(port.trim());
+                    } catch (e) {
+                      _connection.port = null;
+                    }
+                    setState(() {});
+                  },
                 ),
-                initialValue: _connection?.host,
-                onChanged: (host) {
-                  _connection.host = host.trim();
-                },
-              ),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Port',
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                  ),
+                  initialValue: _connection?.user?.toString() ?? '',
+                  onChanged: (user) {
+                    _connection.user = user.trim();
+                    setState(() {});
+                  },
                 ),
-                initialValue: _connection?.port?.toString() ?? '',
-                onChanged: (port) {
-                  try {
-                    _connection.port = int.parse(port.trim());
-                  } catch (e) {
-                    _connection.port = null;
-                  }
-                  setState(() {});
-                },
-              ),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Username',
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                  ),
+                  obscureText: true,
+                  initialValue: _connection?.password?.toString() ?? '',
+                  onChanged: (password) {
+                    _connection.password = password;
+                    setState(() {});
+                  },
                 ),
-                initialValue: _connection?.user?.toString() ?? '',
-                onChanged: (user) {
-                  _connection.user = user.trim();
-                  setState(() {});
-                },
-              ),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Password',
+                Divider(
+                  color: Color.fromARGB(0, 0, 0, 0),
                 ),
-                obscureText: true,
-                initialValue: _connection?.password?.toString() ?? '',
-                onChanged: (password) {
-                  _connection.password = password;
-                  setState(() {});
-                },
-              ),
-              Divider(
-                color: Color.fromARGB(0, 0, 0, 0),
-              ),
-              RaisedButton(
-                child: Text('Save'),
-                onPressed: () {
-                  if (_idx != null && _idx >= 0) {
-                    bloc.add(
-                        cBloc.ConnectionEvent(cBloc.Action.edit, _connection));
-                  } else {
-                    bloc.add(
-                        cBloc.ConnectionEvent(cBloc.Action.add, _connection));
-                  }
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+                RaisedButton(
+                  child: Text('Save'),
+                  onPressed: () {
+                    if (_idx != null && _idx >= 0) {
+                      bloc.add(cBloc.ConnectionEvent(
+                          cBloc.Action.edit, _connection));
+                    } else {
+                      bloc.add(
+                          cBloc.ConnectionEvent(cBloc.Action.add, _connection));
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

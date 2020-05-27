@@ -211,7 +211,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
           fillColor: Colors.amber, onPressed: () {
         Scaffold.of(context)
           ..removeCurrentSnackBar()
-          ..showSnackBar(loadingSnackBar('Pausing...'));
+          ..showSnackBar(buildSnackBar('Pausing...'));
 
         _reqId = _uuid.v4();
         apiBloc.add(SynoApiEvent.params(RequestType.pause_task, {
@@ -225,7 +225,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
           fillColor: Colors.green, onPressed: () {
         Scaffold.of(context)
           ..removeCurrentSnackBar()
-          ..showSnackBar(loadingSnackBar('Resuming...'));
+          ..showSnackBar(buildSnackBar('Resuming...'));
 
         _reqId = _uuid.v4();
         apiBloc.add(SynoApiEvent.params(RequestType.resume_task, {
@@ -239,7 +239,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
         fillColor: Colors.red, onPressed: () {
       Scaffold.of(context)
         ..removeCurrentSnackBar()
-        ..showSnackBar(loadingSnackBar('Removing...'));
+        ..showSnackBar(buildSnackBar('Removing...'));
 
       _reqId = _uuid.v4();
       apiBloc.add(SynoApiEvent.params(RequestType.remove_task, {

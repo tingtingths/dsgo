@@ -10,18 +10,24 @@ void copyToClipboard(String text, BuildContext context) {
   ));
 }
 
-SnackBar loadingSnackBar(String text,
-    {Duration duration: const Duration(days: 365)}) {
+SnackBar buildSnackBar(String text,
+    {Duration duration: const Duration(days: 365),
+    SnackBarAction action,
+    bool showProgressIndicator: true}) {
+  var children = <Widget>[Text(text)];
+
+  if (showProgressIndicator) {
+    children.insert(0, Padding(
+      child: CircularProgressIndicator(),
+      padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+    ));
+  }
+
   return SnackBar(
     duration: duration,
+    action: action,
     content: Row(
-      children: [
-        Padding(
-          child: CircularProgressIndicator(),
-          padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
-        ),
-        Text(text)
-      ],
+      children: children,
     ),
   );
 }
