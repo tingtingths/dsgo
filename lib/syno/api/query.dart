@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:synodownloadstation/syno/api/context.dart';
+import 'package:dsgo/syno/api/context.dart';
 
 import 'const.dart';
 

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:synodownloadstation/syno/api/context.dart';
-import 'package:synodownloadstation/syno/api/downloadstation.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:dsgo/syno/api/context.dart';
+import 'package:dsgo/syno/api/downloadstation.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
 
 class DownloadStationAPI extends DownloadStationAPIRaw {
   APIContext _cntx;

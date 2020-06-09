@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/provider/connection.dart';
-import 'package:synodownloadstation/syno/api/context.dart';
-import 'package:synodownloadstation/syno/api/modeled/downloadstation.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/provider/connection.dart';
+import 'package:dsgo/syno/api/context.dart';
+import 'package:dsgo/syno/api/modeled/downloadstation.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
 
 enum RequestType {
   task_list,
@@ -70,8 +70,7 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
     }
     _provider.getDefaultConnection().then((value) {
       if (value != null) {
-        _connection = value;
-        _initContext();
+        this.connection = value;
       }
     });
 
@@ -81,6 +80,11 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   @override
   Stream<SynoApiState> mapEventToState(SynoApiEvent event) async* {
     APIResponse resp;
+
+    if (_dsApi == null) {
+      yield SynoApiState(event, resp);
+      return;
+    }
 
     if (event.requestType == RequestType.task_list) {
       int offset = 0;

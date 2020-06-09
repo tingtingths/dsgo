@@ -4,13 +4,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
-import 'package:synodownloadstation/bloc/delegate.dart';
-import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
-import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
-import 'package:synodownloadstation/page/panel.dart';
-import 'package:synodownloadstation/page/tasks.dart';
-
+import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/delegate.dart';
+import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/bloc/ui_evt_bloc.dart';
+import 'package:dsgo/page/panel.dart';
+import 'package:dsgo/page/tasks.dart';
 import 'page/drawer.dart';
 
 void main() => runApp(MyApp());
@@ -76,9 +75,12 @@ class MyScaffoldState extends State<MyScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    var scaffold = SafeArea(
-      child: Scaffold(
-        body: Column(
+    var scaffold = Scaffold(
+      appBar: AppBar(
+        title: Text('DS Go'),
+      ),
+      body: SafeArea(
+        child: Column(
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
             Expanded(
@@ -89,8 +91,8 @@ class MyScaffoldState extends State<MyScaffold> {
             SearchPanel(),
           ],
         ),
-        drawer: MyDrawer(),
       ),
+      drawer: MyDrawer(),
     );
 
     return GestureDetector(

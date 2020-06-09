@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:synodownloadstation/syno/api/auth.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
-import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
+import 'package:dsgo/syno/api/auth.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/syno/api/modeled/query_mapped.dart';
 
 class LoggingInterceptor extends InterceptorsWrapper {
   @override

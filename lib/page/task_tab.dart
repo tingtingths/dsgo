@@ -4,13 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
-import 'package:synodownloadstation/syno/api/const.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
-import 'package:synodownloadstation/util/const.dart';
-import 'package:synodownloadstation/util/extension.dart';
-import 'package:synodownloadstation/util/format.dart';
-import 'package:synodownloadstation/util/utils.dart';
+import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/syno/api/const.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/util/const.dart';
+import 'package:dsgo/util/extension.dart';
+import 'package:dsgo/util/format.dart';
+import 'package:dsgo/util/utils.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskDetailsPage extends StatefulWidget {
@@ -237,15 +237,8 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
 
     Widget deleteBtn = _buildCircleIconBtn(Icon(Icons.delete),
         fillColor: Colors.red, onPressed: () {
-      Scaffold.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(buildSnackBar('Removing...'));
-
-      _reqId = _uuid.v4();
-      apiBloc.add(SynoApiEvent.params(RequestType.remove_task, {
-        '_reqId': _reqId,
-        'ids': [_task.id]
-      }));
+      Navigator.of(context)
+          .pop({'requestType': RequestType.remove_task, 'taskId': _task.id});
     });
 
     List<Widget> actionBtns = [playPauseBtn, deleteBtn];

@@ -1,6 +1,6 @@
-# synodownloadstation
+# dsgo
 
-A new Flutter application.
+Control your Synology Download Station on the go! 
 
 ## Getting Started
 

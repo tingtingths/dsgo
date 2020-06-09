@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 import 'package:path/path.dart' as path;
-import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
-import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
-import 'package:synodownloadstation/util/format.dart';
-import 'package:synodownloadstation/util/utils.dart';
+import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/bloc/ui_evt_bloc.dart';
+import 'package:dsgo/util/format.dart';
+import 'package:dsgo/util/utils.dart';
 import 'package:uuid/uuid.dart';
 
 class SearchPanel extends StatefulWidget {
@@ -53,6 +53,7 @@ class SearchPanelState extends State<SearchPanel> {
             children: <Widget>[
               Expanded(
                 child: TextField(
+                  textInputAction: TextInputAction.search,
                   controller: _controller,
                   decoration: InputDecoration(
                     hintText: 'Search',
@@ -298,7 +299,6 @@ class AddTaskFormState extends State<AddTaskForm> {
                               child: Icon(Icons.cancel),
                             ),
                             child: ListTile(
-                              focusColor: Colors.green,
                               title: Text(path.basename(filepath)),
                               subtitle: Text(humanifySize(len)),
                             ),

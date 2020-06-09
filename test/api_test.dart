@@ -1,14 +1,14 @@
 import 'dart:convert';
 
-import 'package:synodownloadstation/syno/api/auth.dart';
-import 'package:synodownloadstation/syno/api/const.dart';
-import 'package:synodownloadstation/syno/api/context.dart';
-import 'package:synodownloadstation/syno/api/downloadstation.dart';
-import 'package:synodownloadstation/syno/api/modeled/downloadstation.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
-import 'package:synodownloadstation/syno/api/modeled/query_mapped.dart';
-import 'package:synodownloadstation/syno/api/query.dart';
-import 'package:synodownloadstation/util/format.dart';
+import 'package:dsgo/syno/api/auth.dart';
+import 'package:dsgo/syno/api/const.dart';
+import 'package:dsgo/syno/api/context.dart';
+import 'package:dsgo/syno/api/downloadstation.dart';
+import 'package:dsgo/syno/api/modeled/downloadstation.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/syno/api/modeled/query_mapped.dart';
+import 'package:dsgo/syno/api/query.dart';
+import 'package:dsgo/util/format.dart';
 import 'package:test/test.dart';
 
 import '../lib/confidential.dart';

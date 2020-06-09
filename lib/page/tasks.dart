@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
-import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
-import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
-import 'package:synodownloadstation/bloc/ui_evt_bloc.dart';
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/page/task_tab.dart';
-import 'package:synodownloadstation/syno/api/modeled/model.dart';
-import 'package:synodownloadstation/util/const.dart';
-import 'package:synodownloadstation/util/extension.dart';
-import 'package:synodownloadstation/util/format.dart';
-import 'package:synodownloadstation/util/utils.dart';
+import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/bloc/ui_evt_bloc.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/page/task_tab.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/util/const.dart';
+import 'package:dsgo/util/extension.dart';
+import 'package:dsgo/util/format.dart';
+import 'package:dsgo/util/utils.dart';
 
 class TaskList extends StatefulWidget {
   @override
@@ -27,16 +27,49 @@ class _TaskListState extends State<TaskList>
   bool _fetching = false;
   TextTheme textTheme;
   List<GlobalKey> _cardKeys = [];
-  List<StreamSubscription> _subscriptions = [];
+  Map<String, StreamSubscription> _subscriptions = {};
   SynoApiBloc apiBloc;
   UiEventBloc uiBloc;
   List<Task> pendingRemove = [];
   Timer pendingRemoveCountdown;
+  static const String fetchingStreamKey = 'STREAM_FETCH';
 
   @override
   void dispose() {
-    _subscriptions.forEach((e) => e.cancel());
+    _subscriptions.values.forEach((e) => e.cancel());
     super.dispose();
+  }
+
+  void initFetch() {
+    if (_connection == null || _fetching) return;
+
+    _subscriptions[fetchingStreamKey]?.cancel();
+
+    _fetching = true;
+    uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
+    apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
+      'additional': ['transfer'],
+      '_reqId': 'init_state_request'
+    }));
+
+    apiBloc.listen((state) {
+      if (state.event != null &&
+          state.event.requestType == RequestType.task_list &&
+          'init_state_request' == state.event.params['_reqId']) {
+        _subscriptions[fetchingStreamKey] =
+            Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+                .listen((event) async {
+          if (_connection == null || _fetching) return;
+
+          _fetching = true;
+          uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
+          apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
+            'additional': ['transfer']
+          }));
+        });
+        _fetching = false;
+      }
+    });
   }
 
   @override
@@ -46,22 +79,11 @@ class _TaskListState extends State<TaskList>
     uiBloc = BlocProvider.of<UiEventBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
-    _subscriptions.add(
-        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-            .listen((event) async {
-      if (_connection == null || _fetching) return;
-
-      _fetching = true;
-      uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
-      apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
-        'additional': ['transfer']
-      }));
-    }));
-
     apiBloc.listen((state) {
       if (state.event != null &&
           state.event.requestType == RequestType.task_list) {
         APIResponse<ListTaskInfo> info = state.resp;
+        if (info == null) return;
 
         if (mounted && info.success) {
           setState(() {
@@ -105,6 +127,7 @@ class _TaskListState extends State<TaskList>
           setState(() {
             _connection = state.activeConnection;
           });
+          initFetch();
         }
       },
       builder: (cntx, state) {
@@ -131,7 +154,7 @@ class _TaskListState extends State<TaskList>
 
         if (info.total == 0) {
           return Text(
-            'Empty...',
+            'Nothing...',
             style: TextStyle(color: Colors.grey),
           );
         }
@@ -182,13 +205,15 @@ class _TaskListState extends State<TaskList>
             }
 
             var progressBar = LinearProgressIndicator(
-              backgroundColor: Colors.white,
+              //backgroundColor: Colors.white,
               value: progress,
             );
 
             var statusIcon = _getStatusIcon(task.status, () {
               print('icon selected');
-              var params = {'ids': [task.id]};
+              var params = {
+                'ids': [task.id]
+              };
               /*
               i.e.
                 Downloading -> Pause
@@ -197,13 +222,15 @@ class _TaskListState extends State<TaskList>
                */
               if (TaskStatus.downloading == task.status) {
                 // pause it
-                apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
+                apiBloc
+                    .add(SynoApiEvent.params(RequestType.pause_task, params));
                 setState(() {
                   task.status = TaskStatus.paused;
                 });
               } else if (TaskStatus.paused == task.status) {
                 // resume it
-                apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
+                apiBloc
+                    .add(SynoApiEvent.params(RequestType.resume_task, params));
                 setState(() {
                   task.status = TaskStatus.waiting;
                 });
@@ -219,87 +246,90 @@ class _TaskListState extends State<TaskList>
                 alignment: Alignment.centerLeft,
                 padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
                 color: Colors.red,
-                child: Icon(Icons.cancel),
+                child: Icon(
+                  Icons.delete_forever,
+                  size: Theme.of(context).iconTheme.size ?? 42,
+                ),
               ),
               secondaryBackground: Container(
                 margin: EdgeInsets.zero,
                 alignment: Alignment.centerRight,
                 padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
                 color: Colors.red,
-                child: Icon(Icons.cancel),
-              ),
-              child: Card(
-                key: _cardKeys[idx],
-                elevation: 5,
-                margin: EdgeInsets.fromLTRB(10, 5, 10, 5),
-                child: Column(
-                  children: <Widget>[
-                    ListTile(
-                      dense: false,
-                      leading: statusIcon,
-                      //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MorpheusPageRoute(
-                                parentKey: _cardKeys[idx],
-                                builder: (context) {
-                                  return BlocProvider.value(
-                                    value:
-                                        BlocProvider.of<cBloc.ConnectionBloc>(
-                                            context),
-                                    child: TaskDetailsPage(task),
-                                  );
-                                })).then((result) {
-                          result = (result ?? {});
-                          if (result['requestType'] ==
-                                  RequestType.remove_task &&
-                              result['taskId'] != null) {
-                            removeTaskFromModel(result['taskId']);
-                          }
-                        });
-                      },
-                      title: Text(
-                        task.title,
-                        overflow: TextOverflow.fade,
-                        softWrap: false,
-                        style: TextStyle(
-                            fontSize:
-                                Theme.of(context).textTheme.headline6.fontSize),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Divider(
-                            height: 5,
-                          ),
-                          Text((['seeding', 'finished']
-                                  .contains(task.status.name.toLowerCase())
-                              ? '${task.status.name.capitalize()}'
-                              : '$progressText% | ${task.status.name.capitalize()}' +
-                                  (remainingTime == null ||
-                                          remainingTime.isEmpty
-                                      ? ''
-                                      : ' | ~$remainingTime'))),
-                          Text('$downloaded of $totalSize'),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.arrow_downward,
-                                size: textTheme.bodyText1.fontSize,
-                              ),
-                              Text(downSpeed),
-                              Icon(Icons.arrow_upward,
-                                  size: textTheme.bodyText1.fontSize),
-                              Text(upSpeed),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                    progressBar,
-                  ],
+                child: Icon(
+                  Icons.delete_forever,
+                  size: Theme.of(context).iconTheme.size ?? 42,
                 ),
+              ),
+              child: Column(
+                key: _cardKeys[idx],
+                children: <Widget>[
+                  Divider(indent: 15, endIndent: 15,),
+                  ListTile(
+                    dense: false,
+                    leading: statusIcon,
+                    //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MorpheusPageRoute(
+                              parentKey: _cardKeys[idx],
+                              builder: (context) {
+                                return BlocProvider.value(
+                                  value:
+                                  BlocProvider.of<cBloc.ConnectionBloc>(
+                                      context),
+                                  child: TaskDetailsPage(task),
+                                );
+                              })).then((result) {
+                        result = (result ?? {});
+                        if (result['requestType'] ==
+                            RequestType.remove_task &&
+                            result['taskId'] != null) {
+                          removeTaskFromModel(result['taskId']);
+                        }
+                      });
+                    },
+                    title: Text(
+                      task.title,
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
+                      style: TextStyle(
+                          fontSize:
+                          Theme.of(context).textTheme.headline6.fontSize),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Divider(
+                          height: 5,
+                        ),
+                        Text((['seeding', 'finished']
+                            .contains(task.status.name.toLowerCase())
+                            ? '${task.status.name.capitalize()}'
+                            : '$progressText% | ${task.status.name.capitalize()}' +
+                            (remainingTime == null ||
+                                remainingTime.isEmpty
+                                ? ''
+                                : ' | ~$remainingTime'))),
+                        Text('$downloaded of $totalSize'),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.arrow_downward,
+                              size: textTheme.bodyText1.fontSize,
+                            ),
+                            Text(downSpeed),
+                            Icon(Icons.arrow_upward,
+                                size: textTheme.bodyText1.fontSize),
+                            Text(upSpeed),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                  progressBar,
+                ],
               ),
               onDismissed: (direction) {
                 removeTaskFromModel(task.id);
@@ -321,16 +351,15 @@ class _TaskListState extends State<TaskList>
         taskInfo.total -= 1;
       });
       pendingRemove.add(found);
-      var confirmDuration = Duration(seconds: 6);
+      var confirmDuration = Duration(seconds: 4);
 
       // reset timer
       if (pendingRemoveCountdown != null) {
         pendingRemoveCountdown.cancel();
       }
       pendingRemoveCountdown = Timer(confirmDuration, () {
-        apiBloc.add(SynoApiEvent.params(RequestType.remove_task, {
-          'ids':  pendingRemove.map((task) => task.id).toList()
-        }));
+        apiBloc.add(SynoApiEvent.params(RequestType.remove_task,
+            {'ids': pendingRemove.map((task) => task.id).toList()}));
       });
 
       Scaffold.of(context)

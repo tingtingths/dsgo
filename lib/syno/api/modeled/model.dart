@@ -1,4 +1,4 @@
-import 'package:synodownloadstation/util/extension.dart';
+import 'package:dsgo/util/extension.dart';
 
 enum TaskStatus {
   waiting,

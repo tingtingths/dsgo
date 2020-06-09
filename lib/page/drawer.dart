@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
-import 'package:synodownloadstation/bloc/connection_bloc.dart' as cBloc;
-import 'package:synodownloadstation/bloc/syno_api_bloc.dart';
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/page/account.dart';
+import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/page/account.dart';
 
 class MyDrawer extends StatefulWidget {
   @override
@@ -195,13 +195,16 @@ class _MyDrawerState extends State<MyDrawer> {
         }
 
         return Drawer(
+          child: SafeArea(
             child: AnimatedList(
-          key: _listKey,
-          initialItemCount: _list.length,
-          itemBuilder: (cntx, idx, anim) {
-            return _listItemBuilder(cntx, _list[idx], anim);
-          },
-        ));
+              key: _listKey,
+              initialItemCount: _list.length,
+              itemBuilder: (cntx, idx, anim) {
+                return _listItemBuilder(cntx, _list[idx], anim);
+              },
+            ),
+          ),
+        );
       },
     );
   }

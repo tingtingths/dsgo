@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/util/const.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/util/const.dart';
 import 'package:tuple/tuple.dart';
 
 abstract class ConnectionProvider {

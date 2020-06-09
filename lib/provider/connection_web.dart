@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:html';
 
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/util/const.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/util/const.dart';
 
 import 'connection.dart';
 

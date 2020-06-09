@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:synodownloadstation/model/model.dart';
-import 'package:synodownloadstation/provider/connection.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/provider/connection.dart';
 import 'package:tuple/tuple.dart';
 
 enum Action { add, remove, removeAll, edit, select }
