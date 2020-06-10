@@ -1,6 +1,6 @@
-# dsgo
+# DS Go
 
-Control your Synology Download Station on the go! 
+Control your Synology Download Station on the go!
 
 ## Getting Started
 

@@ -24,14 +24,14 @@ dependencies:
   flutter:
     sdk: flutter
 
-  http: any
+  http: ^0.12.1
   dio: ^3.0.9
   http_interceptor: ^0.3.0
   flutter_secure_storage: ^3.3.3
   flutter_bloc: ^4.0.0
-  tuple: any
+  tuple: ^1.0.3
   morpheus: ^1.2.2+1
-  intl: any
+  intl: ^0.16.1
   uuid: ^2.0.0
   file_picker: ^1.9.0
 
