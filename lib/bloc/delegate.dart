@@ -1,7 +1,7 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dsgo/bloc/connection_bloc.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BlocLogDelegate extends BlocDelegate {
   @override

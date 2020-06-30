@@ -1,10 +1,10 @@
+import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
 import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/provider/connection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/provider/connection.dart';
 
 class AccountForm extends StatefulWidget {
   int _idx;

@@ -1,14 +1,13 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:morpheus/morpheus.dart';
-import 'package:path/path.dart' as path;
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 class SearchPanel extends StatefulWidget {
@@ -72,51 +71,13 @@ class SearchPanelState extends State<SearchPanel> {
                   color: Theme.of(context).primaryColor,
                 ),
                 iconSize: 30,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MorpheusPageRoute(
-                        parentKey: _addTaskBtnKey,
-                        builder: (context) {
-                          return AddTaskForm();
-                        }),
-                  ).then((result) {
-                    if (result != null && result is String) {
-                      var scaffold = Scaffold.of(context);
-                      scaffold.removeCurrentSnackBar();
-                      scaffold.showSnackBar(SnackBar(
-                        content: Text(result as String),
-                      ));
-                    }
-                  });
-                },
+                onPressed: () {},
               ),
             ],
           ),
         ],
       ),
     );
-  }
-}
-
-class ActionPanel extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() => _ActionPanelState();
-}
-
-class _ActionPanelState extends State<ActionPanel> {
-  @override
-  Widget build(BuildContext context) {
-    var bloc = BlocProvider.of<UiEventBloc>(context);
-
-    var panelBody = AddTaskForm();
-
-    return BlocBuilder<UiEventBloc, UiEventState>(
-        bloc: bloc,
-        builder: (cntx, state) {
-          return Container(
-              padding: EdgeInsets.fromLTRB(10, 20, 10, 10), child: panelBody);
-        });
   }
 }
 
@@ -143,13 +104,13 @@ class AddTaskFormState extends State<AddTaskForm> {
     // listen add_task event feedback
     apiBloc.listen((state) {
       if (state.event?.requestType != RequestType.add_task ||
-          state.event?.params['_req_id'] != _reqId) {
+          state.event?.params['_reqId'] != _reqId) {
         return;
       }
 
       if (state.resp?.success ?? false) {
-        if (mounted && Navigator.canPop(context)) {
-          Navigator.pop(context, 'Task submitted.');
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop('Task submitted.');
         }
       } else {
         setState(() {
@@ -195,7 +156,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                     // submit task
                     _reqId = _uuid.v4();
                     var params = {
-                      '_req_id': _reqId,
+                      '_reqId': _reqId,
                       'uris': _formModel['url'],
                       'torrent_files': _torrentFiles.values
                           .map((entry) => entry.key)

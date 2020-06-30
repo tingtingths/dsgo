@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:morpheus/morpheus.dart';
 import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
@@ -13,6 +10,9 @@ import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:morpheus/morpheus.dart';
 
 class TaskList extends StatefulWidget {
   @override
@@ -134,11 +134,13 @@ class _TaskListState extends State<TaskList>
         var info = taskInfo;
 
         if (_connection == null) {
-          return Text('Select account first');
+          return SliverFillRemaining(
+              child: Center(child: Text('Select account first')));
         }
 
         if (info == null) {
-          return Center(child: CircularProgressIndicator());
+          return SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()));
         }
 
         var count = info.tasks.length;
@@ -159,184 +161,177 @@ class _TaskListState extends State<TaskList>
           );
         }
 
-        return ListView.builder(
-          addAutomaticKeepAlives: true,
-          itemCount: count,
-          itemBuilder: (cntx, idx) {
-            if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
+        return SliverList(
+            delegate: SliverChildBuilderDelegate((context, idx) {
+          if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
 
-            var task = tasks[idx];
+          var task = tasks[idx];
 
-            if (filter != null && filter.trim().isNotEmpty) {
-              var sanitizedTitle =
-                  task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-              var sanitizedMatcher =
-                  filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-              if (!sanitizedTitle.contains(sanitizedMatcher)) {
-                return SizedBox.shrink();
-              }
+          if (filter != null && filter.trim().isNotEmpty) {
+            var sanitizedTitle =
+                task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+            var sanitizedMatcher =
+                filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+            if (!sanitizedTitle.contains(sanitizedMatcher)) {
+              return SizedBox.shrink();
             }
+          }
 
-            var totalSize = humanifySize(task.size);
-            var downloaded =
-                humanifySize(task.additional?.transfer?.sizeDownloaded);
-            var progress =
-                (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size;
-            progress = progress.isFinite ? progress : 0;
-            var downSpeed = humanifySize(
-                    task.additional?.transfer?.speedDownload ?? 0,
-                    p: 0) +
-                '/s';
-            var upSpeed = humanifySize(
-                    task.additional?.transfer?.speedUpload ?? 0,
-                    p: 0) +
-                '/s';
-            var progressText = fmtNum(progress * 100, p: 0);
+          var totalSize = humanifySize(task.size);
+          var downloaded =
+              humanifySize(task.additional?.transfer?.sizeDownloaded);
+          var progress =
+              (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size;
+          progress = progress.isFinite ? progress : 0;
+          var downSpeed = humanifySize(
+                  task.additional?.transfer?.speedDownload ?? 0,
+                  p: 0) +
+              '/s';
+          var upSpeed =
+              humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) +
+                  '/s';
+          var progressText = fmtNum(progress * 100, p: 0);
 
-            String remainingTime;
-            if (task.status == TaskStatus.downloading) {
-              var remainingSeconds =
-                  (task.size - task.additional?.transfer?.sizeDownloaded) /
-                      task.additional?.transfer?.speedDownload;
-              remainingSeconds =
-                  remainingSeconds.isFinite ? remainingSeconds : 0;
-              remainingTime =
-                  humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
-            }
+          String remainingTime;
+          if (task.status == TaskStatus.downloading) {
+            var remainingSeconds =
+                (task.size - task.additional?.transfer?.sizeDownloaded) /
+                    task.additional?.transfer?.speedDownload;
+            remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
+            remainingTime =
+                humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
+          }
 
-            var progressBar = LinearProgressIndicator(
-              //backgroundColor: Colors.white,
-              value: progress,
-            );
+          var progressBar = LinearProgressIndicator(
+            //backgroundColor: Colors.white,
+            value: progress,
+          );
 
-            var statusIcon = _getStatusIcon(task.status, () {
-              print('icon selected');
-              var params = {
-                'ids': [task.id]
-              };
-              /*
+          var statusIcon = _getStatusIcon(task.status, () {
+            print('icon selected');
+            var params = {
+              'ids': [task.id]
+            };
+            /*
               i.e.
                 Downloading -> Pause
                 Pause -> Downloading
                 ..etc?
                */
-              if (TaskStatus.downloading == task.status) {
-                // pause it
-                apiBloc
-                    .add(SynoApiEvent.params(RequestType.pause_task, params));
-                setState(() {
-                  task.status = TaskStatus.paused;
-                });
-              } else if (TaskStatus.paused == task.status) {
-                // resume it
-                apiBloc
-                    .add(SynoApiEvent.params(RequestType.resume_task, params));
-                setState(() {
-                  task.status = TaskStatus.waiting;
-                });
-              }
-            }, onLongPress: () {
-              // TODO : trigger multiple selection here
-            });
+            if (TaskStatus.downloading == task.status) {
+              // pause it
+              apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
+              setState(() {
+                task.status = TaskStatus.paused;
+              });
+            } else if (TaskStatus.paused == task.status) {
+              // resume it
+              apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
+              setState(() {
+                task.status = TaskStatus.waiting;
+              });
+            }
+          }, onLongPress: () {
+            // TODO : trigger multiple selection here
+          });
 
-            return Dismissible(
-              direction: DismissDirection.horizontal,
-              key: ValueKey(task.id),
-              background: Container(
-                alignment: Alignment.centerLeft,
-                padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
-                color: Colors.red,
-                child: Icon(
-                  Icons.delete_forever,
-                  size: Theme.of(context).iconTheme.size ?? 42,
-                ),
+          return Dismissible(
+            direction: DismissDirection.horizontal,
+            key: ValueKey(task.id),
+            background: Container(
+              alignment: Alignment.centerLeft,
+              padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
+              color: Colors.red,
+              child: Icon(
+                Icons.delete_forever,
+                size: Theme.of(context).iconTheme.size ?? 42,
               ),
-              secondaryBackground: Container(
-                margin: EdgeInsets.zero,
-                alignment: Alignment.centerRight,
-                padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
-                color: Colors.red,
-                child: Icon(
-                  Icons.delete_forever,
-                  size: Theme.of(context).iconTheme.size ?? 42,
-                ),
+            ),
+            secondaryBackground: Container(
+              margin: EdgeInsets.zero,
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+              color: Colors.red,
+              child: Icon(
+                Icons.delete_forever,
+                size: Theme.of(context).iconTheme.size ?? 42,
               ),
-              child: Column(
-                key: _cardKeys[idx],
-                children: <Widget>[
-                  Divider(indent: 15, endIndent: 15,),
-                  ListTile(
-                    dense: false,
-                    leading: statusIcon,
-                    //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MorpheusPageRoute(
-                              parentKey: _cardKeys[idx],
-                              builder: (context) {
-                                return BlocProvider.value(
-                                  value:
-                                  BlocProvider.of<cBloc.ConnectionBloc>(
-                                      context),
-                                  child: TaskDetailsPage(task),
-                                );
-                              })).then((result) {
-                        result = (result ?? {});
-                        if (result['requestType'] ==
-                            RequestType.remove_task &&
-                            result['taskId'] != null) {
-                          removeTaskFromModel(result['taskId']);
-                        }
-                      });
-                    },
-                    title: Text(
-                      task.title,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                      style: TextStyle(
-                          fontSize:
-                          Theme.of(context).textTheme.headline6.fontSize),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Divider(
-                          height: 5,
-                        ),
-                        Text((['seeding', 'finished']
-                            .contains(task.status.name.toLowerCase())
-                            ? '${task.status.name.capitalize()}'
-                            : '$progressText% | ${task.status.name.capitalize()}' +
-                            (remainingTime == null ||
-                                remainingTime.isEmpty
-                                ? ''
-                                : ' | ~$remainingTime'))),
-                        Text('$downloaded of $totalSize'),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.arrow_downward,
-                              size: textTheme.bodyText1.fontSize,
-                            ),
-                            Text(downSpeed),
-                            Icon(Icons.arrow_upward,
-                                size: textTheme.bodyText1.fontSize),
-                            Text(upSpeed),
-                          ],
-                        )
-                      ],
-                    ),
+            ),
+            child: Column(
+              key: _cardKeys[idx],
+              children: <Widget>[
+                Divider(
+                  indent: 15,
+                  endIndent: 15,
+                ),
+                ListTile(
+                  dense: false,
+                  leading: statusIcon,
+                  //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MorpheusPageRoute(
+                            parentKey: _cardKeys[idx],
+                            builder: (context) {
+                              return BlocProvider.value(
+                                value: BlocProvider.of<cBloc.ConnectionBloc>(
+                                    context),
+                                child: TaskDetailsPage(task),
+                              );
+                            })).then((result) {
+                      result = (result ?? {});
+                      if (result['requestType'] == RequestType.remove_task &&
+                          result['taskId'] != null) {
+                        removeTaskFromModel(result['taskId']);
+                      }
+                    });
+                  },
+                  title: Text(
+                    task.title,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    style: TextStyle(
+                        fontSize:
+                            Theme.of(context).textTheme.headline6.fontSize),
                   ),
-                  progressBar,
-                ],
-              ),
-              onDismissed: (direction) {
-                removeTaskFromModel(task.id);
-              },
-            );
-          },
-        );
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Divider(
+                        height: 5,
+                      ),
+                      Text((['seeding', 'finished']
+                              .contains(task.status.name.toLowerCase())
+                          ? '${task.status.name.capitalize()}'
+                          : '$progressText% | ${task.status.name.capitalize()}' +
+                              (remainingTime == null || remainingTime.isEmpty
+                                  ? ''
+                                  : ' | ~$remainingTime'))),
+                      Text('$downloaded of $totalSize'),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.arrow_downward,
+                            size: textTheme.bodyText1.fontSize,
+                          ),
+                          Text(downSpeed),
+                          Icon(Icons.arrow_upward,
+                              size: textTheme.bodyText1.fontSize),
+                          Text(upSpeed),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                progressBar,
+              ],
+            ),
+            onDismissed: (direction) {
+              removeTaskFromModel(task.id);
+            },
+          );
+        }, childCount: count));
       },
     );
   }

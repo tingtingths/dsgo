@@ -1,11 +1,21 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:async';
+
+import 'package:animations/animations.dart';
 import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
 import 'package:dsgo/bloc/delegate.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
 import 'package:dsgo/page/panel.dart';
 import 'package:dsgo/page/tasks.dart';
+import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/util/const.dart';
+import 'package:dsgo/util/format.dart';
+import 'package:dsgo/util/utils.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
+
 import 'page/drawer.dart';
 
 void main() => runApp(MyApp());
@@ -30,8 +40,13 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         home: Material(child: MyScaffold()),
         theme: Theme.of(context).copyWith(
+          brightness: Brightness.light,
           colorScheme: ColorScheme.light(),
+          iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
         ),
+        darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            appBarTheme: AppBarTheme(color: Color(0xff404040))),
       ),
     );
   }
@@ -43,57 +58,241 @@ class MyScaffold extends StatefulWidget {
 }
 
 class MyScaffoldState extends State<MyScaffold> {
-  Size _searchPanelSize;
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  var _searchController = TextEditingController();
+  UiEventBloc uiBloc;
+  SynoApiBloc apiBloc;
+  cBloc.ConnectionBloc connBloc;
+  List<StreamSubscription> _subs = [];
+  var _fetching = false;
+  var totalUp = 0;
+  var totalDown = 0;
+  var infoWidgets = <Widget>[];
+  Uuid _uuid;
+  var _addTaskReqid;
 
-  BorderRadius _radius = BorderRadius.only(
-    topLeft: Radius.circular(5),
-    topRight: Radius.circular(5),
-  );
+  @override
+  void dispose() {
+    _subs.forEach((e) => e.cancel());
+    super.dispose();
+  }
 
   @override
   void initState() {
-    super.initState();
+    _uuid = Uuid();
+    uiBloc = BlocProvider.of<UiEventBloc>(context);
+    apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    connBloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
 
-    var uiBloc = BlocProvider.of<UiEventBloc>(context);
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    var connBloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    _searchController.addListener(() {
+      final text = _searchController.text;
+      uiBloc.add(UiEventState(this, UiEvent.tasks_filter_change, [text]));
+      if (mounted) setState(() {});
+    });
 
-    uiBloc.listen((state) {
-      if (state.initiator is SearchPanelState &&
-          state.event == UiEvent.post_frame) {
-        Size size = state.payload[0];
+    _subs.add(Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+        .listen((event) {
+      if (!_fetching) {
+        apiBloc.add(SynoApiEvent(RequestType.statistic_info));
+      }
+    }));
+
+    apiBloc.listen((SynoApiState state) {
+      // get statistic
+      if (state.event?.requestType == RequestType.statistic_info) {
+        var info = state.resp.data as DownloadStationStatisticGetInfo;
         setState(() {
-          _searchPanelSize = size;
+          totalDown = info.speedDownload ?? 0 + info.emuleSpeedDownload ?? 0;
+          totalUp = info.speedUpload ?? 0 + info.emuleSpeedUpload ?? 0;
         });
       }
+
+      // submit task from clipboard
+      if (state.event?.requestType == RequestType.add_task &&
+          (state.event?.params ?? {})['_reqId'] == _addTaskReqid &&
+          state.resp?.success == true) {
+        _scaffoldKey.currentState.removeCurrentSnackBar();
+        _scaffoldKey.currentState.showSnackBar(buildSnackBar('Task submitted',
+            duration: Duration(seconds: 2), showProgressIndicator: false));
+      }
     });
+
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    infoWidgets.clear();
+
+    if (false && totalDown != null) {
+      infoWidgets.add(Text(humanifySize(totalDown)));
+      infoWidgets.add(Icon(Icons.arrow_downward));
+    }
+    if (false && totalUp != null) {
+      infoWidgets.add(Text(humanifySize(totalUp)));
+      infoWidgets.add(Icon(Icons.arrow_upward));
+    }
+
     var scaffold = Scaffold(
-      appBar: AppBar(
-        title: Text('DS Go'),
-      ),
+      key: _scaffoldKey,
       body: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
             Expanded(
-              child: Center(
-                child: TaskList(),
+              child: CustomScrollView(
+                slivers: <Widget>[
+                  SliverPadding(
+                    padding: EdgeInsets.only(left: 20, right: 20),
+                    sliver: SliverAppBar(
+                        backgroundColor: Theme.of(context).bottomAppBarColor,
+                        iconTheme: Theme.of(context).iconTheme,
+                        forceElevated: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        leading: IconButton(
+                          icon: Icon(Icons.menu),
+                          onPressed: () {
+                            _scaffoldKey.currentState.openDrawer();
+                          },
+                        ),
+                        title: TextField(
+                          textInputAction: TextInputAction.search,
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                              hintText: 'Search tasks',
+                              border: InputBorder.none),
+                        )),
+                  ),
+                  TaskList(),
+                ],
               ),
             ),
-            SearchPanel(),
           ],
         ),
+      ),
+      floatingActionButton: OpenContainer(
+        openColor: Theme.of(context).backgroundColor,
+        closedColor: Theme.of(context).backgroundColor,
+        closedShape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        closedBuilder: (context, openContainerCallback) {
+          return FloatingActionButton(
+            child: Icon(
+              Icons.add,
+              size: 32,
+            ),
+            onPressed: openContainerCallback,
+          );
+        },
+        openBuilder: (context,
+            CloseContainerActionCallback<String> closeContainerCallback) {
+          return AddTaskForm();
+        },
+        onClosed: (String data) {
+          if (data != null) {
+            var scaffold = _scaffoldKey.currentState;
+            scaffold.removeCurrentSnackBar();
+            scaffold.showSnackBar(SnackBar(
+              content: Text(data),
+            ));
+          }
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        child: Container(
+            padding: EdgeInsets.only(left: 5),
+            height: 45,
+            child: Stack(
+              children: <Widget>[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    IconButton(
+                      icon: Icon(Icons.play_arrow),
+                      onPressed: () {
+                        // start all tasks
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.pause),
+                      onPressed: () {
+                        // pause all tasks
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.content_paste),
+                      onPressed: () {
+                        Clipboard.getData('text/plain').then((data) {
+                          var text = data?.text ?? '';
+                          if (Uri.parse(text).isAbsolute) {
+                            showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: Text('Add from clipboard'),
+                                    content: Text(text),
+                                    actions: <Widget>[
+                                      FlatButton(
+                                        child: Text('Cancel'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      FlatButton(
+                                        child: Text('Add'),
+                                        onPressed: () {
+                                          // submit task
+                                          _addTaskReqid = Uuid().v4();
+                                          var params = {
+                                            '_reqId': _addTaskReqid,
+                                            'uris': [text],
+                                          };
+                                          Navigator.of(context).pop();
+                                          _scaffoldKey.currentState
+                                              .showSnackBar(buildSnackBar(
+                                                  'Submitting tasks...'));
+                                          apiBloc.add(SynoApiEvent.params(
+                                              RequestType.add_task, params));
+                                        },
+                                      )
+                                    ],
+                                  );
+                                });
+                          } else {
+                            _scaffoldKey.currentState.removeCurrentSnackBar();
+                            _scaffoldKey.currentState.showSnackBar(SnackBar(
+                              content: Text('No Uri in clipboard...'),
+                              duration: Duration(milliseconds: 500),
+                            ));
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                Center(
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        children: infoWidgets)),
+              ],
+            )),
       ),
       drawer: MyDrawer(),
     );
 
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus();
+        print('taptap');
+        var node = FocusScope.of(context);
+        if (!node.hasPrimaryFocus) {
+          node.unfocus();
+        }
       },
       child: scaffold,
     );

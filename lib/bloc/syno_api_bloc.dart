@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/provider/connection.dart';
 import 'package:dsgo/syno/api/context.dart';
 import 'package:dsgo/syno/api/modeled/downloadstation.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum RequestType {
   task_list,
@@ -15,7 +15,8 @@ enum RequestType {
   add_task,
   remove_task,
   pause_task,
-  resume_task
+  resume_task,
+  statistic_info
 }
 
 extension RequestTypeMember on RequestType {
@@ -155,6 +156,10 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
         if (event.requestType == RequestType.pause_task)
           resp = await _dsApi.taskPause(ids);
       }
+    }
+
+    if (event.requestType == RequestType.statistic_info) {
+      resp = await _dsApi.statGetInfo();
     }
 
     yield SynoApiState(event, resp);

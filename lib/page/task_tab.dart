@@ -1,9 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/syno/api/const.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
@@ -11,6 +7,10 @@ import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskDetailsPage extends StatefulWidget {
@@ -30,14 +30,14 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
   bool _fetching = false;
   String _fetchingId;
   Uuid _uuid;
-  List<StreamSubscription> _subscriptions = [];
+  List<StreamSubscription> _subs = [];
 
   TaskDetailsPageState(this._task) : assert(_task != null);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void dispose() {
-    _subscriptions.forEach((e) => e.cancel());
+    _subs.forEach((e) => e.cancel());
     super.dispose();
   }
 
@@ -60,9 +60,8 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
       '_fetchingId': _fetchingId
     }));
 
-    _subscriptions.add(
-        Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-            .listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
+        .listen((event) {
       if (!_fetching) {
         _fetchingId = _uuid.v4();
         apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
@@ -261,8 +260,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
             shrinkWrap: true,
             children: [
               ListTile(
-                onTap: () =>
-                    copyToClipboard(_task.additional?.detail?.uri, context),
+                onTap: () => copyToClipboard(_task.title, context),
                 title: Text(_task.title ?? UNKNOWN),
                 subtitle: Text('Title'),
               ),
@@ -271,8 +269,8 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                 subtitle: Text('Status'),
               ),
               ListTile(
-                onTap: () =>
-                    copyToClipboard(_task.additional?.detail?.uri, context),
+                onTap: () => copyToClipboard(
+                    _task.additional?.detail?.destination, context),
                 title: Text(_task.additional?.detail?.destination ?? UNKNOWN),
                 subtitle: Text('Destination'),
               ),
@@ -281,8 +279,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                 subtitle: Text('Size'),
               ),
               ListTile(
-                onTap: () =>
-                    copyToClipboard(_task.additional?.detail?.uri, context),
+                onTap: () => copyToClipboard(_task.username, context),
                 title: Text(_task.username ?? UNKNOWN),
                 subtitle: Text('Owner'),
               ),

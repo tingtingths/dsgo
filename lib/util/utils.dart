@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 
 void copyToClipboard(String text, BuildContext context) {
   if (text == null) return;
-  Clipboard.setData(ClipboardData(text: text));
-  Scaffold.of(context).showSnackBar(SnackBar(
-    duration: Duration(milliseconds: 1000),
-    content: Text('Copied to clipboard'),
-  ));
+  Clipboard.setData(ClipboardData(text: text)).then((value) {
+    Scaffold.of(context).showSnackBar(SnackBar(
+      duration: Duration(milliseconds: 1000),
+      content: Text('Copied to clipboard'),
+    ));
+  });
 }
 
 SnackBar buildSnackBar(String text,
@@ -17,10 +18,12 @@ SnackBar buildSnackBar(String text,
   var children = <Widget>[Text(text)];
 
   if (showProgressIndicator) {
-    children.insert(0, Padding(
-      child: CircularProgressIndicator(),
-      padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
-    ));
+    children.insert(
+        0,
+        Padding(
+          child: CircularProgressIndicator(),
+          padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+        ));
   }
 
   return SnackBar(

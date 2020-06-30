@@ -1,10 +1,10 @@
+import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/model/model.dart';
+import 'package:dsgo/page/account.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
-import 'package:dsgo/bloc/syno_api_bloc.dart';
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/page/account.dart';
+import 'package:package_info/package_info.dart';
 
 class MyDrawer extends StatefulWidget {
   @override
@@ -92,15 +92,27 @@ class _MyDrawerState extends State<MyDrawer> {
   var _connectionCntrListItemIdx = [];
   cBloc.ConnectionBloc bloc;
   GlobalKey _addAcBtnKey = GlobalKey();
+  PackageInfo packageInfo;
 
   @override
-  void initState() {
-    super.initState();
+  Future<void> initState() {
     bloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+
+    PackageInfo.fromPlatform().then((packageInfo) {
+      setState(() {
+        this.packageInfo = packageInfo;
+      });
+    });
+
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (packageInfo == null) {
+      return CircularProgressIndicator();
+    }
+
     return BlocBuilder<cBloc.ConnectionBloc, cBloc.ConnectionState>(
       builder: (BuildContext context, cBloc.ConnectionState state) {
         var activeConnection = state.activeConnection;
@@ -117,7 +129,40 @@ class _MyDrawerState extends State<MyDrawer> {
             }),
           ]);
           itmidx += _list.length - 1;
-          _list.addAll([Divider(), ..._buildFilterList()]);
+          _list.addAll([
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.all_inclusive),
+              title: Text('All'),
+              onTap: () {
+                print('tap: All');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.file_download),
+              title: Text('Downloading'),
+              onTap: () {
+                print('tap: Downloading');
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+              onTap: () {
+                print('tap: Settings');
+              },
+            ),
+            AboutListTile(
+              icon: Icon(Icons.info),
+              applicationIcon: FlutterLogo(),
+              applicationName: packageInfo.appName,
+              applicationVersion:
+                  '${packageInfo.version}-${packageInfo.buildNumber}',
+              applicationLegalese: '@ 2020 Ho Shing Ting',
+              aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
+            )
+          ]);
         } else {
           _listKey.currentState.setState(() {
             expandConnection = expandConnection;
@@ -196,14 +241,28 @@ class _MyDrawerState extends State<MyDrawer> {
 
         return Drawer(
           child: SafeArea(
-            child: AnimatedList(
-              key: _listKey,
-              initialItemCount: _list.length,
-              itemBuilder: (cntx, idx, anim) {
-                return _listItemBuilder(cntx, _list[idx], anim);
-              },
-            ),
-          ),
+              child: Column(
+            children: <Widget>[
+              Expanded(
+                child: AnimatedList(
+                  key: _listKey,
+                  initialItemCount: _list.length,
+                  itemBuilder: (cntx, idx, anim) {
+                    return _listItemBuilder(cntx, _list[idx], anim);
+                  },
+                ),
+              ),
+              Text(
+                '@ 2020 Ho Shing Ting',
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .textTheme
+                        .subtitle2
+                        .color
+                        .withAlpha(100)),
+              )
+            ],
+          )),
         );
       },
     );
@@ -223,25 +282,6 @@ class _MyDrawerState extends State<MyDrawer> {
     }, duration: Duration(milliseconds: 150));
   }
 
-  List<Widget> _buildFilterList() {
-    return <Widget>[
-      ListTile(
-        leading: Icon(Icons.all_inclusive),
-        title: Text('All'),
-        onTap: () {
-          print('tap: All');
-        },
-      ),
-      ListTile(
-        leading: Icon(Icons.file_download),
-        title: Text('Downloading'),
-        onTap: () {
-          print('tap: Downloading');
-        },
-      )
-    ];
-  }
-
   Widget _listItemBuilder(
       BuildContext context, Widget widget, Animation<double> animation) {
     return SizeTransition(
@@ -256,9 +296,8 @@ class _MyDrawerState extends State<MyDrawer> {
 
   Widget _buildConnectionWidget(Connection conn, bool isActive) {
     var bg = Theme.of(context).accentColor.withOpacity(0.2);
-    var fg = Theme.of(context).primaryColor;
+    var fg = Theme.of(context).accentColor;
     cBloc.ConnectionBloc bloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
-    SynoApiBloc apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     var tile = ListTile(
       leading: Icon(
