@@ -106,6 +106,7 @@ class _MyDrawerState extends State<MyDrawer> {
   DSConnectionBloc bloc;
   GlobalKey _addAcBtnKey = GlobalKey();
   GlobalKey _settingsBtnKey = GlobalKey();
+  GlobalKey _manageAccountBtnKey = GlobalKey();
   PackageInfo packageInfo;
 
   @override
@@ -213,29 +214,6 @@ class _MyDrawerState extends State<MyDrawer> {
 
           // add control button if not already add
           if (_connectionCntrListItemIdx.isEmpty) {
-            // add connection btn
-            _insertItem(
-                ++itmIdx,
-                ListTile(
-                  key: _addAcBtnKey,
-                  leading: Icon(Icons.person_add),
-                  title: Text('Add Account'),
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MorpheusPageRoute(
-                          parentKey: _addAcBtnKey,
-                          builder: (context) {
-                            return BlocProvider.value(
-                              value: BlocProvider.of<DSConnectionBloc>(context),
-                              child: AccountForm(),
-                            );
-                          },
-                        ));
-                  },
-                ));
-            _connectionCntrListItemIdx.add(itmIdx);
-
             // DEBUG : remove all
             _insertItem(
                 ++itmIdx,
@@ -244,6 +222,24 @@ class _MyDrawerState extends State<MyDrawer> {
                   title: Text('DEBUG Remove all'),
                   onTap: () {
                     bloc.add(DSConnectionEvent(DSConnectionAction.removeAll, null));
+                  },
+                ));
+
+            _insertItem(
+                ++itmIdx,
+                ListTile(
+                  key: _manageAccountBtnKey,
+                  leading: Icon(Icons.people),
+                  title: Text('Manage Accounts'),
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MorpheusPageRoute(
+                          parentKey: _manageAccountBtnKey,
+                          builder: (context) {
+                            return ManageAccountPage();
+                          },
+                        ));
                   },
                 ));
             _connectionCntrListItemIdx.add(itmIdx);

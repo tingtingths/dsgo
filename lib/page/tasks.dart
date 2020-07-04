@@ -6,6 +6,7 @@ import 'package:dsgo/bloc/ui_evt_bloc.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/page/task_details.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
@@ -154,7 +155,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
           return SliverFillRemaining(
             child: Center(
               child: Text(
-                'Nothing...',
+                TXT_NOTHING,
               ),
             ),
           );

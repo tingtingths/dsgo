@@ -4,6 +4,7 @@ import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/syno/api/const.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
+import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
@@ -477,7 +478,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
     if (trackers.isEmpty) {
       return Center(
         child: Text(
-          'Nothing...',
+          TXT_NOTHING,
         ),
       );
     }
@@ -579,7 +580,7 @@ class PeerInfoTabState extends State<PeerInfoTab> {
     if (peer.isEmpty) {
       return Center(
         child: Text(
-          'Nothing...',
+          TXT_NOTHING,
         ),
       );
     }
@@ -679,7 +680,7 @@ class FileInfoTabState extends State<FileInfoTab> {
     if (files.isEmpty) {
       return Center(
         child: Text(
-          'Nothing...',
+          TXT_NOTHING,
         ),
       );
     }

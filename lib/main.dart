@@ -134,7 +134,7 @@ class MyScaffoldState extends State<MyScaffold> {
 
     apiBloc.listen((SynoApiState state) {
       // get statistic
-      if (state.event?.requestType == RequestType.statistic_info) {
+      if (state.event?.requestType == RequestType.statistic_info && state.resp?.data != null) {
         var info = state.resp.data as DownloadStationStatisticGetInfo;
         setState(() {
           totalDown = info.speedDownload ?? 0 + info.emuleSpeedDownload ?? 0;
@@ -204,8 +204,6 @@ class MyScaffoldState extends State<MyScaffold> {
         ),
       ),
       floatingActionButton: OpenContainer(
-        openColor: Theme.of(context).backgroundColor,
-        closedColor: Theme.of(context).backgroundColor,
         closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         closedBuilder: (context, openContainerCallback) {
           return FloatingActionButton(

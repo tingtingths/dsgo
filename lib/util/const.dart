@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+final String TXT_NOTHING = 'Wow, such empty';
+
 enum StorageKey { Connections, DefaultConnectionIndex, UserSettings }
 
 extension StorageKeyMembers on StorageKey {
