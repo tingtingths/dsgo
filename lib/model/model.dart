@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class ConnectionMenuItem {
   var _type = 1;
   dynamic _value;
@@ -25,14 +27,11 @@ class Connection {
 
   Connection.empty();
 
-  Connection.withoutCredential(
-      this.friendlyName, this.proto, this.user, this.host, this.port);
+  Connection.withoutCredential(this.friendlyName, this.proto, this.user, this.host, this.port);
 
-  Connection(this.friendlyName, this.proto, this.user, this.host, this.port,
-      this.sid, this.password);
+  Connection(this.friendlyName, this.proto, this.user, this.host, this.port, this.sid, this.password);
 
-  String buildUri() =>
-      Uri(scheme: proto, userInfo: user, host: host, port: port).toString();
+  String buildUri() => Uri(scheme: proto, userInfo: user, host: host, port: port).toString();
 
   Connection.fromJson(Map<String, dynamic> json) {
     friendlyName = (json ?? {})['friendlyName'];
@@ -44,14 +43,10 @@ class Connection {
     password = (json ?? {})['password'];
 
     int createdTs = (json ?? {})['created'];
-    created = createdTs == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(createdTs);
+    created = createdTs == null ? null : DateTime.fromMillisecondsSinceEpoch(createdTs);
 
     int updatedTs = (json ?? {})['updated'];
-    updated = updatedTs == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(updatedTs);
+    updated = updatedTs == null ? null : DateTime.fromMillisecondsSinceEpoch(updatedTs);
   }
 
   Map<String, dynamic> toJson() => {
@@ -65,4 +60,22 @@ class Connection {
         'created': created?.millisecondsSinceEpoch,
         'updated': updated?.millisecondsSinceEpoch,
       };
+}
+
+class UserSettings {
+  int apiRequestFrequency = 5000; // ms
+  ThemeMode themeMode = ThemeMode.system;
+
+  UserSettings({int apiRequestFrequency, ThemeMode themeMode}) {
+    if (apiRequestFrequency != null) this.apiRequestFrequency = apiRequestFrequency;
+    if (themeMode != null) this.themeMode = themeMode;
+  }
+
+  UserSettings.fromJson(Map<String, dynamic> json) {
+    apiRequestFrequency = (json ?? {})['apiRequestFrequency'];
+    var themeModeStr = (json ?? {})['themeMode'];
+    themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeStr);
+  }
+
+  Map<String, dynamic> toJson() => {'apiRequestFrequency': apiRequestFrequency, 'themeMode': themeMode.toString()};
 }

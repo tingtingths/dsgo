@@ -14,8 +14,7 @@ class StreamManager {
     _streams[streamName] = controller;
   }
 
-  StreamController<T> controller<T>(String streamName,
-      {StreamController defaultController}) {
+  StreamController<T> controller<T>(String streamName, {StreamController defaultController}) {
     if (defaultController != null) {
       return _putIfAbsent(streamName, defaultController);
     }
@@ -34,8 +33,7 @@ class StreamManager {
     return _streams[streamName]?.stream;
   }
 
-  StreamController _putIfAbsent(
-      String streamName, StreamController controller) {
+  StreamController _putIfAbsent(String streamName, StreamController controller) {
     if (!_streams.containsKey(streamName)) {
       register(streamName, controller);
     }

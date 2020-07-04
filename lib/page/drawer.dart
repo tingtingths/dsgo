@@ -1,6 +1,7 @@
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/connection_bloc.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/page/account.dart';
+import 'package:dsgo/page/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
@@ -24,8 +25,25 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
   bool _expandConnection = false;
   Function(bool) _btnCallback;
   Connection _connection;
+  PackageInfo packageInfo = PackageInfo(
+    appName: 'Unknown',
+    packageName: 'Unknown',
+    version: 'Unknown',
+    buildNumber: 'Unknown',
+  );
 
   _MyDrawerHeaderState(this._btnCallback);
+
+  @override
+  void initState() {
+    PackageInfo.fromPlatform().then((packageInfo) {
+      setState(() {
+        this.packageInfo = packageInfo;
+      });
+    });
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,23 +54,20 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Text(
-            'Download Station',
-            style:
-                DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
+            packageInfo.appName,
+            style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
           ),
           Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Expanded(
-                child: BlocBuilder<cBloc.ConnectionBloc, cBloc.ConnectionState>(
+                child: BlocBuilder<DSConnectionBloc, DSConnectionState>(
                   builder: (cntx, state) {
                     var text = 'Add an account...';
                     if (state.activeConnection != null) {
                       text = state.activeConnection.friendlyName;
-                      text = text == null
-                          ? state.activeConnection.buildUri()
-                          : text;
+                      text = text == null ? state.activeConnection.buildUri() : text;
                     }
 
                     return Text(
@@ -64,9 +79,7 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
                 ),
               ),
               IconButton(
-                icon: _expandConnection
-                    ? Icon(Icons.arrow_drop_up)
-                    : Icon(Icons.arrow_drop_down),
+                icon: _expandConnection ? Icon(Icons.arrow_drop_up) : Icon(Icons.arrow_drop_down),
                 onPressed: () {
                   setState(() {
                     _expandConnection = !_expandConnection;
@@ -90,13 +103,14 @@ class _MyDrawerState extends State<MyDrawer> {
   var _list = <Widget>[];
   var _connectionListItemIdx = [];
   var _connectionCntrListItemIdx = [];
-  cBloc.ConnectionBloc bloc;
+  DSConnectionBloc bloc;
   GlobalKey _addAcBtnKey = GlobalKey();
+  GlobalKey _settingsBtnKey = GlobalKey();
   PackageInfo packageInfo;
 
   @override
   Future<void> initState() {
-    bloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    bloc = BlocProvider.of<DSConnectionBloc>(context);
 
     PackageInfo.fromPlatform().then((packageInfo) {
       setState(() {
@@ -113,12 +127,12 @@ class _MyDrawerState extends State<MyDrawer> {
       return CircularProgressIndicator();
     }
 
-    return BlocBuilder<cBloc.ConnectionBloc, cBloc.ConnectionState>(
-      builder: (BuildContext context, cBloc.ConnectionState state) {
+    return BlocBuilder<DSConnectionBloc, DSConnectionState>(
+      builder: (BuildContext context, DSConnectionState state) {
         var activeConnection = state.activeConnection;
         var connections = state.connections ?? [];
 
-        int itmidx = 0;
+        int itmIdx = 0;
         if (!_inited) {
           _inited = true;
           _list.addAll([
@@ -128,7 +142,7 @@ class _MyDrawerState extends State<MyDrawer> {
               });
             }),
           ]);
-          itmidx += _list.length - 1;
+          itmIdx += _list.length - 1;
           _list.addAll([
             Divider(),
             ListTile(
@@ -147,18 +161,25 @@ class _MyDrawerState extends State<MyDrawer> {
             ),
             Divider(),
             ListTile(
+              key: _settingsBtnKey,
               leading: Icon(Icons.settings),
               title: Text('Settings'),
               onTap: () {
-                print('tap: Settings');
+                Navigator.push(
+                    context,
+                    MorpheusPageRoute(
+                      parentKey: _settingsBtnKey,
+                      builder: (context) {
+                        return SettingsPage();
+                      },
+                    ));
               },
             ),
             AboutListTile(
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
               applicationName: packageInfo.appName,
-              applicationVersion:
-                  '${packageInfo.version}-${packageInfo.buildNumber}',
+              applicationVersion: '${packageInfo.version}-${packageInfo.buildNumber}',
               applicationLegalese: '@ 2020 Ho Shing Ting',
               aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
             )
@@ -179,14 +200,14 @@ class _MyDrawerState extends State<MyDrawer> {
             _connectionListItemIdx = [];
             connections.forEach((c) {
               var isActive = activeConnection?.buildUri() == c.buildUri();
-              _insertItem(++itmidx, _buildConnectionWidget(c, isActive));
-              _connectionListItemIdx.add(itmidx);
+              _insertItem(++itmIdx, _buildConnectionWidget(c, isActive));
+              _connectionListItemIdx.add(itmIdx);
             });
           } else {
             // replace
             connections.forEach((c) {
               var isActive = activeConnection?.buildUri() == c.buildUri();
-              _list[++itmidx] = _buildConnectionWidget(c, isActive);
+              _list[++itmIdx] = _buildConnectionWidget(c, isActive);
             });
           }
 
@@ -194,7 +215,7 @@ class _MyDrawerState extends State<MyDrawer> {
           if (_connectionCntrListItemIdx.isEmpty) {
             // add connection btn
             _insertItem(
-                ++itmidx,
+                ++itmIdx,
                 ListTile(
                   key: _addAcBtnKey,
                   leading: Icon(Icons.person_add),
@@ -206,28 +227,26 @@ class _MyDrawerState extends State<MyDrawer> {
                           parentKey: _addAcBtnKey,
                           builder: (context) {
                             return BlocProvider.value(
-                              value: BlocProvider.of<cBloc.ConnectionBloc>(
-                                  context),
-                              child: AccountForm.create(),
+                              value: BlocProvider.of<DSConnectionBloc>(context),
+                              child: AccountForm(),
                             );
                           },
                         ));
                   },
                 ));
-            _connectionCntrListItemIdx.add(itmidx);
+            _connectionCntrListItemIdx.add(itmIdx);
 
             // DEBUG : remove all
             _insertItem(
-                ++itmidx,
+                ++itmIdx,
                 ListTile(
                   leading: Icon(Icons.person_add),
                   title: Text('DEBUG Remove all'),
                   onTap: () {
-                    bloc.add(
-                        cBloc.ConnectionEvent(cBloc.Action.removeAll, null));
+                    bloc.add(DSConnectionEvent(DSConnectionAction.removeAll, null));
                   },
                 ));
-            _connectionCntrListItemIdx.add(itmidx);
+            _connectionCntrListItemIdx.add(itmIdx);
           }
         } else {
           _connectionCntrListItemIdx.sort((x, y) => (y - x));
@@ -254,12 +273,7 @@ class _MyDrawerState extends State<MyDrawer> {
               ),
               Text(
                 '@ 2020 Ho Shing Ting',
-                style: TextStyle(
-                    color: Theme.of(context)
-                        .textTheme
-                        .subtitle2
-                        .color
-                        .withAlpha(100)),
+                style: TextStyle(color: Theme.of(context).textTheme.subtitle2.color.withAlpha(100)),
               )
             ],
           )),
@@ -270,8 +284,7 @@ class _MyDrawerState extends State<MyDrawer> {
 
   _insertItem(int idx, Widget widget) {
     _list.insert(idx, widget);
-    _listKey.currentState
-        .insertItem(idx, duration: Duration(milliseconds: 150));
+    _listKey.currentState.insertItem(idx, duration: Duration(milliseconds: 150));
   }
 
   _removeItem(int idx) {
@@ -282,8 +295,7 @@ class _MyDrawerState extends State<MyDrawer> {
     }, duration: Duration(milliseconds: 150));
   }
 
-  Widget _listItemBuilder(
-      BuildContext context, Widget widget, Animation<double> animation) {
+  Widget _listItemBuilder(BuildContext context, Widget widget, Animation<double> animation) {
     return SizeTransition(
       axis: Axis.vertical,
       sizeFactor: animation,
@@ -297,7 +309,7 @@ class _MyDrawerState extends State<MyDrawer> {
   Widget _buildConnectionWidget(Connection conn, bool isActive) {
     var bg = Theme.of(context).accentColor.withOpacity(0.2);
     var fg = Theme.of(context).accentColor;
-    cBloc.ConnectionBloc bloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    DSConnectionBloc bloc = BlocProvider.of<DSConnectionBloc>(context);
 
     var tile = ListTile(
       leading: Icon(
@@ -311,15 +323,14 @@ class _MyDrawerState extends State<MyDrawer> {
         ),
       ),
       onTap: () {
-        bloc.add(cBloc.ConnectionEvent(cBloc.Action.select, conn));
+        bloc.add(DSConnectionEvent(DSConnectionAction.select, conn));
       },
     );
 
     if (isActive) {
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-              topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
+          borderRadius: BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
           color: bg,
         ),
         child: tile,

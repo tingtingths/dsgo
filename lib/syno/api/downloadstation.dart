@@ -21,9 +21,7 @@ class DownloadStationAPIRaw {
   Future<Response<String>> infoGetInfoRaw({int version}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString() : version.toString(),
       'method': 'getinfo',
       '_sid': _cntx.appSid[session]
     };
@@ -35,9 +33,7 @@ class DownloadStationAPIRaw {
   Future<Response<String>> infoGetConfigRaw({int version}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString() : version.toString(),
       'method': 'getconfig',
       '_sid': _cntx.appSid[session]
     };
@@ -46,13 +42,10 @@ class DownloadStationAPIRaw {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> infoSetServerConfigRaw(Map<String, String> config,
-      {int version}) async {
+  Future<Response<String>> infoSetServerConfigRaw(Map<String, String> config, {int version}) async {
     final param = {
       'api': Syno.DownloadStation.Info,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Info).toString() : version.toString(),
       'method': 'setserverconfig',
       '_sid': _cntx.appSid[session]
     };
@@ -66,9 +59,7 @@ class DownloadStationAPIRaw {
   Future<Response<String>> scheduleGetConfigRaw({int version}) async {
     final param = {
       'api': Syno.DownloadStation.Schedule,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Schedule).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Schedule).toString() : version.toString(),
       'method': 'getconfig',
       '_sid': _cntx.appSid[session]
     };
@@ -77,15 +68,12 @@ class DownloadStationAPIRaw {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> scheduleSetConfigRaw(bool enabled, bool emuleEnabled,
-      {int version}) async {
+  Future<Response<String>> scheduleSetConfigRaw(bool enabled, bool emuleEnabled, {int version}) async {
     final param = {
       'enabled': enabled.toString(),
       'emule_enabled': emuleEnabled.toString(),
       'api': Syno.DownloadStation.Schedule,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Schedule).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Schedule).toString() : version.toString(),
       'method': 'setconfig',
       '_sid': _cntx.appSid[session]
     };
@@ -98,22 +86,14 @@ class DownloadStationAPIRaw {
       {int version,
       int offset: 0,
       int limit: -1,
-      List<String> additional: const [
-        'detail',
-        'transfer',
-        'file',
-        'tracker',
-        'peer'
-      ]}) async {
+      List<String> additional: const ['detail', 'transfer', 'file', 'tracker', 'peer']}) async {
     final param = {
       'offset': offset.toString(),
       'limit': limit.toString(),
       'additional': additional?.join(","),
       // detail, transfer, file, tracker, peer
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'list',
       '_sid': _cntx.appSid[session]
     };
@@ -123,22 +103,13 @@ class DownloadStationAPIRaw {
   }
 
   Future<Response<String>> taskGetInfoRaw(List<String> ids,
-      {int version,
-      List<String> additional: const [
-        'detail',
-        'transfer',
-        'file',
-        'tracker',
-        'peer'
-      ]}) async {
+      {int version, List<String> additional: const ['detail', 'transfer', 'file', 'tracker', 'peer']}) async {
     final param = {
       'id': ids.join(","),
       'additional': additional?.join(","),
       // detail, transfer, file, tracker, peer
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'getinfo',
       '_sid': _cntx.appSid[session]
     };
@@ -163,9 +134,7 @@ class DownloadStationAPIRaw {
       'unzip_password': unzipPasswd,
       'destination': destination,
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'create',
       '_sid': _cntx.appSid[session]
     };
@@ -190,15 +159,12 @@ class DownloadStationAPIRaw {
     return _cntx.c.postUri(uri, data: data, options: options);
   }
 
-  Future<Response<String>> taskDeleteRaw(List<String> ids, bool forceComplete,
-      {int version}) async {
+  Future<Response<String>> taskDeleteRaw(List<String> ids, bool forceComplete, {int version}) async {
     final param = {
       'id': ids.join(","),
       'force_complete': forceComplete.toString(),
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'delete',
       '_sid': _cntx.appSid[session]
     };
@@ -211,9 +177,7 @@ class DownloadStationAPIRaw {
     final param = {
       'id': ids.join(","),
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'pause',
       '_sid': _cntx.appSid[session]
     };
@@ -222,14 +186,11 @@ class DownloadStationAPIRaw {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskResumeRaw(List<String> ids,
-      {int version}) async {
+  Future<Response<String>> taskResumeRaw(List<String> ids, {int version}) async {
     final param = {
       'id': ids.join(","),
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'resume',
       '_sid': _cntx.appSid[session]
     };
@@ -238,15 +199,12 @@ class DownloadStationAPIRaw {
     return _cntx.c.getUri(uri);
   }
 
-  Future<Response<String>> taskEditRaw(List<String> ids,
-      {String destination, int version}) async {
+  Future<Response<String>> taskEditRaw(List<String> ids, {String destination, int version}) async {
     final param = {
       'id': ids.join(","),
       'destination': destination,
       'api': Syno.DownloadStation.Task,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Task).toString() : version.toString(),
       'method': 'edit',
       '_sid': _cntx.appSid[session]
     };
@@ -259,9 +217,7 @@ class DownloadStationAPIRaw {
   Future<Response<String>> statGetInfoRaw({int version}) async {
     final param = {
       'api': Syno.DownloadStation.Statistic,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.DownloadStation.Statistic).toString()
-          : version.toString(),
+      'version': version == null ? _cntx.maxApiVersion(Syno.DownloadStation.Statistic).toString() : version.toString(),
       'method': 'getinfo',
       '_sid': _cntx.appSid[session]
     };

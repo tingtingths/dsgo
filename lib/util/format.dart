@@ -21,13 +21,8 @@ String humanifySize(int sizeBytes, {int p: 1}) {
   return '?';
 }
 
-String humanifySeconds(int duration,
-    {int accuracy: 0,
-    int maxUnits,
-    int currentUnit: 1,
-    String defaultStr: ''}) {
-  if (duration == null || duration <= 0 || duration <= accuracy)
-    return defaultStr;
+String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int currentUnit: 1, String defaultStr: ''}) {
+  if (duration == null || duration <= 0 || duration <= accuracy) return defaultStr;
 
   var unit = [
     {86400, 'Day'},
@@ -45,16 +40,11 @@ String humanifySeconds(int duration,
       String trailing = '';
       if (rem > 0) {
         if (maxUnits != null && currentUnit != null && maxUnits > currentUnit) {
-          trailing = ' ' +
-              humanifySeconds(rem,
-                  accuracy: accuracy,
-                  maxUnits: maxUnits,
-                  currentUnit: ++currentUnit);
+          trailing = ' ' + humanifySeconds(rem, accuracy: accuracy, maxUnits: maxUnits, currentUnit: ++currentUnit);
         }
       }
 
-      return '$floored ${unit[i].elementAt(1)}${floored > 1 ? "s" : ""}' +
-          trailing;
+      return '$floored ${unit[i].elementAt(1)}${floored > 1 ? "s" : ""}' + trailing;
     }
     i += 1;
   }

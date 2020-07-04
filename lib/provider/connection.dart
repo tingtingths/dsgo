@@ -52,16 +52,13 @@ abstract class ConnectionProvider {
   }
 
   Tuple2<int, Connection> _findByUri(String uri, List<Connection> connections) {
-    return Tuple2(
-        connections.indexWhere((e) => uri == e.buildUri()),
-        connections?.firstWhere((e) => uri == e.buildUri(),
-            orElse: () => null));
+    return Tuple2(connections.indexWhere((e) => uri == e.buildUri()),
+        connections?.firstWhere((e) => uri == e.buildUri(), orElse: () => null));
   }
 }
 
 class MobileConnectionProvider extends ConnectionProvider {
-  static MobileConnectionProvider _instance =
-      MobileConnectionProvider._internal();
+  static MobileConnectionProvider _instance = MobileConnectionProvider._internal();
   final FlutterSecureStorage _storage = FlutterSecureStorage();
   static final String _key = StorageKey.Connections.key;
 
@@ -80,8 +77,7 @@ class MobileConnectionProvider extends ConnectionProvider {
       return connections[0].buildUri();
     }
 
-    String value =
-        await _storage.read(key: StorageKey.DefaultConnectionIndex.key);
+    String value = await _storage.read(key: StorageKey.DefaultConnectionIndex.key);
     try {
       Map<String, dynamic> json = jsonDecode(value);
       ret = json['defaultUri'];
@@ -94,9 +90,7 @@ class MobileConnectionProvider extends ConnectionProvider {
 
   @override
   Future<void> setDefaultConnection(String uri) async {
-    await _storage.write(
-        key: StorageKey.DefaultConnectionIndex.key,
-        value: jsonEncode({'defaultUri': uri}));
+    await _storage.write(key: StorageKey.DefaultConnectionIndex.key, value: jsonEncode({'defaultUri': uri}));
   }
 
   @override

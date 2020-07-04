@@ -33,13 +33,12 @@ class APIContext {
   Map<String, String> _appSid = {};
   Map<String, APIInfoQuery> _apiInfo = {};
 
-  APIContext(String host,
-      {String proto: 'https', int port: 443, String endpoint: ''}) {
+  APIContext(String host, {String proto: 'https', int port: 443, String endpoint: ''}) {
     _proto = proto;
     _authority = '$host:$port';
     _endpoint = endpoint;
     _client = Dio()..interceptors.add(LoggingInterceptor());
-    _client = Dio();
+    //_client = Dio();
   }
 
   Uri buildUri(String path, Map<String, String> queryParams) {
@@ -53,17 +52,15 @@ class APIContext {
   }
 
   Future<bool> authApp(String app, String account, String passwd) async {
-    var resp =
-        await AuthAPIRaw(this).login(account, passwd, app, format: 'sid');
+    var resp = await AuthAPIRaw(this).login(account, passwd, app, format: 'sid');
     var respObj = jsonDecode(resp.data);
     if (respObj['success']) {
       _appSid[app] = respObj['data']['sid'];
 
-      APIResponse<Map<String, APIInfoQuery>> apiInfo =
-          await QueryAPI(this).apiInfo();
+      APIResponse<Map<String, APIInfoQuery>> apiInfo = await QueryAPI(this).apiInfo();
       if (!apiInfo.success) {
-        throw Exception('Failed to query api info. error: ' +
-            apiInfo.error.entries.map((e) => '${e.key}=${e.value}').join(','));
+        throw Exception(
+            'Failed to query api info. error: ' + apiInfo.error.entries.map((e) => '${e.key}=${e.value}').join(','));
       }
       _apiInfo = apiInfo.data;
 

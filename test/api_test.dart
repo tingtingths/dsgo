@@ -14,6 +14,8 @@ import 'package:test/test.dart';
 import '../lib/confidential.dart';
 
 void main() {
+  test('Test json', () {});
+
   test('Test format', () {
     print(humanifySize(952000000000));
     print(humanifySize(952360000000));
@@ -63,8 +65,7 @@ void main() {
     APIResponse<Map<String, APIInfoQuery>> info = await queryApi.apiInfo();
     if (info.success) {
       info.data.forEach((key, value) {
-        print(
-            '$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
+        print('$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
       });
     }
 
@@ -89,8 +90,7 @@ void main() {
       });
     }
 
-    APIResponse<DownloadStationStatisticGetInfo> stats =
-        await dsApi.statGetInfo();
+    APIResponse<DownloadStationStatisticGetInfo> stats = await dsApi.statGetInfo();
     if (stats.success) {
       print('Total download speed=${stats.data.speedDownload}');
       print('Total upload speed=${stats.data.speedUpload}');

@@ -203,8 +203,7 @@ class _DownloadStationMultiTaskActionResponse {
   List<_DownloadStationTaskActionResponse> get responses => _responses;
 }
 
-class DownloadStationTaskDelete
-    extends _DownloadStationMultiTaskActionResponse {
+class DownloadStationTaskDelete extends _DownloadStationMultiTaskActionResponse {
   DownloadStationTaskDelete.fromJson(List<dynamic> json) : super.fromJson(json);
 }
 
@@ -212,14 +211,12 @@ class DownloadStationTaskPause extends _DownloadStationMultiTaskActionResponse {
   DownloadStationTaskPause.fromJson(List<dynamic> json) : super.fromJson(json);
 }
 
-class DownloadStationTaskResume
-    extends _DownloadStationMultiTaskActionResponse {
+class DownloadStationTaskResume extends _DownloadStationMultiTaskActionResponse {
   DownloadStationTaskResume.fromJson(List<dynamic> json) : super.fromJson(json);
 }
 
 class DownloadStationTaskEdit extends _DownloadStationTaskActionResponse {
-  DownloadStationTaskEdit.fromJson(Map<String, dynamic> json)
-      : super.fromJson(json);
+  DownloadStationTaskEdit.fromJson(Map<String, dynamic> json) : super.fromJson(json);
 }
 
 class ListTaskInfo {
@@ -227,15 +224,7 @@ class ListTaskInfo {
   int _offset;
   List<Task> _tasks;
 
-  int get total => _total;
-
-  int get offset => _offset;
-
-  List<Task> get tasks => _tasks;
-
-  set total(int value) {
-    _total = value;
-  }
+  ListTaskInfo(this._total, this._offset, this._tasks);
 
   ListTaskInfo.fromJson(Map<String, dynamic> json) {
     _total = (json ?? {})['total'];
@@ -245,6 +234,24 @@ class ListTaskInfo {
       List<dynamic> tasks = (json ?? {})['tasks'];
       _tasks.addAll(tasks.map((e) => Task.fromJson(e)).toList());
     }
+  }
+
+  int get total => _total;
+
+  set total(int value) {
+    _total = value;
+  }
+
+  int get offset => _offset;
+
+  set offset(int value) {
+    _offset = value;
+  }
+
+  List<Task> get tasks => _tasks;
+
+  set tasks(List<Task> value) {
+    _tasks = value;
   }
 }
 
@@ -257,6 +264,17 @@ class Task {
   String _status;
   StatusExtra _statusExtra;
   Additional _additional;
+
+  Task.fromJson(Map<String, dynamic> json) {
+    _id = (json ?? {})['id'];
+    _type = (json ?? {})['type'];
+    _username = (json ?? {})['username'];
+    _title = (json ?? {})['title'];
+    _size = (json ?? {})['size'];
+    _status = (json ?? {})['status'];
+    _statusExtra = StatusExtra.fromJson((json ?? {})['status_extra']);
+    _additional = Additional.fromJson((json ?? {})['additional']);
+  }
 
   String get id => _id;
 
@@ -310,15 +328,32 @@ class Task {
 
   Additional get additional => _additional;
 
-  Task.fromJson(Map<String, dynamic> json) {
-    _id = (json ?? {})['id'];
-    _type = (json ?? {})['type'];
-    _username = (json ?? {})['username'];
-    _title = (json ?? {})['title'];
-    _size = (json ?? {})['size'];
-    _status = (json ?? {})['status'];
-    _statusExtra = StatusExtra.fromJson((json ?? {})['status_extra']);
-    _additional = Additional.fromJson((json ?? {})['additional']);
+  set id(String value) {
+    _id = value;
+  }
+
+  set type(String value) {
+    _type = value;
+  }
+
+  set username(String value) {
+    _username = value;
+  }
+
+  set title(String value) {
+    _title = value;
+  }
+
+  set size(int value) {
+    _size = value;
+  }
+
+  set statusExtra(StatusExtra value) {
+    _statusExtra = value;
+  }
+
+  set additional(Additional value) {
+    _additional = value;
   }
 }
 
@@ -332,16 +367,11 @@ class Additional {
   Additional.fromJson(Map<String, dynamic> json) {
     _detail = TaskDetail.fromJson((json ?? {})['detail']);
     _transfer = TaskTransfer.fromJson((json ?? {})['transfer']);
-    _file = ((json ?? {}).containsKey('file') ? json['file'] as List : [])
-        .map((e) => TaskFile.fromJson(e))
+    _file = ((json ?? {}).containsKey('file') ? json['file'] as List : []).map((e) => TaskFile.fromJson(e)).toList();
+    _tracker = ((json ?? {}).containsKey('tracker') ? json['tracker'] as List : [])
+        .map((e) => TaskTracker.fromJson(e))
         .toList();
-    _tracker =
-        ((json ?? {}).containsKey('tracker') ? json['tracker'] as List : [])
-            .map((e) => TaskTracker.fromJson(e))
-            .toList();
-    _peer = ((json ?? {}).containsKey('peer') ? json['peer'] as List : [])
-        .map((e) => TaskPeer.fromJson(e))
-        .toList();
+    _peer = ((json ?? {}).containsKey('peer') ? json['peer'] as List : []).map((e) => TaskPeer.fromJson(e)).toList();
   }
 
   List<TaskPeer> get peer => _peer;
@@ -388,16 +418,13 @@ class TaskDetail {
     _uri = (json ?? {})['uri'];
     try {
       int ts = (json ?? {})['create_time'];
-      if (ts != null && ts > 0)
-        _createTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+      if (ts != null && ts > 0) _createTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
 
       ts = (json ?? {})['started_time'];
-      if (ts != null && ts > 0)
-        _startedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+      if (ts != null && ts > 0) _startedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
 
       ts = (json ?? {})['completed_time'];
-      if (ts != null && ts > 0)
-        _completedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+      if (ts != null && ts > 0) _completedTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
     } catch (e) {
       print(e);
     }

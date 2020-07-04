@@ -23,8 +23,7 @@ class WebConnectionProvider extends ConnectionProvider {
 
   @override
   Future<List<Connection>> getAll() {
-    if (window.sessionStorage.containsKey(_key) &&
-        window.sessionStorage[_key] != '') {
+    if (window.sessionStorage.containsKey(_key) && window.sessionStorage[_key] != '') {
       return Future.value(decodeJson(window.sessionStorage[_key]));
     }
     return Future.value([]);
@@ -68,7 +67,6 @@ class WebConnectionProvider extends ConnectionProvider {
 
   @override
   Future<void> setDefaultConnection(String uri) {
-    window.sessionStorage[StorageKey.DefaultConnectionIndex.key] =
-        jsonEncode({'defaultUri': uri});
+    window.sessionStorage[StorageKey.DefaultConnectionIndex.key] = jsonEncode({'defaultUri': uri});
   }
 }

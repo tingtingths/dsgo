@@ -11,13 +11,11 @@ class QueryAPIRaw {
     _cntx = cntx;
   }
 
-  Future<Response<String>> apiInfoRaw(
-      {int version: 1, String query: 'all'}) async {
+  Future<Response<String>> apiInfoRaw({int version: 1, String query: 'all'}) async {
     final param = {
       'api': Syno.API.Info,
-      'version': version == null
-          ? _cntx.maxApiVersion(Syno.API.Info, defaultVersion: 1).toString()
-          : version.toString(),
+      'version':
+          version == null ? _cntx.maxApiVersion(Syno.API.Info, defaultVersion: 1).toString() : version.toString(),
       'query': query,
       'method': 'query'
     };

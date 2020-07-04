@@ -4,32 +4,32 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tuple/tuple.dart';
 
-enum Action { add, remove, removeAll, edit, select }
+enum DSConnectionAction { add, remove, removeAll, edit, select }
 
-class ConnectionEvent {
-  Action action;
+class DSConnectionEvent {
+  DSConnectionAction action;
   Connection connection;
 
-  ConnectionEvent(this.action, this.connection);
+  DSConnectionEvent(this.action, this.connection);
 }
 
-class ConnectionState {
+class DSConnectionState {
   Connection activeConnection;
   List<Connection> connections = [];
 
-  ConnectionState(this.activeConnection, this.connections);
+  DSConnectionState(this.activeConnection, this.connections);
 }
 
-class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
+class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   ConnectionProvider _provider;
   List<Connection> _connections = [];
-  Connection _active = null;
-  ConnectionState currentState;
+  Connection _active;
+  DSConnectionState currentState;
 
   void dispose() {}
 
   @override
-  ConnectionState get initialState {
+  DSConnectionState get initialState {
     if (kIsWeb) {
       //_provider = WebConnectionProvider();
     } else {
@@ -41,16 +41,16 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
       return await _provider.getDefaultConnection();
     }).then((defaultConn) {
       _active = defaultConn;
-      this.add(ConnectionEvent(null, null));
+      this.add(DSConnectionEvent(null, null));
     });
 
-    return ConnectionState(_active, _connections);
+    return DSConnectionState(_active, _connections);
   }
 
   @override
-  Stream<ConnectionState> mapEventToState(ConnectionEvent evt) async* {
+  Stream<DSConnectionState> mapEventToState(DSConnectionEvent evt) async* {
     // new connection
-    if (evt.action == Action.add) {
+    if (evt.action == DSConnectionAction.add) {
       if (!_hasConnection(evt.connection)) {
         await _provider.add(evt.connection);
         _connections = await _provider.getAll();
@@ -58,23 +58,22 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
     }
 
     // remove connection
-    if (evt.action == Action.remove) {
+    if (evt.action == DSConnectionAction.remove) {
       if (_hasConnection(evt.connection)) {
-        var idx = _connections
-            .indexWhere((e) => evt.connection.buildUri() == e.buildUri());
+        var idx = _connections.indexWhere((e) => evt.connection.buildUri() == e.buildUri());
         await _provider.remove(idx);
         _connections = await _provider.getAll();
       }
     }
 
     // remove all connections
-    if (evt.action == Action.removeAll) {
+    if (evt.action == DSConnectionAction.removeAll) {
       await _provider.removeAll();
       _connections = [];
     }
 
     // edit connection
-    if (evt.action == Action.edit) {
+    if (evt.action == DSConnectionAction.edit) {
       var found = _find(evt.connection);
       if (found.item1 != -1) {
         _connections = await _provider.replace(found.item1, evt.connection);
@@ -82,7 +81,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
     }
 
     // select connection
-    if (evt.action == Action.select) {
+    if (evt.action == DSConnectionAction.select) {
       if (_hasConnection(evt.connection)) {
         await _provider.setDefaultConnection(evt.connection.buildUri());
         _active = evt.connection;
@@ -91,7 +90,7 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
 
     if (_connections.length == 1) _active = _connections[0];
     if (_connections.isEmpty) _active = null;
-    currentState = ConnectionState(_active, _connections);
+    currentState = DSConnectionState(_active, _connections);
     yield currentState;
   }
 
@@ -99,16 +98,12 @@ class ConnectionBloc extends Bloc<ConnectionEvent, ConnectionState> {
 
   Tuple2<int, Connection> _find(Connection target) {
     var uri = target.buildUri();
-    return Tuple2(
-        _connections.indexWhere((e) => uri == e.buildUri()),
-        _connections?.firstWhere((e) => uri == e.buildUri(),
-            orElse: () => null));
+    return Tuple2(_connections.indexWhere((e) => uri == e.buildUri()),
+        _connections?.firstWhere((e) => uri == e.buildUri(), orElse: () => null));
   }
 
   Tuple2<int, Connection> _findByUri(String uri) {
-    return Tuple2(
-        _connections.indexWhere((e) => uri == e.buildUri()),
-        _connections?.firstWhere((e) => uri == e.buildUri(),
-            orElse: () => null));
+    return Tuple2(_connections.indexWhere((e) => uri == e.buildUri()),
+        _connections?.firstWhere((e) => uri == e.buildUri(), orElse: () => null));
   }
 }

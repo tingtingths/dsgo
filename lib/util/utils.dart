@@ -6,15 +6,13 @@ void copyToClipboard(String text, BuildContext context) {
   Clipboard.setData(ClipboardData(text: text)).then((value) {
     Scaffold.of(context).showSnackBar(SnackBar(
       duration: Duration(milliseconds: 1000),
-      content: Text('Copied to clipboard'),
+      content: Text('Copied to clipboard.'),
     ));
   });
 }
 
 SnackBar buildSnackBar(String text,
-    {Duration duration: const Duration(days: 365),
-    SnackBarAction action,
-    bool showProgressIndicator: true}) {
+    {Duration duration: const Duration(days: 365), SnackBarAction action, bool showProgressIndicator: true}) {
   var children = <Widget>[Text(text)];
 
   if (showProgressIndicator) {

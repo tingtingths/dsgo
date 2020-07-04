@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/model/model.dart';
 import 'package:dsgo/syno/api/const.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
-import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
@@ -15,15 +15,15 @@ import 'package:uuid/uuid.dart';
 
 class TaskDetailsPage extends StatefulWidget {
   Task _task;
+  UserSettings settings;
 
-  TaskDetailsPage(this._task) : assert(_task != null);
+  TaskDetailsPage(this._task, this.settings) : assert(_task != null, settings != null);
 
   @override
-  State<StatefulWidget> createState() => TaskDetailsPageState(_task);
+  State<StatefulWidget> createState() => TaskDetailsPageState(_task, settings);
 }
 
-class TaskDetailsPageState extends State<TaskDetailsPage>
-    with TickerProviderStateMixin {
+class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderStateMixin {
   Task _task;
   List<Tab> tabs;
   TabController tabController;
@@ -31,8 +31,9 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
   String _fetchingId;
   Uuid _uuid;
   List<StreamSubscription> _subs = [];
+  UserSettings settings;
 
-  TaskDetailsPageState(this._task) : assert(_task != null);
+  TaskDetailsPageState(this._task, this.settings) : assert(_task != null, settings != null);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -60,8 +61,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
       '_fetchingId': _fetchingId
     }));
 
-    _subs.add(Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-        .listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
       if (!_fetching) {
         _fetchingId = _uuid.v4();
         apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
@@ -79,13 +79,11 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
         List<Task> tasks = state.resp.data ?? [];
         List<String> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
-          if (mounted && Navigator.of(context).canPop())
-            Navigator.of(context).pop();
+          if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -109,8 +107,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage>
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text(_task.title),
-        bottom:
-            TabBar(isScrollable: false, tabs: tabs, controller: tabController),
+        bottom: TabBar(isScrollable: false, tabs: tabs, controller: tabController),
       ),
       body: TabBarView(
         controller: tabController,
@@ -157,8 +154,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -171,18 +167,14 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
         Scaffold.of(context).removeCurrentSnackBar();
 
         // paused
-        if (state.event.requestType == RequestType.pause_task &&
-            state.resp.success &&
-            mounted) {
+        if (state.event.requestType == RequestType.pause_task && state.resp.success && mounted) {
           setState(() {
             _task.status = TaskStatus.paused;
           });
         }
 
         // resumed
-        if (state.event?.requestType == RequestType.resume_task &&
-            state.resp.success &&
-            mounted) {
+        if (state.event?.requestType == RequestType.resume_task && state.resp.success && mounted) {
           setState(() {
             _task.status = TaskStatus.downloading;
           });
@@ -192,8 +184,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
             state.resp.success &&
             mounted &&
             Navigator.of(context).canPop()) {
-          Navigator.pop(context,
-              {'requestType': RequestType.remove_task, 'taskId': _task.id});
+          Navigator.pop(context, {'requestType': RequestType.remove_task, 'taskId': _task.id});
         }
       }
     });
@@ -206,8 +197,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
 
     Widget playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow));
     if (_task.status == TaskStatus.downloading) {
-      playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause),
-          fillColor: Colors.amber, onPressed: () {
+      playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause), fillColor: Colors.amber, onPressed: () {
         Scaffold.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Pausing...'));
@@ -220,8 +210,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
       });
     }
     if (_task.status == TaskStatus.paused) {
-      playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow),
-          fillColor: Colors.green, onPressed: () {
+      playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow), fillColor: Colors.green, onPressed: () {
         Scaffold.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Resuming...'));
@@ -234,10 +223,8 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
       });
     }
 
-    Widget deleteBtn = _buildCircleIconBtn(Icon(Icons.delete),
-        fillColor: Colors.red, onPressed: () {
-      Navigator.of(context)
-          .pop({'requestType': RequestType.remove_task, 'taskId': _task.id});
+    Widget deleteBtn = _buildCircleIconBtn(Icon(Icons.delete), fillColor: Colors.red, onPressed: () {
+      Navigator.of(context).pop({'requestType': RequestType.remove_task, 'taskId': _task.id});
     });
 
     List<Widget> actionBtns = [playPauseBtn, deleteBtn];
@@ -269,8 +256,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                 subtitle: Text('Status'),
               ),
               ListTile(
-                onTap: () => copyToClipboard(
-                    _task.additional?.detail?.destination, context),
+                onTap: () => copyToClipboard(_task.additional?.detail?.destination, context),
                 title: Text(_task.additional?.detail?.destination ?? UNKNOWN),
                 subtitle: Text('Destination'),
               ),
@@ -284,23 +270,20 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                 subtitle: Text('Owner'),
               ),
               ListTile(
-                onTap: () =>
-                    copyToClipboard(_task.additional?.detail?.uri, context),
+                onTap: () => copyToClipboard(_task.additional?.detail?.uri, context),
                 title: Text(_task.additional?.detail?.uri ?? UNKNOWN),
                 subtitle: Text('URI'),
               ),
               ListTile(
                 title: Text(_task.additional?.detail?.createTime == null
                     ? UNKNOWN
-                    : dtFmt.format(
-                        _task.additional?.detail?.createTime ?? UNKNOWN)),
+                    : dtFmt.format(_task.additional?.detail?.createTime ?? UNKNOWN)),
                 subtitle: Text('Created Time'),
               ),
               ListTile(
                 title: Text(_task.additional?.detail?.completedTime == null
                     ? UNKNOWN
-                    : dtFmt.format(
-                        _task.additional?.detail?.completedTime ?? UNKNOWN)),
+                    : dtFmt.format(_task.additional?.detail?.completedTime ?? UNKNOWN)),
                 subtitle: Text('Completed Time'),
               ),
             ],
@@ -310,8 +293,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     );
   }
 
-  Widget _buildCircleIconBtn(Icon icon,
-      {Color fillColor: Colors.grey, double size: 24.0, Function onPressed}) {
+  Widget _buildCircleIconBtn(Icon icon, {Color fillColor: Colors.grey, double size: 24.0, Function onPressed}) {
     if (onPressed == null) {
       fillColor = Colors.grey.withOpacity(0.6);
     }
@@ -360,8 +342,7 @@ class TransferInfoTabState extends State<TransferInfoTab> {
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -381,33 +362,26 @@ class TransferInfoTabState extends State<TransferInfoTab> {
     double pct = (upSize ?? 0) / (downSize ?? 0) * 100;
     pct = pct.isFinite ? pct : 0;
 
-    var downSpeed =
-        humanifySize(_task.additional?.transfer?.speedDownload ?? 0, p: 0);
-    var upSpeed =
-        humanifySize(_task.additional?.transfer?.speedUpload ?? 0, p: 0);
+    var downSpeed = humanifySize(_task.additional?.transfer?.speedDownload ?? 0, p: 0);
+    var upSpeed = humanifySize(_task.additional?.transfer?.speedUpload ?? 0, p: 0);
 
-    var progress =
-        (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size;
+    var progress = (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size;
     progress = progress.isFinite ? progress : 0;
 
     String remainingTime = '-';
     double remainingSeconds;
     if (_task.status == TaskStatus.downloading) {
       remainingSeconds =
-          (_task.size - _task.additional?.transfer?.sizeDownloaded) /
-              _task.additional?.transfer?.speedDownload;
+          (_task.size - _task.additional?.transfer?.sizeDownloaded) / _task.additional?.transfer?.speedDownload;
       remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-      remainingTime = humanifySeconds(remainingSeconds?.round(),
-          maxUnits: 2, defaultStr: "-");
+      remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 2, defaultStr: "-");
     }
 
     return ListView(
       shrinkWrap: true,
       children: [
         ListTile(
-          title: Text('${humanifySize(upSize)}' +
-              ' / ${humanifySize(downSize)}' +
-              ' (${fmtNum(pct)}%)'),
+          title: Text('${humanifySize(upSize)}' + ' / ${humanifySize(downSize)}' + ' (${fmtNum(pct)}%)'),
           subtitle: Text('Transferred (UL / DL)'),
         ),
         ListTile(
@@ -427,19 +401,16 @@ class TransferInfoTabState extends State<TransferInfoTab> {
           subtitle: Text('Connected Peers'),
         ),
         ListTile(
-          title: Text(
-              '${_task.additional?.transfer?.downloadedPieces ?? 0} / ' +
-                  '${_task.additional?.detail?.totalPieces ?? UNKNOWN}'),
+          title: Text('${_task.additional?.transfer?.downloadedPieces ?? 0} / ' +
+              '${_task.additional?.detail?.totalPieces ?? UNKNOWN}'),
           subtitle: Text('Downloaded Blocks'),
         ),
         ListTile(
-          title: Text(
-              '${humanifySeconds(_task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
+          title: Text('${humanifySeconds(_task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
           subtitle: Text('Seeding Duration'),
         ),
         ListTile(
-          title: Text(
-              '${_task.additional?.detail?.connectedSeeders} / ${_task.additional?.detail?.connectedLeechers}'),
+          title: Text('${_task.additional?.detail?.connectedSeeders} / ${_task.additional?.detail?.connectedLeechers}'),
           subtitle: Text('Seeds / Leechers'),
         ),
         ListTile(
@@ -485,8 +456,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -508,7 +478,6 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
       return Center(
         child: Text(
           'Nothing...',
-          style: TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -529,8 +498,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${trackers.length}',
-                    style: TextStyle(
-                        color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
                   ),
                 ),
                 Column(
@@ -541,13 +509,11 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
                       subtitle: Text('Tracker Url'),
                     ),
                     ListTile(
-                      title: Text(
-                          tracker.status.isEmpty ? UNKNOWN : tracker.status),
+                      title: Text(tracker.status.isEmpty ? UNKNOWN : tracker.status),
                       subtitle: Text('Status'),
                     ),
                     ListTile(
-                      title: Text(
-                          humanifySeconds(tracker.updateTimer, maxUnits: 2)),
+                      title: Text(humanifySeconds(tracker.updateTimer, maxUnits: 2)),
                       subtitle: Text('Next update'),
                     ),
                     ListTile(
@@ -592,8 +558,7 @@ class PeerInfoTabState extends State<PeerInfoTab> {
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -615,7 +580,6 @@ class PeerInfoTabState extends State<PeerInfoTab> {
       return Center(
         child: Text(
           'Nothing...',
-          style: TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -636,8 +600,7 @@ class PeerInfoTabState extends State<PeerInfoTab> {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${peer.length}',
-                    style: TextStyle(
-                        color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
                   ),
                 ),
                 Column(
@@ -695,8 +658,7 @@ class FileInfoTabState extends State<FileInfoTab> {
           return;
         }
 
-        Task task =
-            tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
 
         if (task != null && mounted) {
           setState(() {
@@ -718,7 +680,6 @@ class FileInfoTabState extends State<FileInfoTab> {
       return Center(
         child: Text(
           'Nothing...',
-          style: TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -742,8 +703,7 @@ class FileInfoTabState extends State<FileInfoTab> {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${files.length}',
-                    style: TextStyle(
-                        color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
                   ),
                 ),
                 Column(

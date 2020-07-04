@@ -1,12 +1,11 @@
 import 'dart:async';
 
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/connection_bloc.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
 import 'package:dsgo/model/model.dart';
-import 'package:dsgo/page/task_tab.dart';
+import 'package:dsgo/page/task_details.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
-import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/extension.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
@@ -15,12 +14,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 
 class TaskList extends StatefulWidget {
+  UserSettings settings;
+
+  TaskList(this.settings);
+
   @override
-  State<StatefulWidget> createState() => _TaskListState();
+  State<StatefulWidget> createState() => _TaskListState(settings);
 }
 
-class _TaskListState extends State<TaskList>
-    with SingleTickerProviderStateMixin {
+class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin {
   ListTaskInfo taskInfo;
   Connection _connection;
   var filter = '';
@@ -33,6 +35,9 @@ class _TaskListState extends State<TaskList>
   List<Task> pendingRemove = [];
   Timer pendingRemoveCountdown;
   static const String fetchingStreamKey = 'STREAM_FETCH';
+  UserSettings settings;
+
+  _TaskListState(this.settings);
 
   @override
   void dispose() {
@@ -57,8 +62,7 @@ class _TaskListState extends State<TaskList>
           state.event.requestType == RequestType.task_list &&
           'init_state_request' == state.event.params['_reqId']) {
         _subscriptions[fetchingStreamKey] =
-            Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-                .listen((event) async {
+            Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) async {
           if (_connection == null || _fetching) return;
 
           _fetching = true;
@@ -80,8 +84,7 @@ class _TaskListState extends State<TaskList>
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     apiBloc.listen((state) {
-      if (state.event != null &&
-          state.event.requestType == RequestType.task_list) {
+      if (state.event != null && state.event.requestType == RequestType.task_list) {
         APIResponse<ListTaskInfo> info = state.resp;
         if (info == null) return;
 
@@ -89,16 +92,14 @@ class _TaskListState extends State<TaskList>
           setState(() {
             taskInfo = info.data;
           });
-          BlocProvider.of<UiEventBloc>(context).add(UiEventState(
-              null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
+          BlocProvider.of<UiEventBloc>(context)
+              .add(UiEventState(null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
         }
         _fetching = false;
       }
 
-      if (state.event != null &&
-          state.event.requestType == RequestType.remove_task) {
-        pendingRemove
-            .removeWhere((task) => state.event.params['ids'].contains(task.id));
+      if (state.event != null && state.event.requestType == RequestType.remove_task) {
+        pendingRemove.removeWhere((task) => state.event.params['ids'].contains(task.id));
       }
     });
 
@@ -116,12 +117,10 @@ class _TaskListState extends State<TaskList>
 
   @override
   Widget build(BuildContext context) {
-    print('${DateTime.now()} build task page');
-
     textTheme = Theme.of(context).textTheme;
 
-    return BlocConsumer<cBloc.ConnectionBloc, cBloc.ConnectionState>(
-      bloc: BlocProvider.of<cBloc.ConnectionBloc>(context),
+    return BlocConsumer<DSConnectionBloc, DSConnectionState>(
+      bloc: BlocProvider.of<DSConnectionBloc>(context),
       listener: (cntx, state) {
         if (mounted) {
           setState(() {
@@ -134,20 +133,17 @@ class _TaskListState extends State<TaskList>
         var info = taskInfo;
 
         if (_connection == null) {
-          return SliverFillRemaining(
-              child: Center(child: Text('Select account first')));
+          return SliverFillRemaining(child: Center(child: Text('Select account first')));
         }
 
         if (info == null) {
-          return SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()));
+          return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
         }
 
         var count = info.tasks.length;
         var tasks = List<Task>.from(info.tasks);
         pendingRemove.forEach((pendingRemove) {
-          var found = tasks.firstWhere((task) => task.id == pendingRemove.id,
-              orElse: () => null);
+          var found = tasks.firstWhere((task) => task.id == pendingRemove.id, orElse: () => null);
           if (found == null) return;
 
           count -= 1;
@@ -155,9 +151,12 @@ class _TaskListState extends State<TaskList>
         });
 
         if (info.total == 0) {
-          return Text(
-            'Nothing...',
-            style: TextStyle(color: Colors.grey),
+          return SliverFillRemaining(
+            child: Center(
+              child: Text(
+                'Nothing...',
+              ),
+            ),
           );
         }
 
@@ -168,42 +167,31 @@ class _TaskListState extends State<TaskList>
           var task = tasks[idx];
 
           if (filter != null && filter.trim().isNotEmpty) {
-            var sanitizedTitle =
-                task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-            var sanitizedMatcher =
-                filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+            var sanitizedTitle = task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+            var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
             if (!sanitizedTitle.contains(sanitizedMatcher)) {
               return SizedBox.shrink();
             }
           }
 
           var totalSize = humanifySize(task.size);
-          var downloaded =
-              humanifySize(task.additional?.transfer?.sizeDownloaded);
-          var progress =
-              (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size;
+          var downloaded = humanifySize(task.additional?.transfer?.sizeDownloaded);
+          var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size;
           progress = progress.isFinite ? progress : 0;
-          var downSpeed = humanifySize(
-                  task.additional?.transfer?.speedDownload ?? 0,
-                  p: 0) +
-              '/s';
-          var upSpeed =
-              humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) +
-                  '/s';
+          var downSpeed = humanifySize(task.additional?.transfer?.speedDownload ?? 0, p: 0) + '/s';
+          var upSpeed = humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) + '/s';
           var progressText = fmtNum(progress * 100, p: 0);
 
           String remainingTime;
           if (task.status == TaskStatus.downloading) {
             var remainingSeconds =
-                (task.size - task.additional?.transfer?.sizeDownloaded) /
-                    task.additional?.transfer?.speedDownload;
+                (task.size - task.additional?.transfer?.sizeDownloaded) / task.additional?.transfer?.speedDownload;
             remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-            remainingTime =
-                humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
+            remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
           }
 
           var progressBar = LinearProgressIndicator(
-            //backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).backgroundColor,
             value: progress,
           );
 
@@ -275,14 +263,12 @@ class _TaskListState extends State<TaskList>
                             parentKey: _cardKeys[idx],
                             builder: (context) {
                               return BlocProvider.value(
-                                value: BlocProvider.of<cBloc.ConnectionBloc>(
-                                    context),
-                                child: TaskDetailsPage(task),
+                                value: BlocProvider.of<DSConnectionBloc>(context),
+                                child: TaskDetailsPage(task, settings),
                               );
                             })).then((result) {
                       result = (result ?? {});
-                      if (result['requestType'] == RequestType.remove_task &&
-                          result['taskId'] != null) {
+                      if (result['requestType'] == RequestType.remove_task && result['taskId'] != null) {
                         removeTaskFromModel(result['taskId']);
                       }
                     });
@@ -291,9 +277,7 @@ class _TaskListState extends State<TaskList>
                     task.title,
                     overflow: TextOverflow.fade,
                     softWrap: false,
-                    style: TextStyle(
-                        fontSize:
-                            Theme.of(context).textTheme.headline6.fontSize),
+                    style: TextStyle(fontSize: Theme.of(context).textTheme.headline6.fontSize),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,13 +285,10 @@ class _TaskListState extends State<TaskList>
                       Divider(
                         height: 5,
                       ),
-                      Text((['seeding', 'finished']
-                              .contains(task.status.name.toLowerCase())
+                      Text((['seeding', 'finished'].contains(task.status.name.toLowerCase())
                           ? '${task.status.name.capitalize()}'
                           : '$progressText% | ${task.status.name.capitalize()}' +
-                              (remainingTime == null || remainingTime.isEmpty
-                                  ? ''
-                                  : ' | ~$remainingTime'))),
+                              (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
                       Text('$downloaded of $totalSize'),
                       Row(
                         children: [
@@ -316,8 +297,7 @@ class _TaskListState extends State<TaskList>
                             size: textTheme.bodyText1.fontSize,
                           ),
                           Text(downSpeed),
-                          Icon(Icons.arrow_upward,
-                              size: textTheme.bodyText1.fontSize),
+                          Icon(Icons.arrow_upward, size: textTheme.bodyText1.fontSize),
                           Text(upSpeed),
                         ],
                       )
@@ -337,8 +317,7 @@ class _TaskListState extends State<TaskList>
   }
 
   void removeTaskFromModel(String taskId) {
-    var found =
-        taskInfo.tasks.firstWhere((t) => t.id == taskId, orElse: () => null);
+    var found = taskInfo.tasks.firstWhere((t) => t.id == taskId, orElse: () => null);
 
     if (found != null) {
       setState(() {
@@ -353,8 +332,8 @@ class _TaskListState extends State<TaskList>
         pendingRemoveCountdown.cancel();
       }
       pendingRemoveCountdown = Timer(confirmDuration, () {
-        apiBloc.add(SynoApiEvent.params(RequestType.remove_task,
-            {'ids': pendingRemove.map((task) => task.id).toList()}));
+        apiBloc
+            .add(SynoApiEvent.params(RequestType.remove_task, {'ids': pendingRemove.map((task) => task.id).toList()}));
       });
 
       Scaffold.of(context)
@@ -379,8 +358,7 @@ class _TaskListState extends State<TaskList>
     }
   }
 
-  Widget _getStatusIcon(TaskStatus status, Function onPressed,
-      {Function onLongPress}) {
+  Widget _getStatusIcon(TaskStatus status, Function onPressed, {Function onLongPress}) {
     Color color = Colors.grey;
     double size = 38;
     Icon icon = Icon(Icons.info_outline);

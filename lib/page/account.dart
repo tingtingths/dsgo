@@ -1,4 +1,4 @@
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/connection_bloc.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/provider/connection.dart';
@@ -15,7 +15,7 @@ class AccountForm extends StatefulWidget {
     _connection = connection;
   }
 
-  AccountForm.create();
+  AccountForm();
 
   @override
   State<StatefulWidget> createState() => _AccountFormState(_idx, _connection);
@@ -26,7 +26,7 @@ class _AccountFormState extends State<AccountForm> {
   int _idx;
   Connection _connection;
   MobileConnectionProvider _connectionProvider = MobileConnectionProvider();
-  cBloc.ConnectionBloc connectionBloc;
+  DSConnectionBloc connectionBloc;
   SynoApiBloc apiBloc;
   Map<String, FocusNode> fieldFocus = {};
 
@@ -34,7 +34,7 @@ class _AccountFormState extends State<AccountForm> {
 
   @override
   void initState() {
-    connectionBloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    connectionBloc = BlocProvider.of<DSConnectionBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     fieldFocus = {
@@ -167,11 +167,9 @@ class _AccountFormState extends State<AccountForm> {
                   onPressed: () {
                     apiBloc.connection = _connection;
                     if (_idx != null && _idx >= 0) {
-                      connectionBloc.add(cBloc.ConnectionEvent(
-                          cBloc.Action.edit, _connection));
+                      connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection));
                     } else {
-                      connectionBloc.add(
-                          cBloc.ConnectionEvent(cBloc.Action.add, _connection));
+                      connectionBloc.add(DSConnectionEvent(DSConnectionAction.add, _connection));
                     }
                     Navigator.pop(context);
                   },

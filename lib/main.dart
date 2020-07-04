@@ -1,34 +1,67 @@
 import 'dart:async';
 
 import 'package:animations/animations.dart';
-import 'package:dsgo/bloc/connection_bloc.dart' as cBloc;
+import 'package:dsgo/bloc/connection_bloc.dart';
 import 'package:dsgo/bloc/delegate.dart';
 import 'package:dsgo/bloc/syno_api_bloc.dart';
 import 'package:dsgo/bloc/ui_evt_bloc.dart';
-import 'package:dsgo/page/panel.dart';
+import 'package:dsgo/page/add_task.dart';
 import 'package:dsgo/page/tasks.dart';
+import 'package:dsgo/provider/user_settings.dart';
 import 'package:dsgo/syno/api/modeled/model.dart';
-import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/format.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
+import 'model/model.dart';
 import 'page/drawer.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => MyAppState();
+}
+
+class MyAppState extends State<MyApp> {
+  UserSettings settings;
+
+  @override
+  void initState() {
+    MobileUserSettingsProvider().get().then((settings) {
+      if (mounted) {
+        setState(() {
+          this.settings = settings;
+        });
+      }
+    });
+    MobileUserSettingsProvider().onSet().listen((settings) {
+      if (mounted) {
+        setState(() {
+          this.settings = settings;
+        });
+      }
+    });
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (settings == null) {
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     BlocSupervisor.delegate = BlocLogDelegate();
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider<cBloc.ConnectionBloc>(
-          create: (_) => cBloc.ConnectionBloc(),
+        BlocProvider<DSConnectionBloc>(
+          create: (_) => DSConnectionBloc(),
         ),
         BlocProvider<UiEventBloc>(
           create: (_) => UiEventBloc(),
@@ -38,23 +71,24 @@ class MyApp extends StatelessWidget {
         )
       ],
       child: MaterialApp(
-        home: Material(child: MyScaffold()),
-        theme: Theme.of(context).copyWith(
-          brightness: Brightness.light,
-          colorScheme: ColorScheme.light(),
+        home: Material(child: MyScaffold(settings)),
+        themeMode: settings.themeMode,
+        theme: ThemeData.light().copyWith(
           iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
         ),
-        darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            appBarTheme: AppBarTheme(color: Color(0xff404040))),
+        darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
       ),
     );
   }
 }
 
 class MyScaffold extends StatefulWidget {
+  UserSettings settings;
+
+  MyScaffold(this.settings);
+
   @override
-  State<StatefulWidget> createState() => MyScaffoldState();
+  State<StatefulWidget> createState() => MyScaffoldState(settings);
 }
 
 class MyScaffoldState extends State<MyScaffold> {
@@ -62,14 +96,17 @@ class MyScaffoldState extends State<MyScaffold> {
   var _searchController = TextEditingController();
   UiEventBloc uiBloc;
   SynoApiBloc apiBloc;
-  cBloc.ConnectionBloc connBloc;
+  DSConnectionBloc connBloc;
   List<StreamSubscription> _subs = [];
   var _fetching = false;
   var totalUp = 0;
   var totalDown = 0;
   var infoWidgets = <Widget>[];
-  Uuid _uuid;
-  var _addTaskReqid;
+  var _addTaskReqId;
+  List<String> taskIds = [];
+  UserSettings settings;
+
+  MyScaffoldState(this.settings);
 
   @override
   void dispose() {
@@ -79,10 +116,9 @@ class MyScaffoldState extends State<MyScaffold> {
 
   @override
   void initState() {
-    _uuid = Uuid();
     uiBloc = BlocProvider.of<UiEventBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    connBloc = BlocProvider.of<cBloc.ConnectionBloc>(context);
+    connBloc = BlocProvider.of<DSConnectionBloc>(context);
 
     _searchController.addListener(() {
       final text = _searchController.text;
@@ -90,8 +126,7 @@ class MyScaffoldState extends State<MyScaffold> {
       if (mounted) setState(() {});
     });
 
-    _subs.add(Stream.periodic(Duration(milliseconds: FETCH_INTERVAL_MS))
-        .listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
       if (!_fetching) {
         apiBloc.add(SynoApiEvent(RequestType.statistic_info));
       }
@@ -107,13 +142,11 @@ class MyScaffoldState extends State<MyScaffold> {
         });
       }
 
-      // submit task from clipboard
-      if (state.event?.requestType == RequestType.add_task &&
-          (state.event?.params ?? {})['_reqId'] == _addTaskReqid &&
-          state.resp?.success == true) {
-        _scaffoldKey.currentState.removeCurrentSnackBar();
-        _scaffoldKey.currentState.showSnackBar(buildSnackBar('Task submitted',
-            duration: Duration(seconds: 2), showProgressIndicator: false));
+      if (state.event?.requestType == RequestType.task_list) {
+        APIResponse<ListTaskInfo> info = state.resp;
+        if (info?.data == null) return;
+
+        taskIds.replaceRange(0, taskIds.length, info.data.tasks.map((task) => task.id).toList());
       }
     });
 
@@ -160,12 +193,10 @@ class MyScaffoldState extends State<MyScaffold> {
                         title: TextField(
                           textInputAction: TextInputAction.search,
                           controller: _searchController,
-                          decoration: InputDecoration(
-                              hintText: 'Search tasks',
-                              border: InputBorder.none),
+                          decoration: InputDecoration(hintText: 'Search tasks', border: InputBorder.none),
                         )),
                   ),
-                  TaskList(),
+                  TaskList(settings),
                 ],
               ),
             ),
@@ -175,8 +206,7 @@ class MyScaffoldState extends State<MyScaffold> {
       floatingActionButton: OpenContainer(
         openColor: Theme.of(context).backgroundColor,
         closedColor: Theme.of(context).backgroundColor,
-        closedShape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         closedBuilder: (context, openContainerCallback) {
           return FloatingActionButton(
             child: Icon(
@@ -186,8 +216,7 @@ class MyScaffoldState extends State<MyScaffold> {
             onPressed: openContainerCallback,
           );
         },
-        openBuilder: (context,
-            CloseContainerActionCallback<String> closeContainerCallback) {
+        openBuilder: (context, CloseContainerActionCallback<String> closeContainerCallback) {
           return AddTaskForm();
         },
         onClosed: (String data) {
@@ -216,12 +245,22 @@ class MyScaffoldState extends State<MyScaffold> {
                       icon: Icon(Icons.play_arrow),
                       onPressed: () {
                         // start all tasks
+                        apiBloc.add(SynoApiEvent.resumeTask(taskIds, onCompleted: (state) {
+                          if (state.resp.success) {
+                            _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Tasks resumed.')));
+                          }
+                        }));
                       },
                     ),
                     IconButton(
                       icon: Icon(Icons.pause),
                       onPressed: () {
                         // pause all tasks
+                        apiBloc.add(SynoApiEvent.pauseTask(taskIds, onCompleted: (state) {
+                          if (state.resp.success) {
+                            _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Tasks paused.')));
+                          }
+                        }));
                       },
                     ),
                     IconButton(
@@ -247,17 +286,19 @@ class MyScaffoldState extends State<MyScaffold> {
                                         child: Text('Add'),
                                         onPressed: () {
                                           // submit task
-                                          _addTaskReqid = Uuid().v4();
-                                          var params = {
-                                            '_reqId': _addTaskReqid,
-                                            'uris': [text],
-                                          };
                                           Navigator.of(context).pop();
-                                          _scaffoldKey.currentState
-                                              .showSnackBar(buildSnackBar(
-                                                  'Submitting tasks...'));
-                                          apiBloc.add(SynoApiEvent.params(
-                                              RequestType.add_task, params));
+                                          _scaffoldKey.currentState.showSnackBar(buildSnackBar('Submitting tasks...'));
+                                          apiBloc.add(SynoApiEvent.addTask(
+                                            uris: [text],
+                                            onCompleted: (state) {
+                                              _scaffoldKey.currentState.removeCurrentSnackBar();
+                                              if (state.resp.success) {
+                                                _scaffoldKey.currentState.showSnackBar(SnackBar(
+                                                  content: Text('Task Submitted.'),
+                                                ));
+                                              }
+                                            },
+                                          ));
                                         },
                                       )
                                     ],

@@ -10,77 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
-class SearchPanel extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() => SearchPanelState();
-}
-
-class SearchPanelState extends State<SearchPanel> {
-  GlobalKey _addTaskBtnKey = GlobalKey();
-  var _controller = TextEditingController();
-
-  @override
-  void initState() {
-    var uiBloc = BlocProvider.of<UiEventBloc>(context);
-    _controller.addListener(() {
-      final text = _controller.text;
-      uiBloc.add(UiEventState(this, UiEvent.tasks_filter_change, [text]));
-      if (mounted) setState(() {});
-    });
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    var clearIcon;
-    if (_controller.text.isNotEmpty) {
-      clearIcon = IconButton(
-        color: Colors.grey,
-        icon: Icon(Icons.clear),
-        iconSize: 20,
-        onPressed: () {
-          _controller.clear();
-        },
-      );
-    }
-
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Row(
-            mainAxisSize: MainAxisSize.max,
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  textInputAction: TextInputAction.search,
-                  controller: _controller,
-                  decoration: InputDecoration(
-                    hintText: 'Search',
-                    fillColor: Colors.red,
-                    prefixIcon: Icon(Icons.search),
-                    suffixIcon: clearIcon,
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              IconButton(
-                key: _addTaskBtnKey,
-                padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                icon: Icon(
-                  Icons.add,
-                  color: Theme.of(context).primaryColor,
-                ),
-                iconSize: 30,
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class AddTaskForm extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => AddTaskFormState();
@@ -103,8 +32,7 @@ class AddTaskFormState extends State<AddTaskForm> {
 
     // listen add_task event feedback
     apiBloc.listen((state) {
-      if (state.event?.requestType != RequestType.add_task ||
-          state.event?.params['_reqId'] != _reqId) {
+      if (state.event?.requestType != RequestType.add_task || state.event?.params['_reqId'] != _reqId) {
         return;
       }
 
@@ -129,17 +57,13 @@ class AddTaskFormState extends State<AddTaskForm> {
   @override
   Widget build(BuildContext context) {
     final uiBloc = BlocProvider.of<UiEventBloc>(context);
-    final textBtnStyle = Theme.of(context)
-        .textTheme
-        .button
-        .copyWith(color: Theme.of(context).accentColor);
+    final textBtnStyle = Theme.of(context).textTheme.button.copyWith(color: Theme.of(context).accentColor);
     final textHdrStyle = Theme.of(context).textTheme.headline6;
     final textSeparatorStyle = Theme.of(context).textTheme.caption;
 
     var urlCount = _formModel['url']?.length ?? 0;
 
-    _submitBtn = _torrentFiles.isNotEmpty ||
-        (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
+    _submitBtn = _torrentFiles.isNotEmpty || (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
 
     var scaffold = Scaffold(
       key: _scaffoldKey,
@@ -150,20 +74,16 @@ class AddTaskFormState extends State<AddTaskForm> {
             icon: Icon(Icons.done),
             onPressed: _submitBtn
                 ? () {
-                    _scaffoldKey.currentState
-                        .showSnackBar(buildSnackBar('Submitting tasks...'));
+                    _scaffoldKey.currentState.showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task
                     _reqId = _uuid.v4();
                     var params = {
                       '_reqId': _reqId,
                       'uris': _formModel['url'],
-                      'torrent_files': _torrentFiles.values
-                          .map((entry) => entry.key)
-                          .toList(),
+                      'torrent_files': _torrentFiles.values.map((entry) => entry.key).toList(),
                     };
-                    apiBloc
-                        .add(SynoApiEvent.params(RequestType.add_task, params));
+                    apiBloc.add(SynoApiEvent.params(RequestType.add_task, params));
                     setState(() {
                       _submitBtn = false;
                     });
@@ -300,8 +220,7 @@ class AddTaskFormState extends State<AddTaskForm> {
 
       if (mounted) {
         setState(() {
-          _torrentFiles.addAll(
-              Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
+          _torrentFiles.addAll(Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
             var _f = f as File;
             return _f.path;
           }, value: (f) {

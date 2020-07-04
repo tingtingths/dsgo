@@ -10,17 +10,13 @@ class BlocLogDelegate extends BlocDelegate {
     var nextState = transition.nextState;
     String from = '$currState', to = '$nextState';
 
-    if (currState is ConnectionState) {
-      from =
-          'ConnectionState | active=${currState.activeConnection}, connections=[${currState.connections.length}]';
-      to =
-          'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
+    if (currState is DSConnectionState) {
+      from = 'ConnectionState | active=${currState.activeConnection}, connections=[${currState.connections.length}]';
+      to = 'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
     }
     if (currState is UiEventState) {
-      from =
-          'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
-      to =
-          'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
+      from = 'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
+      to = 'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
     }
     if (currState is SynoApiState) {
       from = 'SynoApiState | request_type=${currState.event?.requestType}';
