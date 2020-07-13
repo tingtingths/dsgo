@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:animations/animations.dart';
-import 'package:dsgo/bloc/connection_bloc.dart';
-import 'package:dsgo/bloc/delegate.dart';
-import 'package:dsgo/bloc/syno_api_bloc.dart';
-import 'package:dsgo/bloc/ui_evt_bloc.dart';
-import 'package:dsgo/page/add_task.dart';
-import 'package:dsgo/page/tasks.dart';
-import 'package:dsgo/provider/user_settings.dart';
-import 'package:dsgo/syno/api/modeled/model.dart';
-import 'package:dsgo/util/format.dart';
-import 'package:dsgo/util/utils.dart';
+import 'bloc/connection_bloc.dart';
+import 'bloc/delegate.dart';
+import 'bloc/syno_api_bloc.dart';
+import 'bloc/ui_evt_bloc.dart';
+import 'page/add_task.dart';
+import 'page/tasks.dart';
+import 'provider/user_settings.dart';
+import 'util/format.dart';
+import 'util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:synoapi/synoapi.dart';
 
 import 'model/model.dart';
 import 'page/drawer.dart';

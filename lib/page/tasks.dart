@@ -1,18 +1,18 @@
 import 'dart:async';
 
-import 'package:dsgo/bloc/connection_bloc.dart';
-import 'package:dsgo/bloc/syno_api_bloc.dart';
-import 'package:dsgo/bloc/ui_evt_bloc.dart';
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/page/task_details.dart';
-import 'package:dsgo/syno/api/modeled/model.dart';
-import 'package:dsgo/util/const.dart';
-import 'package:dsgo/util/extension.dart';
-import 'package:dsgo/util/format.dart';
-import 'package:dsgo/util/utils.dart';
+import '../bloc/connection_bloc.dart';
+import '../bloc/syno_api_bloc.dart';
+import '../bloc/ui_evt_bloc.dart';
+import '../model/model.dart';
+import '../page/task_details.dart';
+import '../util/const.dart';
+import '../util/extension.dart';
+import '../util/format.dart';
+import '../util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
+import 'package:synoapi/synoapi.dart';
 
 class TaskList extends StatefulWidget {
   UserSettings settings;

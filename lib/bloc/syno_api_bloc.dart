@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/provider/connection.dart';
-import 'package:dsgo/syno/api/context.dart';
-import 'package:dsgo/syno/api/modeled/downloadstation.dart';
-import 'package:dsgo/syno/api/modeled/model.dart';
+import '../model/model.dart';
+import '../provider/connection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:synoapi/synoapi.dart';
 
 enum RequestType { task_list, task_info, add_task, remove_task, pause_task, resume_task, statistic_info }
 

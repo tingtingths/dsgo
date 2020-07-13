@@ -1,7 +1,7 @@
-import 'package:dsgo/bloc/connection_bloc.dart';
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/page/account.dart';
-import 'package:dsgo/page/settings.dart';
+import '../bloc/connection_bloc.dart';
+import '../model/model.dart';
+import '../page/account.dart';
+import '../page/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';

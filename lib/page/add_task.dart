@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:dsgo/bloc/syno_api_bloc.dart';
-import 'package:dsgo/bloc/ui_evt_bloc.dart';
-import 'package:dsgo/util/format.dart';
-import 'package:dsgo/util/utils.dart';
+import '../bloc/syno_api_bloc.dart';
+import '../bloc/ui_evt_bloc.dart';
+import '../util/format.dart';
+import '../util/utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

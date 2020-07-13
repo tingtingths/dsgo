@@ -1,5 +1,5 @@
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/provider/connection.dart';
+import '../model/model.dart';
+import '../provider/connection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tuple/tuple.dart';

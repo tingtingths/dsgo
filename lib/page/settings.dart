@@ -1,6 +1,6 @@
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/provider/user_settings.dart';
-import 'package:dsgo/util/const.dart';
+import '../model/model.dart';
+import '../provider/user_settings.dart';
+import '../util/const.dart';
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {

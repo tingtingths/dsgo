@@ -36,6 +36,8 @@ dependencies:
   file_picker: ^1.9.0
   animations: ^1.1.1
   package_info: ^0.4.1
+  synoapi:
+    path: synoapi
 
 dev_dependencies:
   flutter_test:

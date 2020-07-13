@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:html';
 
-import 'package:dsgo/model/model.dart';
-import 'package:dsgo/util/const.dart';
+import '../model/model.dart';
+import '../util/const.dart';
 
 import 'connection.dart';
 
