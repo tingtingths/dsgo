@@ -1,11 +1,8 @@
-import 'dart:convert';
-
-
 import 'package:dsgo/util/format.dart';
 import 'package:synoapi/synoapi.dart';
 import 'package:test/test.dart';
 
-import '../lib/confidential.dart';
+import './config.dart';
 
 void main() {
   test('Test json', () {});
@@ -53,27 +50,28 @@ void main() {
   });
 
   test('Test Json typing', () async {
-    var cntx = APIContext('itdog.me', port: 8443);
+    var cntx = APIContext(HOST, port: PORT);
 
     var queryApi = QueryAPI(cntx);
-    APIResponse<Map<String, APIInfoQuery>> info = await queryApi.apiInfo();
+    APIResponse<Map<String, APIInfoQuery>> info = await queryApi.info.apiInfo();
     if (info.success) {
       info.data.forEach((key, value) {
-        print('$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
+        print(
+            '$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
       });
     }
 
     var authApi = AuthAPIRaw(cntx);
-    var authOk = await cntx.authApp('DownloadStation', user, passwd);
+    var authOk = await cntx.authApp('DownloadStation', USER, PASSWORD);
     var dsApi = DownloadStationAPI(cntx);
 
     if (false) {
-      await dsApi.taskCreateRaw(uris: [
+      await dsApi.task.createRaw(uris: [
         'magnet:?xt=urn:btih:f95c371d5609d15f6615139be84edbb5b94a79bc&dn=archlinux-2020.05.01-x86_64.iso&tr=udp://tracker.archlinux.org:6969&tr=http://tracker.archlinux.org:6969/announce'
       ]);
     }
 
-    APIResponse<ListTaskInfo> taskResp = await dsApi.taskList();
+    APIResponse<ListTaskInfo> taskResp = await dsApi.task.list();
     if (taskResp.success) {
       var info = taskResp.data;
       print('total=${info.total}');
@@ -84,42 +82,11 @@ void main() {
       });
     }
 
-    APIResponse<DownloadStationStatisticGetInfo> stats = await dsApi.statGetInfo();
+    APIResponse<DownloadStationStatisticGetInfo> stats =
+        await dsApi.statistic.getInfo();
     if (stats.success) {
       print('Total download speed=${stats.data.speedDownload}');
       print('Total upload speed=${stats.data.speedUpload}');
     }
-  });
-
-  test('Test Syno Api', () async {
-    var jsonEncoder = JsonEncoder.withIndent('  ');
-    var jsonDecoder = JsonDecoder();
-    var cntx = APIContext('itdog.me', port: 8443);
-
-    var queryApi = QueryAPIRaw(cntx);
-    var resp = await queryApi.apiInfoRaw();
-    Map obj = jsonDecode(resp.data);
-
-    var authApi = AuthAPIRaw(cntx);
-    var authOk = await cntx.authApp('DownloadStation', user, passwd);
-    var dsApi = DownloadStationAPIRaw(cntx);
-
-    await dsApi.infoGetInfoRaw();
-    resp = await dsApi.taskListRaw(additional: ['detail']);
-    obj = jsonDecoder.convert(resp.data) ?? {};
-    Map data = obj['data'] ?? {};
-    List tasks = data['tasks'] ?? [];
-    if (tasks.isNotEmpty) {
-      Map task = tasks[0];
-      await dsApi.taskGetInfoRaw([task['id']]);
-    }
-
-    // add task
-    //var r = await dsApi.taskCreate(file: File('D:/test.torrent'));
-    var r = await dsApi.taskCreateRaw(uris: [
-      'magnet:?xt=urn:btih:f95c371d5609d15f6615139be84edbb5b94a79bc&dn=archlinux-2020.05.01-x86_64.iso&tr=udp://tracker.archlinux.org:6969&tr=http://tracker.archlinux.org:6969/announce'
-    ]);
-
-    authApi.logout('DownloadStation');
   });
 }

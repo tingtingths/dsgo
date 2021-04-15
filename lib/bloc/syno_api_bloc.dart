@@ -138,13 +138,13 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
         additional = event._params['additional'];
       }
 
-      resp = await _dsApi.taskList(offset: offset, limit: limit, additional: additional);
+      resp = await _dsApi.task.list(offset: offset, limit: limit, additional: additional);
     }
 
     if (event.requestType == RequestType.task_info && event._params.containsKey('ids')) {
       var additional = event._params['additional'] ?? ['detail', 'transfer', 'file', 'tracker', 'peer'];
 
-      resp = await _dsApi.taskGetInfo(event._params['ids'], additional: additional);
+      resp = await _dsApi.task.getInfo(event._params['ids'], additional: additional);
     }
 
     if (event.requestType == RequestType.add_task) {
@@ -153,14 +153,14 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
 
       List<Future<APIResponse<void>>> tasks = [];
       if (uris != null && uris.isNotEmpty) {
-        tasks.add(_dsApi.taskCreate(
+        tasks.add(_dsApi.task.create(
           uris: uris,
         ));
       }
       if (files != null && files.isNotEmpty) {
         files.forEach((f) {
           if (f is File) {
-            tasks.add(_dsApi.taskCreate(file: f));
+            tasks.add(_dsApi.task.create(file: f));
           }
         });
       }
@@ -174,16 +174,16 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
       List<String> ids = event._params['ids'] ?? [];
 
       if (ids.isNotEmpty) {
-        if (event.requestType == RequestType.remove_task) resp = await _dsApi.taskDelete(ids, false);
+        if (event.requestType == RequestType.remove_task) resp = await _dsApi.task.delete(ids, false);
 
-        if (event.requestType == RequestType.resume_task) resp = await _dsApi.taskResume(ids);
+        if (event.requestType == RequestType.resume_task) resp = await _dsApi.task.resume(ids);
 
-        if (event.requestType == RequestType.pause_task) resp = await _dsApi.taskPause(ids);
+        if (event.requestType == RequestType.pause_task) resp = await _dsApi.task.pause(ids);
       }
     }
 
     if (event.requestType == RequestType.statistic_info) {
-      resp = await _dsApi.statGetInfo();
+      resp = await _dsApi.statistic.getInfo();
     }
 
     var state = SynoApiState(event, resp);

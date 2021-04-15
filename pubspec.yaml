@@ -24,9 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  http: ^0.12.1
-  dio: ^3.0.9
-  http_interceptor: ^0.3.0
+  dio: ^4.0.0
   flutter_secure_storage: ^3.3.3
   flutter_bloc: ^4.0.0
   tuple: ^1.0.3
@@ -39,7 +37,6 @@ dependencies:
   synoapi:
     git:
       url: git@github.com:tingtingths/synoapi.git
-      ref: 0.1.0
 
 dev_dependencies:
   flutter_test:
