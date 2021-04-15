@@ -37,7 +37,9 @@ dependencies:
   animations: ^1.1.1
   package_info: ^0.4.1
   synoapi:
-    path: synoapi
+    git:
+      url: git@github.com:tingtingths/synoapi.git
+      ref: 0.1.0
 
 dev_dependencies:
   flutter_test:
