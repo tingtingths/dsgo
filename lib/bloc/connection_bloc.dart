@@ -26,6 +26,8 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   Connection _active;
   DSConnectionState currentState;
 
+  DSConnectionBloc(DSConnectionState initialState) : super(initialState);
+
   void dispose() {}
 
   @override

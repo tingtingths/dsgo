@@ -1,9 +1,10 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../bloc/connection_bloc.dart';
 import '../bloc/syno_api_bloc.dart';
 import '../bloc/ui_evt_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-class BlocLogDelegate extends BlocDelegate {
+class BlocLogDelegate extends BlocObserver {
   @override
   void onTransition(Bloc bloc, Transition transition) {
     var currState = transition.currentState;
@@ -11,12 +12,16 @@ class BlocLogDelegate extends BlocDelegate {
     String from = '$currState', to = '$nextState';
 
     if (currState is DSConnectionState) {
-      from = 'ConnectionState | active=${currState.activeConnection}, connections=[${currState.connections.length}]';
-      to = 'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
+      from =
+          'ConnectionState | active=${currState.activeConnection}, connections=[${currState.connections.length}]';
+      to =
+          'ConnectionState | active=${nextState.activeConnection}, connections=[${nextState.connections.length}]';
     }
     if (currState is UiEventState) {
-      from = 'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
-      to = 'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
+      from =
+          'UiEventState | initiator=${currState.initiator}, event=${currState.event}';
+      to =
+          'UiEventState | initiator=${nextState.initiator}, event=${nextState.event}';
     }
     if (currState is SynoApiState) {
       from = 'SynoApiState | request_type=${currState.event?.requestType}';

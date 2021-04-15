@@ -1,6 +1,6 @@
-import 'package:dsgo/util/format.dart';
 import 'package:synoapi/synoapi.dart';
 import 'package:test/test.dart';
+import '../lib/util/format.dart';
 
 import './config.dart';
 
