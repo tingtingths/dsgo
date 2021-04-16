@@ -35,11 +35,12 @@ dependencies:
   uuid: ^3.0.0
   file_picker: ^3.0.1
   animations: ^2.0.0
-  package_info: ^2.0.0
+  package_info_plus : ^1.0.0
   synoapi:
     git:
       url: git@github.com:tingtingths/synoapi.git
   collection: ^1.15.0-nullsafety.4
+  logging: ^1.0.0
 
 dev_dependencies:
   flutter_test:

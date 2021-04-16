@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 import 'bloc/connection_bloc.dart';
 import 'bloc/delegate.dart';
 import 'bloc/syno_api_bloc.dart';
@@ -19,7 +20,16 @@ import 'package:synoapi/synoapi.dart';
 import 'model/model.dart';
 import 'page/drawer.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // logger configuration
+  Logger.root.level = Level.FINE;
+  Logger.root.onRecord.listen((l) {
+    print('${l.time} ${l.level} ${l.loggerName} | ${l.message}${l.error ?? ''}${l.stackTrace ?? ''}');
+  });
+  Logger.detached('SynoAPI').level = Level.WARNING;
+
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -332,12 +342,11 @@ class MyScaffoldState extends State<MyScaffold> {
               ],
             )),
       ),
-      drawer: MyDrawer(),
+      drawer: AppDrawer(),
     );
 
     return GestureDetector(
       onTap: () {
-        print('taptap');
         var node = FocusScope.of(context);
         if (!node.hasPrimaryFocus) {
           node.unfocus();

@@ -1,38 +1,34 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
+import 'package:morpheus/morpheus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../bloc/connection_bloc.dart';
 import '../model/model.dart';
 import '../page/account.dart';
 import '../page/settings.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:morpheus/morpheus.dart';
-import 'package:package_info/package_info.dart';
 
-class MyDrawer extends StatefulWidget {
+class AppDrawer extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => _MyDrawerState();
+  State<StatefulWidget> createState() => _AppDrawerState();
 }
 
-class _MyDrawerHeader extends StatefulWidget {
+class _AppDrawerHeader extends StatefulWidget {
   Function(bool) _btnCallback;
 
-  _MyDrawerHeader(this._btnCallback);
+  _AppDrawerHeader(this._btnCallback);
 
   @override
-  State<StatefulWidget> createState() => _MyDrawerHeaderState(_btnCallback);
+  State<StatefulWidget> createState() => _AppDrawerHeaderState(_btnCallback);
 }
 
-class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
+class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
   bool _expandConnection = false;
   Function(bool) _btnCallback;
-  Connection? _connection;
-  PackageInfo packageInfo = PackageInfo(
-    appName: 'Unknown',
-    packageName: 'Unknown',
-    version: 'Unknown',
-    buildNumber: 'Unknown',
-  );
+  PackageInfo? packageInfo;
 
-  _MyDrawerHeaderState(this._btnCallback);
+  _AppDrawerHeaderState(this._btnCallback);
 
   @override
   void initState() {
@@ -41,12 +37,15 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
         this.packageInfo = packageInfo;
       });
     });
-
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (packageInfo == null) {
+      return Text('');
+    }
+    // draw content
     return Container(
       padding: EdgeInsets.fromLTRB(15, 15, 15, 0),
       child: Column(
@@ -54,8 +53,9 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Text(
-            packageInfo.appName,
-            style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
+            packageInfo!.appName,
+            style:
+                DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
           ),
           Row(
             mainAxisSize: MainAxisSize.max,
@@ -67,7 +67,9 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
                     String? text = 'Add an account...';
                     if (state.activeConnection != null) {
                       text = state.activeConnection!.friendlyName;
-                      text = text == null ? state.activeConnection!.buildUri() : text;
+                      text = text == null
+                          ? state.activeConnection!.buildUri()
+                          : text;
                     }
 
                     return Text(
@@ -79,7 +81,9 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
                 ),
               ),
               IconButton(
-                icon: _expandConnection ? Icon(Icons.arrow_drop_up) : Icon(Icons.arrow_drop_down),
+                icon: _expandConnection
+                    ? Icon(Icons.arrow_drop_up)
+                    : Icon(Icons.arrow_drop_down),
                 onPressed: () {
                   setState(() {
                     _expandConnection = !_expandConnection;
@@ -95,7 +99,8 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
   }
 }
 
-class _MyDrawerState extends State<MyDrawer> {
+class _AppDrawerState extends State<AppDrawer> {
+  final l = Logger('_AppDrawerState');
   bool _inited = false;
   bool expandConnection = false;
   bool accountUpdated = false;
@@ -110,15 +115,13 @@ class _MyDrawerState extends State<MyDrawer> {
   PackageInfo? packageInfo;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     bloc = BlocProvider.of<DSConnectionBloc>(context);
-
     PackageInfo.fromPlatform().then((packageInfo) {
       setState(() {
         this.packageInfo = packageInfo;
       });
     });
-
     super.initState();
   }
 
@@ -127,7 +130,6 @@ class _MyDrawerState extends State<MyDrawer> {
     if (packageInfo == null) {
       return CircularProgressIndicator();
     }
-
     return BlocBuilder<DSConnectionBloc, DSConnectionState>(
       builder: (BuildContext context, DSConnectionState state) {
         var activeConnection = state.activeConnection;
@@ -137,7 +139,7 @@ class _MyDrawerState extends State<MyDrawer> {
         if (!_inited) {
           _inited = true;
           _list.addAll([
-            _MyDrawerHeader((expand) {
+            _AppDrawerHeader((expand) {
               setState(() {
                 expandConnection = expand;
               });
@@ -150,14 +152,14 @@ class _MyDrawerState extends State<MyDrawer> {
               leading: Icon(Icons.all_inclusive),
               title: Text('All'),
               onTap: () {
-                print('tap: All');
+                l.fine('tap: All'); // TODO ?
               },
             ),
             ListTile(
               leading: Icon(Icons.file_download),
               title: Text('Downloading'),
               onTap: () {
-                print('tap: Downloading');
+                l.fine('tap: Downloading'); // TODO ?
               },
             ),
             Divider(),
@@ -180,7 +182,8 @@ class _MyDrawerState extends State<MyDrawer> {
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
               applicationName: packageInfo!.appName,
-              applicationVersion: '${packageInfo!.version}-${packageInfo!.buildNumber}',
+              applicationVersion:
+                  '${packageInfo!.version}-${packageInfo!.buildNumber}',
               applicationLegalese: '@ 2020 Ho Shing Ting',
               aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
             )
@@ -221,7 +224,8 @@ class _MyDrawerState extends State<MyDrawer> {
                   leading: Icon(Icons.person_add),
                   title: Text('DEBUG Remove all'),
                   onTap: () {
-                    bloc.add(DSConnectionEvent(DSConnectionAction.removeAll, null));
+                    bloc.add(
+                        DSConnectionEvent(DSConnectionAction.removeAll, null));
                   },
                 ));
 
@@ -269,7 +273,12 @@ class _MyDrawerState extends State<MyDrawer> {
               ),
               Text(
                 '@ 2020 Ho Shing Ting',
-                style: TextStyle(color: Theme.of(context).textTheme.subtitle2!.color!.withAlpha(100)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .textTheme
+                        .subtitle2!
+                        .color!
+                        .withAlpha(100)),
               )
             ],
           )),
@@ -280,7 +289,8 @@ class _MyDrawerState extends State<MyDrawer> {
 
   _insertItem(int idx, Widget widget) {
     _list.insert(idx, widget);
-    _listKey.currentState!.insertItem(idx, duration: Duration(milliseconds: 150));
+    _listKey.currentState!
+        .insertItem(idx, duration: Duration(milliseconds: 150));
   }
 
   _removeItem(int idx) {
@@ -291,7 +301,8 @@ class _MyDrawerState extends State<MyDrawer> {
     }, duration: Duration(milliseconds: 150));
   }
 
-  Widget _listItemBuilder(BuildContext context, Widget widget, Animation<double> animation) {
+  Widget _listItemBuilder(
+      BuildContext context, Widget widget, Animation<double> animation) {
     return SizeTransition(
       axis: Axis.vertical,
       sizeFactor: animation,
@@ -326,7 +337,8 @@ class _MyDrawerState extends State<MyDrawer> {
     if (isActive) {
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
+          borderRadius: BorderRadius.only(
+              topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
           color: bg,
         ),
         child: tile,

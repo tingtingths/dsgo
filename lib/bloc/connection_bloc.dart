@@ -1,3 +1,5 @@
+import 'package:logging/logging.dart';
+
 import '../model/model.dart';
 import '../provider/connection.dart';
 import 'package:collection/collection.dart' show IterableExtension;
@@ -5,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tuple/tuple.dart';
 
-enum DSConnectionAction { add, remove, removeAll, edit, select }
+enum DSConnectionAction { refresh, add, remove, removeAll, edit, select }
 
 class DSConnectionEvent {
   DSConnectionAction action;
@@ -22,6 +24,7 @@ class DSConnectionState {
 }
 
 class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
+  final l = Logger('DSConnectionBloc');
   late ConnectionProvider _provider;
   DSConnectionState? currentState;
 
@@ -31,34 +34,26 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     } else {
       _provider = MobileConnectionProvider();
     }
+    this.add(DSConnectionEvent(DSConnectionAction.refresh, null));
   }
 
   void dispose() {}
 
   static DSConnectionState get initialState {
-    late ConnectionProvider provider;
-    List<Connection> connections = [];
-    Connection? active;
-    if (kIsWeb) {
-      provider = WebConnectionProvider();
-    } else {
-      provider = MobileConnectionProvider();
-    }
-
-    provider.getAll().then((connections) async {
-      connections = connections;
-      return await provider.getDefaultConnection();
-    }).then((defaultConn) {
-      active = defaultConn;
-    });
-
-    return DSConnectionState(active, connections);
+    return DSConnectionState(null, []);
   }
 
   @override
   Stream<DSConnectionState> mapEventToState(DSConnectionEvent evt) async* {
     Connection? active;
     List<Connection?> connections = [];
+
+    if (evt.action == DSConnectionAction.refresh) {
+      connections = await _provider.getAll();
+      active = await _provider.getDefaultConnection();
+      l.info('mapEventToState(); evt.action=${evt.action}, found ${connections.length} connections.');
+    }
+
     // new connection
     if (evt.action == DSConnectionAction.add) {
       if (!_hasConnection(evt.connection!, connections)) {

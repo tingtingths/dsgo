@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:html';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:localstorage/localstorage.dart';
+import 'package:logging/logging.dart';
 import 'package:tuple/tuple.dart';
 
 import '../model/model.dart';
@@ -22,7 +23,7 @@ abstract class ConnectionProvider {
 
   Future<void> setDefaultConnection(String uri);
 
-  Future<List<Connection?>> getAll();
+  Future<List<Connection>> getAll();
 
   Future<void> add(Connection? conn);
 
@@ -34,8 +35,8 @@ abstract class ConnectionProvider {
 
   Future<Connection> get(int idx);
 
-  List<Connection?> decodeJson(String json) {
-    List<Connection?> ret = [];
+  List<Connection> decodeJson(String json) {
+    List<Connection> ret = [];
     try {
       List<dynamic> jsonArr = jsonDecode(json);
       jsonArr.forEach((json) {
@@ -63,70 +64,82 @@ abstract class ConnectionProvider {
 }
 
 class WebConnectionProvider extends ConnectionProvider {
+  final l = Logger('WebConnectionProvider');
   static final String _key = StorageKey.Connections.key;
+  final LocalStorage _storage = new LocalStorage('_dsgo');
 
   @override
   Future<void> add(Connection? conn) async {
     List<Connection?> conns = await getAll();
     conns.add(conn);
-    window.sessionStorage[_key] = encodeJson(conns);
+    _set(encodeJson(conns));
   }
 
   @override
   Future<Connection> get(int idx) {
-    return getAll().then((value) => value[idx]!);
+    return getAll().then((value) => value[idx]);
   }
 
   @override
-  Future<List<Connection?>> getAll() {
-    if (window.sessionStorage.containsKey(_key) &&
-        window.sessionStorage[_key] != '') {
-      return Future.value(decodeJson(window.sessionStorage[_key]!));
-    }
-    return Future.value([]);
+  Future<List<Connection>> getAll() {
+    return _storage.ready.then((ready) {
+      var json = _storage.getItem(_key) as String;
+      return decodeJson(json);
+    });
   }
 
   @override
   Future<String?> getDefaultConnectionUri() async {
-    String? value = window.sessionStorage[StorageKey.DefaultConnectionIndex.key];
-    if (value == null) return null;
-    try {
-      Map<String, dynamic> json = jsonDecode(value);
-      return json['defaultUri'];
-    } catch (e) {
-      print(e);
-    }
+    return _storage.ready.then((ready) {
+      String? value = _storage.getItem(StorageKey.DefaultConnectionIndex.key);
+      if (value == null) return null;
+      try {
+        Map<String, dynamic> json = jsonDecode(value);
+        return json['defaultUri'];
+      } catch (e) {
+        l.severe('getDefaultConnectionUri(); failed.', e);
+      }
+    });
   }
 
   @override
   Future<Connection?> remove(int idx) async {
     List<Connection?> conns = await getAll();
     Connection? ret = conns.removeAt(idx);
-    window.sessionStorage[_key] = encodeJson(conns);
+    _set(encodeJson(conns));
     return ret;
   }
 
   @override
   Future<void> removeAll() async {
-    window.sessionStorage[_key] = '[]';
+    _set('[]');
   }
 
   @override
   Future<List<Connection?>> replace(int idx, Connection? updated) async {
     List<Connection?> lst = await getAll();
     lst.replaceRange(idx, idx + 1, [updated]);
-    window.sessionStorage[_key] = encodeJson(lst);
+    _set(encodeJson(lst));
     return getAll();
   }
 
   @override
   Future<void> setDefaultConnection(String uri) async {
-    window.sessionStorage[StorageKey.DefaultConnectionIndex.key] =
-        jsonEncode({'defaultUri': uri});
+    _storage.ready.then((ready) {
+      _storage.setItem(StorageKey.DefaultConnectionIndex.key,
+          jsonEncode({'defaultUri': uri}));
+    });
+  }
+
+  Future<void> _set(String? json) async {
+    return _storage.ready.then((ready) {
+      _storage.setItem(_key, json);
+    });
   }
 }
 
 class MobileConnectionProvider extends ConnectionProvider {
+  final l = Logger('MobileConnectionProvider');
   static MobileConnectionProvider _instance =
       MobileConnectionProvider._internal();
   final FlutterSecureStorage _storage = FlutterSecureStorage();
@@ -153,7 +166,7 @@ class MobileConnectionProvider extends ConnectionProvider {
       Map<String, dynamic> json = jsonDecode(value);
       ret = json['defaultUri'];
     } catch (e) {
-      print(e);
+      l.severe('getDefaultConnectionUri(); failed', e);
     }
 
     return ret;
@@ -167,7 +180,7 @@ class MobileConnectionProvider extends ConnectionProvider {
   }
 
   @override
-  Future<List<Connection?>> getAll() async {
+  Future<List<Connection>> getAll() async {
     String value = await (_storage.read(key: _key) as FutureOr<String>);
     return decodeJson(value);
   }
@@ -203,6 +216,6 @@ class MobileConnectionProvider extends ConnectionProvider {
 
   @override
   Future<Connection> get(int idx) async {
-    return await getAll().then((value) => value[idx]!);
+    return await getAll().then((value) => value[idx]);
   }
 }

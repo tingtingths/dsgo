@@ -37,7 +37,7 @@ abstract class UserSettingsProvider {
 
 class WebUserSettingsProvider extends UserSettingsProvider {
   static WebUserSettingsProvider _instance = WebUserSettingsProvider._internal();
-  final LocalStorage _storage = new LocalStorage('dsgo_user_settings');
+  final LocalStorage _storage = new LocalStorage('_dsgo');
 
   factory WebUserSettingsProvider() {
     return _instance;

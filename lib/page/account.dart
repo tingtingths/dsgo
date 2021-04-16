@@ -227,7 +227,7 @@ class ManageAccountPageState extends State<ManageAccountPage> {
       builder: (context, DSConnectionState state) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Manage Accounts'),
+            title: Text('Accounts'),
           ),
           floatingActionButton: OpenContainer(
             closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),

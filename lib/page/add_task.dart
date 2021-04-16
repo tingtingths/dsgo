@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
@@ -18,6 +19,8 @@ class AddTaskForm extends StatefulWidget {
 }
 
 class AddTaskFormState extends State<AddTaskForm> {
+  final l = Logger('AddTaskFormState');
+
   final _formKey = GlobalKey<FormState>();
   var _formModel = {};
   Map<String?, MapEntry<File, int>> _torrentFiles = {};
@@ -243,7 +246,7 @@ class AddTaskFormState extends State<AddTaskForm> {
         });
       }
     } catch (e) {
-      print(e);
+      l.severe('_openFilePicker(); failed.', e);
     }
   }
 }

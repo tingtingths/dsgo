@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../model/model.dart';
@@ -108,6 +109,7 @@ class SynoApiState {
 }
 
 class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
+  final l = Logger('SynoApiBloc');
   late ConnectionProvider _provider;
   Connection? _connection;
   late APIContext _apiCntx;
@@ -128,11 +130,21 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
 
   dispose() {}
 
+  _initContext() {
+    _apiCntx = APIContext(_connection!.host!,
+        proto: _connection!.proto!, port: _connection!.port!);
+    _apiCntx.authApp(
+        'DownloadStation', _connection!.user!, _connection!.password!);
+    _dsApi = DownloadStationAPI(_apiCntx);
+  }
+
   @override
   Stream<SynoApiState> mapEventToState(SynoApiEvent event) async* {
+    l.fine('mapEventToState(); requestType=${event.requestType}');
     APIResponse? resp;
 
     if (_dsApi == null) {
+      l.warning('mapEventToState(); api is not ready');
       yield SynoApiState(event, resp);
       return;
     }
@@ -224,13 +236,5 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   set connection(Connection? value) {
     _connection = value;
     _initContext();
-  }
-
-  _initContext() {
-    _apiCntx = APIContext(_connection!.host!,
-        proto: _connection!.proto!, port: _connection!.port!);
-    _apiCntx.authApp(
-        'DownloadStation', _connection!.user!, _connection!.password!);
-    _dsApi = DownloadStationAPI(_apiCntx);
   }
 }

@@ -1,5 +1,11 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart' show IterableExtension;
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:morpheus/morpheus.dart';
+import 'package:synoapi/synoapi.dart';
+
 import '../bloc/connection_bloc.dart';
 import '../bloc/syno_api_bloc.dart';
 import '../bloc/ui_evt_bloc.dart';
@@ -9,11 +15,6 @@ import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
-import 'package:collection/collection.dart' show IterableExtension;
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:morpheus/morpheus.dart';
-import 'package:synoapi/synoapi.dart';
 
 class TaskList extends StatefulWidget {
   UserSettings? settings;
@@ -28,7 +29,6 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
   ListTaskInfo? taskInfo;
   Connection? _connection;
   var filter = '';
-  bool _fetching = false;
   late TextTheme textTheme;
   List<GlobalKey> _cardKeys = [];
   Map<String, StreamSubscription> _subscriptions = {};
@@ -48,32 +48,31 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
   }
 
   void initFetch() {
-    if (_connection == null || _fetching) return;
+    if (_connection == null) return;
+    l.info('initFetch(); host=${_connection!.host}');
+    if (_connection == null) return;
 
     _subscriptions[fetchingStreamKey]?.cancel();
 
-    _fetching = true;
     uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
+    apiBloc.connection = _connection;
     apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
       'additional': ['transfer'],
       '_reqId': 'init_state_request'
     }));
 
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event != null &&
           state.event!.requestType == RequestType.task_list &&
           'init_state_request' == state.event!.params['_reqId']) {
         _subscriptions[fetchingStreamKey] =
             Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
-          if (_connection == null || _fetching) return;
-
-          _fetching = true;
+          if (_connection == null) return;
           uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
           apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
             'additional': ['transfer']
           }));
         });
-        _fetching = false;
       }
     });
   }
@@ -85,7 +84,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     uiBloc = BlocProvider.of<UiEventBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event != null && state.event!.requestType == RequestType.task_list) {
         APIResponse<ListTaskInfo>? info = state.resp as APIResponse<ListTaskInfo>?;
         if (info == null) return;
@@ -97,7 +96,6 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
           BlocProvider.of<UiEventBloc>(context)
               .add(UiEventState(null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
         }
-        _fetching = false;
       }
 
       if (state.event != null && state.event!.requestType == RequestType.remove_task) {
@@ -186,8 +184,8 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
           String? remainingTime;
           if (task.status == TaskStatus.downloading) {
-            var remainingSeconds =
-                (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) / (task.additional?.transfer?.speedDownload ?? 0);
+            var remainingSeconds = (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) /
+                (task.additional?.transfer?.speedDownload ?? 0);
             remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
             remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 1);
           }
@@ -198,7 +196,6 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
           );
 
           var statusIcon = _getStatusIcon(task.status, () {
-            print('icon selected');
             var params = {
               'ids': [task.id]
             };
