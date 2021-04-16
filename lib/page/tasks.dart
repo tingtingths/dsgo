@@ -9,13 +9,14 @@ import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
 import 'package:synoapi/synoapi.dart';
 
 class TaskList extends StatefulWidget {
-  UserSettings settings;
+  UserSettings? settings;
 
   TaskList(this.settings);
 
@@ -24,19 +25,19 @@ class TaskList extends StatefulWidget {
 }
 
 class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin {
-  ListTaskInfo taskInfo;
-  Connection _connection;
+  ListTaskInfo? taskInfo;
+  Connection? _connection;
   var filter = '';
   bool _fetching = false;
-  TextTheme textTheme;
+  late TextTheme textTheme;
   List<GlobalKey> _cardKeys = [];
   Map<String, StreamSubscription> _subscriptions = {};
-  SynoApiBloc apiBloc;
-  UiEventBloc uiBloc;
+  late SynoApiBloc apiBloc;
+  late UiEventBloc uiBloc;
   List<Task> pendingRemove = [];
-  Timer pendingRemoveCountdown;
+  Timer? pendingRemoveCountdown;
   static const String fetchingStreamKey = 'STREAM_FETCH';
-  UserSettings settings;
+  UserSettings? settings;
 
   _TaskListState(this.settings);
 
@@ -60,10 +61,10 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
     apiBloc.listen((state) {
       if (state.event != null &&
-          state.event.requestType == RequestType.task_list &&
-          'init_state_request' == state.event.params['_reqId']) {
+          state.event!.requestType == RequestType.task_list &&
+          'init_state_request' == state.event!.params['_reqId']) {
         _subscriptions[fetchingStreamKey] =
-            Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) async {
+            Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
           if (_connection == null || _fetching) return;
 
           _fetching = true;
@@ -85,8 +86,8 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
 
     apiBloc.listen((state) {
-      if (state.event != null && state.event.requestType == RequestType.task_list) {
-        APIResponse<ListTaskInfo> info = state.resp;
+      if (state.event != null && state.event!.requestType == RequestType.task_list) {
+        APIResponse<ListTaskInfo>? info = state.resp as APIResponse<ListTaskInfo>?;
         if (info == null) return;
 
         if (mounted && info.success) {
@@ -99,8 +100,8 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
         _fetching = false;
       }
 
-      if (state.event != null && state.event.requestType == RequestType.remove_task) {
-        pendingRemove.removeWhere((task) => state.event.params['ids'].contains(task.id));
+      if (state.event != null && state.event!.requestType == RequestType.remove_task) {
+        pendingRemove.removeWhere((task) => state.event!.params['ids'].contains(task.id));
       }
     });
 
@@ -144,7 +145,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
         var count = info.tasks.length;
         var tasks = List<Task>.from(info.tasks);
         pendingRemove.forEach((pendingRemove) {
-          var found = tasks.firstWhere((task) => task.id == pendingRemove.id, orElse: () => null);
+          var found = tasks.firstWhereOrNull((task) => task.id == pendingRemove.id);
           if (found == null) return;
 
           count -= 1;
@@ -168,7 +169,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
           var task = tasks[idx];
 
           if (filter != null && filter.trim().isNotEmpty) {
-            var sanitizedTitle = task.title.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+            var sanitizedTitle = task.title!.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
             var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
             if (!sanitizedTitle.contains(sanitizedMatcher)) {
               return SizedBox.shrink();
@@ -177,18 +178,18 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
           var totalSize = humanifySize(task.size);
           var downloaded = humanifySize(task.additional?.transfer?.sizeDownloaded);
-          var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size;
+          var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size!;
           progress = progress.isFinite ? progress : 0;
           var downSpeed = humanifySize(task.additional?.transfer?.speedDownload ?? 0, p: 0) + '/s';
           var upSpeed = humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) + '/s';
           var progressText = fmtNum(progress * 100, p: 0);
 
-          String remainingTime;
+          String? remainingTime;
           if (task.status == TaskStatus.downloading) {
             var remainingSeconds =
-                (task.size - task.additional?.transfer?.sizeDownloaded) / task.additional?.transfer?.speedDownload;
+                (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) / (task.additional?.transfer?.speedDownload ?? 0);
             remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-            remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 1);
+            remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 1);
           }
 
           var progressBar = LinearProgressIndicator(
@@ -275,10 +276,10 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
                     });
                   },
                   title: Text(
-                    task.title,
+                    task.title!,
                     overflow: TextOverflow.fade,
                     softWrap: false,
-                    style: TextStyle(fontSize: Theme.of(context).textTheme.headline6.fontSize),
+                    style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,19 +287,19 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
                       Divider(
                         height: 5,
                       ),
-                      Text((['seeding', 'finished'].contains(task.status.name.toLowerCase())
-                          ? '${task.status.name.capitalize()}'
-                          : '$progressText% | ${task.status.name.capitalize()}' +
+                      Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
+                          ? '${task.status!.name.capitalize()}'
+                          : '$progressText% | ${task.status!.name.capitalize()}' +
                               (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
                       Text('$downloaded of $totalSize'),
                       Row(
                         children: [
                           Icon(
                             Icons.arrow_downward,
-                            size: textTheme.bodyText1.fontSize,
+                            size: textTheme.bodyText1!.fontSize,
                           ),
                           Text(downSpeed),
-                          Icon(Icons.arrow_upward, size: textTheme.bodyText1.fontSize),
+                          Icon(Icons.arrow_upward, size: textTheme.bodyText1!.fontSize),
                           Text(upSpeed),
                         ],
                       )
@@ -317,20 +318,20 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     );
   }
 
-  void removeTaskFromModel(String taskId) {
-    var found = taskInfo.tasks.firstWhere((t) => t.id == taskId, orElse: () => null);
+  void removeTaskFromModel(String? taskId) {
+    var found = taskInfo!.tasks.firstWhereOrNull((t) => t.id == taskId);
 
     if (found != null) {
       setState(() {
-        taskInfo.tasks.remove(found);
-        taskInfo.total -= 1;
+        taskInfo!.tasks.remove(found);
+        taskInfo!.total -= 1;
       });
       pendingRemove.add(found);
       var confirmDuration = Duration(seconds: 4);
 
       // reset timer
       if (pendingRemoveCountdown != null) {
-        pendingRemoveCountdown.cancel();
+        pendingRemoveCountdown!.cancel();
       }
       pendingRemoveCountdown = Timer(confirmDuration, () {
         apiBloc
@@ -347,7 +348,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
-                pendingRemoveCountdown.cancel();
+                pendingRemoveCountdown!.cancel();
                 pendingRemoveCountdown = null;
                 setState(() {
                   pendingRemove.clear();
@@ -359,7 +360,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     }
   }
 
-  Widget _getStatusIcon(TaskStatus status, Function onPressed, {Function onLongPress}) {
+  Widget _getStatusIcon(TaskStatus? status, Function onPressed, {Function? onLongPress}) {
     Color color = Colors.grey;
     double size = 38;
     Icon icon = Icon(Icons.info_outline);
@@ -404,16 +405,18 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
         color = Colors.deepOrange;
         icon = Icon(Icons.hourglass_empty);
         break;
+      case null:
+        break;
     }
 
     return GestureDetector(
-      onTap: onPressed,
-      onLongPress: onLongPress,
+      onTap: onPressed as void Function()?,
+      onLongPress: onLongPress as void Function()?,
       child: IconButton(
         iconSize: size,
         icon: icon,
         color: color,
-        onPressed: onPressed,
+        onPressed: onPressed as void Function()?,
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
       ),

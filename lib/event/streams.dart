@@ -14,26 +14,26 @@ class StreamManager {
     _streams[streamName] = controller;
   }
 
-  StreamController<T> controller<T>(String streamName, {StreamController defaultController}) {
+  StreamController<T>? controller<T>(String streamName, {StreamController? defaultController}) {
     if (defaultController != null) {
-      return _putIfAbsent(streamName, defaultController);
+      return _putIfAbsent(streamName, defaultController) as StreamController<T>?;
     }
-    return _streams[streamName];
+    return _streams[streamName] as StreamController<T>?;
   }
 
-  StreamController unregister(String streamName) {
+  StreamController? unregister(String streamName) {
     return _streams.remove(streamName);
   }
 
-  Stream<T> stream<T>(String streamName, {StreamController defaultController}) {
+  Stream<T>? stream<T>(String streamName, {StreamController? defaultController}) {
     if (defaultController != null) {
-      return _putIfAbsent(streamName, defaultController).stream;
+      return _putIfAbsent(streamName, defaultController)!.stream as Stream<T>?;
     }
 
-    return _streams[streamName]?.stream;
+    return _streams[streamName]?.stream as Stream<T>?;
   }
 
-  StreamController _putIfAbsent(String streamName, StreamController controller) {
+  StreamController? _putIfAbsent(String streamName, StreamController controller) {
     if (!_streams.containsKey(streamName)) {
       register(streamName, controller);
     }

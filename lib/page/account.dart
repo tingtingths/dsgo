@@ -8,10 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AccountForm extends StatefulWidget {
-  int _idx;
-  Connection _connection;
+  int? _idx;
+  Connection? _connection;
 
-  AccountForm.edit(int idx, Connection connection) {
+  AccountForm.edit(int idx, Connection? connection) {
     _idx = idx;
     _connection = connection;
   }
@@ -24,11 +24,11 @@ class AccountForm extends StatefulWidget {
 
 class _AccountFormState extends State<AccountForm> {
   final _formKey = GlobalKey<FormState>();
-  int _idx;
-  Connection _connection;
+  int? _idx;
+  Connection? _connection;
   MobileConnectionProvider _connectionProvider = MobileConnectionProvider();
-  DSConnectionBloc connectionBloc;
-  SynoApiBloc apiBloc;
+  late DSConnectionBloc connectionBloc;
+  late SynoApiBloc apiBloc;
   Map<String, FocusNode> fieldFocus = {};
 
   _AccountFormState(this._idx, this._connection);
@@ -55,7 +55,7 @@ class _AccountFormState extends State<AccountForm> {
   Widget build(BuildContext context) {
     if (_connection == null) {
       _connection = Connection.empty();
-      _connection.proto = 'https';
+      _connection!.proto = 'https';
     }
 
     return Scaffold(
@@ -74,8 +74,8 @@ class _AccountFormState extends State<AccountForm> {
               children: <Widget>[
                 DropdownButtonFormField(
                   decoration: InputDecoration(labelText: 'Protocol'),
-                  onChanged: (proto) {
-                    _connection.proto = proto;
+                  onChanged: (dynamic proto) {
+                    _connection!.proto = proto;
                     setState(() {});
                   },
                   items: <DropdownMenuItem>[
@@ -88,7 +88,7 @@ class _AccountFormState extends State<AccountForm> {
                       child: Text('HTTP'),
                     ),
                   ],
-                  value: _connection.proto,
+                  value: _connection!.proto,
                 ),
                 TextFormField(
                   keyboardType: TextInputType.url,
@@ -102,13 +102,13 @@ class _AccountFormState extends State<AccountForm> {
                   ),
                   initialValue: _connection?.host,
                   onSaved: (host) {
-                    _connection.host = host.trim();
+                    _connection!.host = host!.trim();
                   },
                   onFieldSubmitted: (host) {
-                    fieldFocus['port'].requestFocus();
+                    fieldFocus['port']!.requestFocus();
                   },
                   validator: (value) {
-                    if (value.trim().isEmpty) {
+                    if (value!.trim().isEmpty) {
                       return 'Cannot be empty';
                     }
                     return null;
@@ -126,17 +126,17 @@ class _AccountFormState extends State<AccountForm> {
                   initialValue: _connection?.port?.toString() ?? '',
                   onSaved: (port) {
                     try {
-                      _connection.port = int.parse(port.trim());
+                      _connection!.port = int.parse(port!.trim());
                     } catch (e) {
-                      _connection.port = null;
+                      _connection!.port = null;
                     }
                     setState(() {});
                   },
                   onFieldSubmitted: (port) {
-                    fieldFocus['user'].requestFocus();
+                    fieldFocus['user']!.requestFocus();
                   },
                   validator: (port) {
-                    if (port.trim().isEmpty) {
+                    if (port!.trim().isEmpty) {
                       return 'Cannot be empty';
                     }
                     try {
@@ -157,14 +157,14 @@ class _AccountFormState extends State<AccountForm> {
                   ),
                   initialValue: _connection?.user?.toString() ?? '',
                   onSaved: (user) {
-                    _connection.user = user.trim();
+                    _connection!.user = user!.trim();
                     setState(() {});
                   },
                   onFieldSubmitted: (user) {
-                    fieldFocus['password'].requestFocus();
+                    fieldFocus['password']!.requestFocus();
                   },
                   validator: (user) {
-                    if (user.trim().isEmpty) {
+                    if (user!.trim().isEmpty) {
                       return 'Cannot be empty';
                     }
                     return null;
@@ -179,7 +179,7 @@ class _AccountFormState extends State<AccountForm> {
                   obscureText: true,
                   initialValue: _connection?.password?.toString() ?? '',
                   onSaved: (password) {
-                    _connection.password = password;
+                    _connection!.password = password;
                     setState(() {});
                   },
                 ),
@@ -189,13 +189,13 @@ class _AccountFormState extends State<AccountForm> {
                 RaisedButton(
                   child: Text('Save'),
                   onPressed: () {
-                    if (!_formKey.currentState.validate()) {
+                    if (!_formKey.currentState!.validate()) {
                       return;
                     }
-                    _formKey.currentState.save();
+                    _formKey.currentState!.save();
 
                     apiBloc.connection = _connection;
-                    if (_idx != null && _idx >= 0) {
+                    if (_idx != null && _idx! >= 0) {
                       connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection));
                     } else {
                       connectionBloc.add(DSConnectionEvent(DSConnectionAction.add, _connection));
@@ -253,12 +253,12 @@ class ManageAccountPageState extends State<ManageAccountPage> {
                 );
               },
               itemBuilder: (context, index) {
-                Connection conn = state.connections[index];
+                Connection? conn = state.connections[index];
                 return OpenContainer(
                   closedColor: Theme.of(context).scaffoldBackgroundColor,
                   closedBuilder: (context, openContainerCallback) {
                     return ListTile(
-                      title: Text(conn.buildUri()),
+                      title: Text(conn!.buildUri()),
                       subtitle: conn.buildUri() == state.activeConnection?.buildUri()
                           ? Text(
                               'Active',

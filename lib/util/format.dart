@@ -1,4 +1,4 @@
-String humanifySize(int sizeBytes, {int p: 1}) {
+String humanifySize(int? sizeBytes, {int p: 1}) {
   if (sizeBytes == null || sizeBytes <= 0) return '0 B';
 
   var unit = [
@@ -11,7 +11,7 @@ String humanifySize(int sizeBytes, {int p: 1}) {
 
   var i = 0;
   while (true) {
-    var r = sizeBytes / unit[i].elementAt(0);
+    var r = sizeBytes / (unit[i].elementAt(0) as num);
     if (r >= 1) {
       return '${fmtNum(r, p: p)} ${unit[i].elementAt(1)}';
     }
@@ -21,7 +21,7 @@ String humanifySize(int sizeBytes, {int p: 1}) {
   return '?';
 }
 
-String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int currentUnit: 1, String defaultStr: ''}) {
+String humanifySeconds(int? duration, {int accuracy: 0, int? maxUnits, int currentUnit: 1, String defaultStr: ''}) {
   if (duration == null || duration <= 0 || duration <= accuracy) return defaultStr;
 
   var unit = [
@@ -33,10 +33,10 @@ String humanifySeconds(int duration, {int accuracy: 0, int maxUnits, int current
 
   var i = 0;
   while (true) {
-    var r = duration / unit[i].elementAt(0);
+    var r = duration / (unit[i].elementAt(0) as num);
     if (r >= 1) {
       int floored = r.floor();
-      int rem = duration - floored * unit[i].elementAt(0);
+      int rem = duration - floored * (unit[i].elementAt(0) as int);
       String trailing = '';
       if (rem > 0) {
         if (maxUnits != null && currentUnit != null && maxUnits > currentUnit) {

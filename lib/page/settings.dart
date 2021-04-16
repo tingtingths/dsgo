@@ -9,8 +9,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class SettingsPageState extends State<SettingsPage> {
-  UserSettingsProvider settingsProvider;
-  UserSettings settings;
+  late UserSettingsProvider settingsProvider;
+  UserSettings? settings;
 
   @override
   void initState() {
@@ -46,11 +46,11 @@ class SettingsPageState extends State<SettingsPage> {
                 trailing: Container(
                   width: 50,
                   child: TextFormField(
-                    initialValue: settings.apiRequestFrequency.toRadixString(10),
+                    initialValue: settings!.apiRequestFrequency!.toRadixString(10),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
                       setState(() {
-                        settings.apiRequestFrequency = int.parse(value);
+                        settings!.apiRequestFrequency = int.parse(value);
                       });
                       settingsProvider.set(settings);
                     },
@@ -62,16 +62,16 @@ class SettingsPageState extends State<SettingsPage> {
                 trailing: Container(
                     width: 100,
                     child: DropdownButton(
-                      value: settings.themeMode,
+                      value: settings!.themeMode,
                       items: ThemeMode.values.map((val) {
                         return DropdownMenuItem<ThemeMode>(
                           value: val,
                           child: Text(val.text),
                         );
                       }).toList(),
-                      onChanged: (val) {
+                      onChanged: (dynamic val) {
                         setState(() {
-                          settings.themeMode = val;
+                          settings!.themeMode = val;
                         });
                         settingsProvider.set(settings);
                       },

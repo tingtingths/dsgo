@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -19,10 +20,10 @@ class AddTaskForm extends StatefulWidget {
 class AddTaskFormState extends State<AddTaskForm> {
   final _formKey = GlobalKey<FormState>();
   var _formModel = {};
-  Map<String, MapEntry<File, int>> _torrentFiles = {};
-  SynoApiBloc apiBloc;
-  String _reqId;
-  Uuid _uuid;
+  Map<String?, MapEntry<File, int>> _torrentFiles = {};
+  late SynoApiBloc apiBloc;
+  String? _reqId;
+  late Uuid _uuid;
   bool _submitBtn = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -61,7 +62,7 @@ class AddTaskFormState extends State<AddTaskForm> {
     final uiBloc = BlocProvider.of<UiEventBloc>(context);
     final textBtnStyle = Theme.of(context)
         .textTheme
-        .button
+        .button!
         .copyWith(color: Theme.of(context).accentColor);
     final textHdrStyle = Theme.of(context).textTheme.headline6;
     final textSeparatorStyle = Theme.of(context).textTheme.caption;
@@ -80,7 +81,7 @@ class AddTaskFormState extends State<AddTaskForm> {
             icon: Icon(Icons.done),
             onPressed: _submitBtn
                 ? () {
-                    _scaffoldKey.currentState
+                    _scaffoldKey.currentState!
                         .showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task
@@ -169,8 +170,8 @@ class AddTaskFormState extends State<AddTaskForm> {
                           );
                         },
                         itemBuilder: (context, idx) {
-                          var filepath = _torrentFiles.keys.toList()[idx];
-                          var entry = _torrentFiles[filepath];
+                          var filepath = _torrentFiles.keys.toList()[idx]!;
+                          var entry = _torrentFiles[filepath]!;
                           var len = entry.value;
 
                           return Dismissible(
@@ -217,22 +218,22 @@ class AddTaskFormState extends State<AddTaskForm> {
     );
   }
 
-  List<String> _splitAndTrim(String delimiter, String s) {
+  List<String> _splitAndTrim(String delimiter, String? s) {
     return s?.split(delimiter)?.where((e) => e.trim() != '')?.toList() ?? [];
   }
 
   void _openFilePicker() async {
     try {
-      FilePickerResult filePickerResult = await FilePicker.platform.pickFiles(
+      FilePickerResult filePickerResult = await (FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['torrent'],
-      );
+      ) as FutureOr<FilePickerResult>);
       List<PlatformFile> files = filePickerResult.files;
 
       if (mounted) {
         setState(() {
           _torrentFiles.addAll(
-              Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
+              Map<String?, MapEntry<File, int>>.fromIterable(files, key: (f) {
             var _f = f as PlatformFile;
             return _f.path;
           }, value: (f) {

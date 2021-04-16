@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-void copyToClipboard(String text, BuildContext context) {
+void copyToClipboard(String? text, BuildContext context) {
   if (text == null) return;
   Clipboard.setData(ClipboardData(text: text)).then((value) {
     Scaffold.of(context).showSnackBar(SnackBar(
@@ -12,7 +12,7 @@ void copyToClipboard(String text, BuildContext context) {
 }
 
 SnackBar buildSnackBar(String text,
-    {Duration duration: const Duration(days: 365), SnackBarAction action, bool showProgressIndicator: true}) {
+    {Duration duration: const Duration(days: 365), SnackBarAction? action, bool showProgressIndicator: true}) {
   var children = <Widget>[Text(text)];
 
   if (showProgressIndicator) {
@@ -31,4 +31,17 @@ SnackBar buildSnackBar(String text,
       children: children,
     ),
   );
+}
+
+V? mapGet<K, V>(Map<K, dynamic>? dict, K key, {otherwise, Function? mapper, Function(V value)? ifPresent}) {
+  if (dict == null || !dict.containsKey(key) || dict[key] == null) {
+    return otherwise;
+  }
+
+  if (ifPresent != null) {
+    ifPresent(dict[key]);
+  }
+
+  if (mapper != null) return mapper(dict[key]);
+  return dict[key];
 }

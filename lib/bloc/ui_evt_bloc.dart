@@ -11,7 +11,7 @@ enum UiEvent {
 
 class UiEventState {
   dynamic initiator;
-  UiEvent event;
+  UiEvent? event;
   List<dynamic> payload = [];
 
   UiEventState(this.initiator, this.event, this.payload);

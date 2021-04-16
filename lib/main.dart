@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:animations/animations.dart';
+import 'package:flutter/foundation.dart';
 import 'bloc/connection_bloc.dart';
 import 'bloc/delegate.dart';
 import 'bloc/syno_api_bloc.dart';
@@ -26,18 +27,27 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
-  UserSettings settings;
+  UserSettings? settings;
+  late UserSettingsProvider userSettingsProvider;
+
+  MyAppState() {
+    if (kIsWeb) {
+      userSettingsProvider = WebUserSettingsProvider();
+    } else {
+      userSettingsProvider = MobileUserSettingsProvider();
+    }
+  }
 
   @override
   void initState() {
-    MobileUserSettingsProvider().get().then((settings) {
+    userSettingsProvider.get().then((settings) {
       if (mounted) {
         setState(() {
           this.settings = settings;
         });
       }
     });
-    MobileUserSettingsProvider().onSet().listen((settings) {
+    userSettingsProvider.onSet()!.listen((settings) {
       if (mounted) {
         setState(() {
           this.settings = settings;
@@ -72,7 +82,7 @@ class MyAppState extends State<MyApp> {
       ],
       child: MaterialApp(
         home: Material(child: MyScaffold(settings)),
-        themeMode: settings.themeMode,
+        themeMode: settings!.themeMode,
         theme: ThemeData.light().copyWith(
           iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
         ),
@@ -83,7 +93,7 @@ class MyAppState extends State<MyApp> {
 }
 
 class MyScaffold extends StatefulWidget {
-  UserSettings settings;
+  UserSettings? settings;
 
   MyScaffold(this.settings);
 
@@ -94,17 +104,17 @@ class MyScaffold extends StatefulWidget {
 class MyScaffoldState extends State<MyScaffold> {
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   var _searchController = TextEditingController();
-  UiEventBloc uiBloc;
-  SynoApiBloc apiBloc;
-  DSConnectionBloc connBloc;
+  late UiEventBloc uiBloc;
+  late SynoApiBloc apiBloc;
+  DSConnectionBloc? connBloc;
   List<StreamSubscription> _subs = [];
   var _fetching = false;
   var totalUp = 0;
   var totalDown = 0;
   var infoWidgets = <Widget>[];
   var _addTaskReqId;
-  List<String> taskIds = [];
-  UserSettings settings;
+  List<String?> taskIds = [];
+  UserSettings? settings;
 
   MyScaffoldState(this.settings);
 
@@ -126,7 +136,7 @@ class MyScaffoldState extends State<MyScaffold> {
       if (mounted) setState(() {});
     });
 
-    _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) {
       if (!_fetching) {
         apiBloc.add(SynoApiEvent(RequestType.statistic_info));
       }
@@ -135,18 +145,18 @@ class MyScaffoldState extends State<MyScaffold> {
     apiBloc.listen((SynoApiState state) {
       // get statistic
       if (state.event?.requestType == RequestType.statistic_info && state.resp?.data != null) {
-        var info = state.resp.data as DownloadStationStatisticGetInfo;
+        var info = state.resp!.data as DownloadStationStatisticGetInfo?;
         setState(() {
-          totalDown = info.speedDownload ?? 0 + info.emuleSpeedDownload ?? 0;
-          totalUp = info.speedUpload ?? 0 + info.emuleSpeedUpload ?? 0;
+          totalDown = (info?.speedDownload ?? 0) + (info?.emuleSpeedDownload ?? 0);
+          totalUp = (info?.speedUpload ?? 0) + (info?.emuleSpeedUpload ?? 0);
         });
       }
 
       if (state.event?.requestType == RequestType.task_list) {
-        APIResponse<ListTaskInfo> info = state.resp;
+        APIResponse<ListTaskInfo>? info = state.resp as APIResponse<ListTaskInfo>?;
         if (info?.data == null) return;
 
-        taskIds.replaceRange(0, taskIds.length, info.data.tasks.map((task) => task.id).toList());
+        taskIds.replaceRange(0, taskIds.length, info!.data!.tasks.map((task) => task.id).toList());
       }
     });
 
@@ -187,7 +197,7 @@ class MyScaffoldState extends State<MyScaffold> {
                         leading: IconButton(
                           icon: Icon(Icons.menu),
                           onPressed: () {
-                            _scaffoldKey.currentState.openDrawer();
+                            _scaffoldKey.currentState!.openDrawer();
                           },
                         ),
                         title: TextField(
@@ -217,9 +227,9 @@ class MyScaffoldState extends State<MyScaffold> {
         openBuilder: (context, CloseContainerActionCallback<String> closeContainerCallback) {
           return AddTaskForm();
         },
-        onClosed: (String data) {
+        onClosed: (String? data) {
           if (data != null) {
-            var scaffold = _scaffoldKey.currentState;
+            var scaffold = _scaffoldKey.currentState!;
             scaffold.removeCurrentSnackBar();
             scaffold.showSnackBar(SnackBar(
               content: Text(data),
@@ -244,8 +254,8 @@ class MyScaffoldState extends State<MyScaffold> {
                       onPressed: () {
                         // start all tasks
                         apiBloc.add(SynoApiEvent.resumeTask(taskIds, onCompleted: (state) {
-                          if (state.resp.success) {
-                            _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Tasks resumed.')));
+                          if (state.resp!.success) {
+                            _scaffoldKey.currentState!.showSnackBar(SnackBar(content: Text('Tasks resumed.')));
                           }
                         }));
                       },
@@ -255,8 +265,8 @@ class MyScaffoldState extends State<MyScaffold> {
                       onPressed: () {
                         // pause all tasks
                         apiBloc.add(SynoApiEvent.pauseTask(taskIds, onCompleted: (state) {
-                          if (state.resp.success) {
-                            _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Tasks paused.')));
+                          if (state.resp!.success) {
+                            _scaffoldKey.currentState!.showSnackBar(SnackBar(content: Text('Tasks paused.')));
                           }
                         }));
                       },
@@ -285,13 +295,13 @@ class MyScaffoldState extends State<MyScaffold> {
                                         onPressed: () {
                                           // submit task
                                           Navigator.of(context).pop();
-                                          _scaffoldKey.currentState.showSnackBar(buildSnackBar('Submitting tasks...'));
+                                          _scaffoldKey.currentState!.showSnackBar(buildSnackBar('Submitting tasks...'));
                                           apiBloc.add(SynoApiEvent.addTask(
                                             uris: [text],
                                             onCompleted: (state) {
-                                              _scaffoldKey.currentState.removeCurrentSnackBar();
-                                              if (state.resp.success) {
-                                                _scaffoldKey.currentState.showSnackBar(SnackBar(
+                                              _scaffoldKey.currentState!.removeCurrentSnackBar();
+                                              if (state.resp!.success) {
+                                                _scaffoldKey.currentState!.showSnackBar(SnackBar(
                                                   content: Text('Task Submitted.'),
                                                 ));
                                               }
@@ -303,8 +313,8 @@ class MyScaffoldState extends State<MyScaffold> {
                                   );
                                 });
                           } else {
-                            _scaffoldKey.currentState.removeCurrentSnackBar();
-                            _scaffoldKey.currentState.showSnackBar(SnackBar(
+                            _scaffoldKey.currentState!.removeCurrentSnackBar();
+                            _scaffoldKey.currentState!.showSnackBar(SnackBar(
                               content: Text('No Uri in clipboard...'),
                               duration: Duration(milliseconds: 500),
                             ));

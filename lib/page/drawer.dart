@@ -24,7 +24,7 @@ class _MyDrawerHeader extends StatefulWidget {
 class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
   bool _expandConnection = false;
   Function(bool) _btnCallback;
-  Connection _connection;
+  Connection? _connection;
   PackageInfo packageInfo = PackageInfo(
     appName: 'Unknown',
     packageName: 'Unknown',
@@ -64,10 +64,10 @@ class _MyDrawerHeaderState extends State<_MyDrawerHeader> {
               Expanded(
                 child: BlocBuilder<DSConnectionBloc, DSConnectionState>(
                   builder: (cntx, state) {
-                    var text = 'Add an account...';
+                    String? text = 'Add an account...';
                     if (state.activeConnection != null) {
-                      text = state.activeConnection.friendlyName;
-                      text = text == null ? state.activeConnection.buildUri() : text;
+                      text = state.activeConnection!.friendlyName;
+                      text = text == null ? state.activeConnection!.buildUri() : text;
                     }
 
                     return Text(
@@ -103,14 +103,14 @@ class _MyDrawerState extends State<MyDrawer> {
   var _list = <Widget>[];
   var _connectionListItemIdx = [];
   var _connectionCntrListItemIdx = [];
-  DSConnectionBloc bloc;
+  late DSConnectionBloc bloc;
   GlobalKey _addAcBtnKey = GlobalKey();
   GlobalKey _settingsBtnKey = GlobalKey();
   GlobalKey _manageAccountBtnKey = GlobalKey();
-  PackageInfo packageInfo;
+  PackageInfo? packageInfo;
 
   @override
-  Future<void> initState() {
+  Future<void> initState() async {
     bloc = BlocProvider.of<DSConnectionBloc>(context);
 
     PackageInfo.fromPlatform().then((packageInfo) {
@@ -131,7 +131,7 @@ class _MyDrawerState extends State<MyDrawer> {
     return BlocBuilder<DSConnectionBloc, DSConnectionState>(
       builder: (BuildContext context, DSConnectionState state) {
         var activeConnection = state.activeConnection;
-        var connections = state.connections ?? [];
+        var connections = state.connections;
 
         int itmIdx = 0;
         if (!_inited) {
@@ -179,14 +179,14 @@ class _MyDrawerState extends State<MyDrawer> {
             AboutListTile(
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
-              applicationName: packageInfo.appName,
-              applicationVersion: '${packageInfo.version}-${packageInfo.buildNumber}',
+              applicationName: packageInfo!.appName,
+              applicationVersion: '${packageInfo!.version}-${packageInfo!.buildNumber}',
               applicationLegalese: '@ 2020 Ho Shing Ting',
               aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
             )
           ]);
         } else {
-          _listKey.currentState.setState(() {
+          _listKey.currentState!.setState(() {
             expandConnection = expandConnection;
           });
         }
@@ -200,14 +200,14 @@ class _MyDrawerState extends State<MyDrawer> {
             });
             _connectionListItemIdx = [];
             connections.forEach((c) {
-              var isActive = activeConnection?.buildUri() == c.buildUri();
+              var isActive = activeConnection?.buildUri() == c!.buildUri();
               _insertItem(++itmIdx, _buildConnectionWidget(c, isActive));
               _connectionListItemIdx.add(itmIdx);
             });
           } else {
             // replace
             connections.forEach((c) {
-              var isActive = activeConnection?.buildUri() == c.buildUri();
+              var isActive = activeConnection?.buildUri() == c!.buildUri();
               _list[++itmIdx] = _buildConnectionWidget(c, isActive);
             });
           }
@@ -269,7 +269,7 @@ class _MyDrawerState extends State<MyDrawer> {
               ),
               Text(
                 '@ 2020 Ho Shing Ting',
-                style: TextStyle(color: Theme.of(context).textTheme.subtitle2.color.withAlpha(100)),
+                style: TextStyle(color: Theme.of(context).textTheme.subtitle2!.color!.withAlpha(100)),
               )
             ],
           )),
@@ -280,13 +280,13 @@ class _MyDrawerState extends State<MyDrawer> {
 
   _insertItem(int idx, Widget widget) {
     _list.insert(idx, widget);
-    _listKey.currentState.insertItem(idx, duration: Duration(milliseconds: 150));
+    _listKey.currentState!.insertItem(idx, duration: Duration(milliseconds: 150));
   }
 
   _removeItem(int idx) {
     if (_list.length < idx + 1) return;
     var widget = _list.removeAt(idx);
-    _listKey.currentState.removeItem(idx, (cntx, anim) {
+    _listKey.currentState!.removeItem(idx, (cntx, anim) {
       return _listItemBuilder(cntx, widget, anim);
     }, duration: Duration(milliseconds: 150));
   }

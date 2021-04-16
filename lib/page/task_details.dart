@@ -6,6 +6,7 @@ import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,7 @@ import 'package:uuid/uuid.dart';
 
 class TaskDetailsPage extends StatefulWidget {
   Task _task;
-  UserSettings settings;
+  UserSettings? settings;
 
   TaskDetailsPage(this._task, this.settings) : assert(_task != null, settings != null);
 
@@ -25,13 +26,13 @@ class TaskDetailsPage extends StatefulWidget {
 
 class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderStateMixin {
   Task _task;
-  List<Tab> tabs;
-  TabController tabController;
+  late List<Tab> tabs;
+  TabController? tabController;
   bool _fetching = false;
-  String _fetchingId;
-  Uuid _uuid;
+  String? _fetchingId;
+  late Uuid _uuid;
   List<StreamSubscription> _subs = [];
-  UserSettings settings;
+  UserSettings? settings;
 
   TaskDetailsPageState(this._task, this.settings) : assert(_task != null, settings != null);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -61,7 +62,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
       '_fetchingId': _fetchingId
     }));
 
-    _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) {
       if (!_fetching) {
         _fetchingId = _uuid.v4();
         apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
@@ -72,18 +73,18 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
     }));
 
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info &&
-          (state.event.params ?? {})['_fetchingId'] == _fetchingId) {
+      if (state.event!.requestType == RequestType.task_info &&
+          (state.event!.params)['_fetchingId'] == _fetchingId) {
         _fetching = false;
 
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -106,7 +107,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(_task.title),
+        title: Text(_task.title!),
         bottom: TabBar(isScrollable: false, tabs: tabs, controller: tabController),
       ),
       body: TabBarView(
@@ -137,9 +138,9 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
   DateFormat dtFmt = DateFormat.yMd().add_jm();
 
   GeneralTaskInfoTabState(this._task) : assert(_task != null);
-  SynoApiBloc apiBloc;
-  Uuid _uuid;
-  String _reqId;
+  late SynoApiBloc apiBloc;
+  late Uuid _uuid;
+  String? _reqId;
 
   @override
   void initState() {
@@ -147,14 +148,14 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
 
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+      if (state.event!.requestType == RequestType.task_info) {
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -163,25 +164,25 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
         }
       }
 
-      if (_reqId != null && state.event.params['_reqId'] == _reqId) {
+      if (_reqId != null && state.event!.params['_reqId'] == _reqId) {
         Scaffold.of(context).removeCurrentSnackBar();
 
         // paused
-        if (state.event.requestType == RequestType.pause_task && state.resp.success && mounted) {
+        if (state.event!.requestType == RequestType.pause_task && state.resp!.success && mounted) {
           setState(() {
             _task.status = TaskStatus.paused;
           });
         }
 
         // resumed
-        if (state.event?.requestType == RequestType.resume_task && state.resp.success && mounted) {
+        if (state.event?.requestType == RequestType.resume_task && state.resp!.success && mounted) {
           setState(() {
             _task.status = TaskStatus.downloading;
           });
         }
 
         if (state.event?.requestType == RequestType.remove_task &&
-            state.resp.success &&
+            state.resp!.success &&
             mounted &&
             Navigator.of(context).canPop()) {
           Navigator.pop(context, {'requestType': RequestType.remove_task, 'taskId': _task.id});
@@ -252,7 +253,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
                 subtitle: Text('Title'),
               ),
               ListTile(
-                title: Text(_task.status.name.capitalize() ?? UNKNOWN),
+                title: Text(_task.status!.name.capitalize()),
                 subtitle: Text('Status'),
               ),
               ListTile(
@@ -277,13 +278,13 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
               ListTile(
                 title: Text(_task.additional?.detail?.createTime == null
                     ? UNKNOWN
-                    : dtFmt.format(_task.additional?.detail?.createTime ?? UNKNOWN)),
+                    : dtFmt.format(_task.additional?.detail?.createTime ?? UNKNOWN as DateTime)),
                 subtitle: Text('Created Time'),
               ),
               ListTile(
                 title: Text(_task.additional?.detail?.completedTime == null
                     ? UNKNOWN
-                    : dtFmt.format(_task.additional?.detail?.completedTime ?? UNKNOWN)),
+                    : dtFmt.format(_task.additional?.detail?.completedTime ?? UNKNOWN as DateTime)),
                 subtitle: Text('Completed Time'),
               ),
             ],
@@ -293,7 +294,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     );
   }
 
-  Widget _buildCircleIconBtn(Icon icon, {Color fillColor: Colors.grey, double size: 24.0, Function onPressed}) {
+  Widget _buildCircleIconBtn(Icon icon, {Color fillColor: Colors.grey, double size: 24.0, Function? onPressed}) {
     if (onPressed == null) {
       fillColor = Colors.grey.withOpacity(0.6);
     }
@@ -308,7 +309,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
         disabledColor: Colors.white,
         icon: icon,
         iconSize: size,
-        onPressed: onPressed,
+        onPressed: onPressed as void Function()?,
       ),
     );
   }
@@ -335,14 +336,14 @@ class TransferInfoTabState extends State<TransferInfoTab> {
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+      if (state.event!.requestType == RequestType.task_info) {
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -357,24 +358,24 @@ class TransferInfoTabState extends State<TransferInfoTab> {
   Widget build(BuildContext context) {
     if (_task == null) return Text('Null task...');
 
-    int downSize = _task.additional?.transfer?.sizeDownloaded;
-    int upSize = _task.additional?.transfer?.sizeUploaded;
+    int? downSize = _task.additional?.transfer?.sizeDownloaded;
+    int? upSize = _task.additional?.transfer?.sizeUploaded;
     double pct = (upSize ?? 0) / (downSize ?? 0) * 100;
     pct = pct.isFinite ? pct : 0;
 
     var downSpeed = humanifySize(_task.additional?.transfer?.speedDownload ?? 0, p: 0);
     var upSpeed = humanifySize(_task.additional?.transfer?.speedUpload ?? 0, p: 0);
 
-    var progress = (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size;
+    var progress = (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size!;
     progress = progress.isFinite ? progress : 0;
 
     String remainingTime = '-';
     double remainingSeconds;
     if (_task.status == TaskStatus.downloading) {
       remainingSeconds =
-          (_task.size - _task.additional?.transfer?.sizeDownloaded) / _task.additional?.transfer?.speedDownload;
+          (_task.size! - (_task.additional?.transfer?.sizeDownloaded ?? 0)) / (_task.additional?.transfer?.speedDownload ?? 0);
       remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-      remainingTime = humanifySeconds(remainingSeconds?.round(), maxUnits: 2, defaultStr: "-");
+      remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 2, defaultStr: "-");
     }
 
     return ListView(
@@ -416,7 +417,7 @@ class TransferInfoTabState extends State<TransferInfoTab> {
         ListTile(
           title: Text(_task.additional?.detail?.startedTime == null
               ? UNKNOWN
-              : '${dtFmt.format(_task.additional?.detail?.startedTime)}'),
+              : '${dtFmt.format(_task.additional!.detail!.startedTime!)}'),
           subtitle: Text('Started Time'),
         ),
         ListTile(
@@ -449,14 +450,14 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+      if (state.event!.requestType == RequestType.task_info) {
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -472,7 +473,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
     if (_task == null) return Text('Null task...');
 
     var trackers = _task.additional?.tracker ?? [];
-    trackers.sort((x, y) => x.url.compareTo(y.url));
+    trackers.sort((x, y) => x.url!.compareTo(y.url!));
 
     if (trackers.isEmpty) {
       return Center(
@@ -505,11 +506,11 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
                   children: [
                     ListTile(
                       onTap: () => copyToClipboard(tracker.url, context),
-                      title: Text(tracker.url),
+                      title: Text(tracker.url!),
                       subtitle: Text('Tracker Url'),
                     ),
                     ListTile(
-                      title: Text(tracker.status.isEmpty ? UNKNOWN : tracker.status),
+                      title: Text(tracker.status!.isEmpty ? UNKNOWN : tracker.status!),
                       subtitle: Text('Status'),
                     ),
                     ListTile(
@@ -551,14 +552,14 @@ class PeerInfoTabState extends State<PeerInfoTab> {
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+      if (state.event!.requestType == RequestType.task_info) {
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -574,7 +575,7 @@ class PeerInfoTabState extends State<PeerInfoTab> {
     if (_task == null) return Text('Null task...');
 
     var peer = _task.additional?.peer ?? [];
-    peer.sort((x, y) => x.address.compareTo(y.address));
+    peer.sort((x, y) => x.address!.compareTo(y.address!));
 
     if (peer.isEmpty) {
       return Center(
@@ -607,16 +608,16 @@ class PeerInfoTabState extends State<PeerInfoTab> {
                   children: [
                     ListTile(
                       onTap: () => copyToClipboard(p.address, context),
-                      title: Text(p.address),
+                      title: Text(p.address!),
                       subtitle: Text('Peer IP Address'),
                     ),
                     ListTile(
                       onTap: () => copyToClipboard(p.agent, context),
-                      title: Text(p.agent),
+                      title: Text(p.agent!),
                       subtitle: Text('Agent'),
                     ),
                     ListTile(
-                      title: Text('${fmtNum(p.progress)}% ' +
+                      title: Text('${fmtNum(p.progress!)}% ' +
                           '| ${humanifySize(p.speedUpload, p: 0)} ' +
                           '/ ${humanifySize(p.speedDownload, p: 0)}'),
                       subtitle: Text('Progress | Speed (UL / DL)'),
@@ -651,14 +652,14 @@ class FileInfoTabState extends State<FileInfoTab> {
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
     apiBloc.listen((state) {
-      if (state.event.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp.data ?? [];
-        List<String> ids = tasks.map((e) => e.id).toList();
+      if (state.event!.requestType == RequestType.task_info) {
+        List<Task> tasks = state.resp!.data ?? [];
+        List<String?> ids = tasks.map((e) => e.id).toList();
         if (ids == null || !ids.contains(_task.id)) {
           return;
         }
 
-        Task task = tasks.firstWhere((t) => t.id == _task.id, orElse: () => null);
+        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
 
         if (task != null && mounted) {
           setState(() {
@@ -674,7 +675,7 @@ class FileInfoTabState extends State<FileInfoTab> {
     if (_task == null) return Text('Null task...');
 
     var files = _task.additional?.file ?? [];
-    files.sort((x, y) => x.filename.compareTo(y.filename));
+    files.sort((x, y) => x.filename!.compareTo(y.filename!));
 
     if (files.isEmpty) {
       return Center(
@@ -691,7 +692,7 @@ class FileInfoTabState extends State<FileInfoTab> {
       itemBuilder: (context, idx) {
         var f = files[idx];
 
-        var progress = f.sizeDownloaded / f.size;
+        var progress = f.sizeDownloaded! / f.size!;
         progress = progress.isFinite ? progress * 100 : 0;
 
         return Card(
@@ -710,7 +711,7 @@ class FileInfoTabState extends State<FileInfoTab> {
                   children: [
                     ListTile(
                       onTap: () => copyToClipboard(f.filename, context),
-                      title: Text(f.filename),
+                      title: Text(f.filename!),
                       subtitle: Text('Filename'),
                     ),
                     ListTile(
@@ -720,7 +721,7 @@ class FileInfoTabState extends State<FileInfoTab> {
                       subtitle: Text('Downloaded'),
                     ),
                     ListTile(
-                      title: Text('${f.priority.capitalize()}'),
+                      title: Text('${f.priority!.capitalize()}'),
                       subtitle: Text('Priority'),
                     ),
                   ],

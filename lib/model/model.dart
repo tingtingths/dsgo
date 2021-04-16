@@ -1,3 +1,4 @@
+import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 
 class ConnectionMenuItem {
@@ -15,15 +16,15 @@ class ConnectionMenuItem {
 }
 
 class Connection {
-  String friendlyName;
-  String proto;
-  String user;
-  String host;
-  int port;
-  String sid;
-  String password;
-  DateTime created;
-  DateTime updated;
+  String? friendlyName;
+  String? proto;
+  String? user;
+  String? host;
+  int? port;
+  String? sid;
+  String? password;
+  DateTime? created;
+  DateTime? updated;
 
   Connection.empty();
 
@@ -33,19 +34,20 @@ class Connection {
 
   String buildUri() => Uri(scheme: proto, userInfo: user, host: host, port: port).toString();
 
-  Connection.fromJson(Map<String, dynamic> json) {
-    friendlyName = (json ?? {})['friendlyName'];
-    proto = (json ?? {})['proto'];
-    user = (json ?? {})['user'];
-    host = (json ?? {})['host'];
-    port = (json ?? {})['port'];
-    sid = (json ?? {})['sid'];
-    password = (json ?? {})['password'];
+  Connection.fromJson(Map<String, dynamic>? json) {
+    friendlyName = mapGet(json, 'friendlyName');
+    friendlyName = mapGet(json, 'friendlyName');
+    proto = mapGet(json, 'proto');
+    user = mapGet(json, 'user');
+    host = mapGet(json, 'host');
+    port = mapGet(json, 'port');
+    sid = mapGet(json, 'sid');
+    password = mapGet(json, 'password');
 
-    int createdTs = (json ?? {})['created'];
+    int? createdTs = mapGet(json, 'created');
     created = createdTs == null ? null : DateTime.fromMillisecondsSinceEpoch(createdTs);
 
-    int updatedTs = (json ?? {})['updated'];
+    int? updatedTs = mapGet(json, 'updated');
     updated = updatedTs == null ? null : DateTime.fromMillisecondsSinceEpoch(updatedTs);
   }
 
@@ -63,17 +65,17 @@ class Connection {
 }
 
 class UserSettings {
-  int apiRequestFrequency = 5000; // ms
-  ThemeMode themeMode = ThemeMode.system;
+  int? apiRequestFrequency = 5000; // ms
+  ThemeMode? themeMode = ThemeMode.system;
 
-  UserSettings({int apiRequestFrequency, ThemeMode themeMode}) {
+  UserSettings({int? apiRequestFrequency, ThemeMode? themeMode}) {
     if (apiRequestFrequency != null) this.apiRequestFrequency = apiRequestFrequency;
     if (themeMode != null) this.themeMode = themeMode;
   }
 
-  UserSettings.fromJson(Map<String, dynamic> json) {
-    apiRequestFrequency = (json ?? {})['apiRequestFrequency'];
-    var themeModeStr = (json ?? {})['themeMode'];
+  UserSettings.fromJson(Map<String, dynamic>? json) {
+    apiRequestFrequency = mapGet(json, 'apiRequestFrequency');
+    var themeModeStr = mapGet(json, 'themeMode');
     themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeStr);
   }
 

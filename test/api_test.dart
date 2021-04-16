@@ -55,7 +55,7 @@ void main() {
     var queryApi = QueryAPI(cntx);
     APIResponse<Map<String, APIInfoQuery>> info = await queryApi.info.apiInfo();
     if (info.success) {
-      info.data.forEach((key, value) {
+      info.data!.forEach((key, value) {
         print(
             '$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
       });
@@ -73,20 +73,20 @@ void main() {
 
     APIResponse<ListTaskInfo> taskResp = await dsApi.task.list();
     if (taskResp.success) {
-      var info = taskResp.data;
+      var info = taskResp.data!;
       print('total=${info.total}');
       info.tasks.forEach((e) {
         print('id=${e.id},type=${e.type},title=${e.title}');
         print(
-            '\tST=${e.status},DL=${e.additional.transfer.speedDownload},PRG=${(100 * e.additional.transfer.sizeDownloaded / e.size).toStringAsFixed(1)}%');
+            '\tST=${e.status},DL=${e.additional!.transfer!.speedDownload},PRG=${(100 * e.additional!.transfer!.sizeDownloaded! / e.size!).toStringAsFixed(1)}%');
       });
     }
 
     APIResponse<DownloadStationStatisticGetInfo> stats =
         await dsApi.statistic.getInfo();
     if (stats.success) {
-      print('Total download speed=${stats.data.speedDownload}');
-      print('Total upload speed=${stats.data.speedUpload}');
+      print('Total download speed=${stats.data!.speedDownload}');
+      print('Total upload speed=${stats.data!.speedUpload}');
     }
   });
 }
