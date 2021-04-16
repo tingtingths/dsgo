@@ -225,7 +225,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   title: Text('DEBUG Remove all'),
                   onTap: () {
                     bloc.add(
-                        DSConnectionEvent(DSConnectionAction.removeAll, null));
+                        DSConnectionEvent.noPayload(DSConnectionAction.removeAll));
                   },
                 ));
 
@@ -330,7 +330,7 @@ class _AppDrawerState extends State<AppDrawer> {
         ),
       ),
       onTap: () {
-        bloc.add(DSConnectionEvent(DSConnectionAction.select, conn));
+        bloc.add(DSConnectionEvent(DSConnectionAction.select, conn, null));
       },
     );
 
