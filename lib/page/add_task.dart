@@ -1,14 +1,15 @@
 import 'dart:io';
 
-import '../bloc/syno_api_bloc.dart';
-import '../bloc/ui_evt_bloc.dart';
-import '../util/format.dart';
-import '../util/utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
+
+import '../bloc/syno_api_bloc.dart';
+import '../bloc/ui_evt_bloc.dart';
+import '../util/format.dart';
+import '../util/utils.dart';
 
 class AddTaskForm extends StatefulWidget {
   @override
@@ -32,7 +33,8 @@ class AddTaskFormState extends State<AddTaskForm> {
 
     // listen add_task event feedback
     apiBloc.listen((state) {
-      if (state.event?.requestType != RequestType.add_task || state.event?.params['_reqId'] != _reqId) {
+      if (state.event?.requestType != RequestType.add_task ||
+          state.event?.params['_reqId'] != _reqId) {
         return;
       }
 
@@ -57,13 +59,17 @@ class AddTaskFormState extends State<AddTaskForm> {
   @override
   Widget build(BuildContext context) {
     final uiBloc = BlocProvider.of<UiEventBloc>(context);
-    final textBtnStyle = Theme.of(context).textTheme.button.copyWith(color: Theme.of(context).accentColor);
+    final textBtnStyle = Theme.of(context)
+        .textTheme
+        .button
+        .copyWith(color: Theme.of(context).accentColor);
     final textHdrStyle = Theme.of(context).textTheme.headline6;
     final textSeparatorStyle = Theme.of(context).textTheme.caption;
 
     var urlCount = _formModel['url']?.length ?? 0;
 
-    _submitBtn = _torrentFiles.isNotEmpty || (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
+    _submitBtn = _torrentFiles.isNotEmpty ||
+        (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
 
     var scaffold = Scaffold(
       key: _scaffoldKey,
@@ -74,16 +80,20 @@ class AddTaskFormState extends State<AddTaskForm> {
             icon: Icon(Icons.done),
             onPressed: _submitBtn
                 ? () {
-                    _scaffoldKey.currentState.showSnackBar(buildSnackBar('Submitting tasks...'));
+                    _scaffoldKey.currentState
+                        .showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task
                     _reqId = _uuid.v4();
                     var params = {
                       '_reqId': _reqId,
                       'uris': _formModel['url'],
-                      'torrent_files': _torrentFiles.values.map((entry) => entry.key).toList(),
+                      'torrent_files': _torrentFiles.values
+                          .map((entry) => entry.key)
+                          .toList(),
                     };
-                    apiBloc.add(SynoApiEvent.params(RequestType.add_task, params));
+                    apiBloc
+                        .add(SynoApiEvent.params(RequestType.add_task, params));
                     setState(() {
                       _submitBtn = false;
                     });
@@ -213,15 +223,17 @@ class AddTaskFormState extends State<AddTaskForm> {
 
   void _openFilePicker() async {
     try {
-      List<File> files = await FilePicker.getMultiFile(
-//        type: FileType.custom,
-//        allowedExtensions: ['torrent'],
-          );
+      FilePickerResult filePickerResult = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['torrent'],
+      );
+      List<PlatformFile> files = filePickerResult.files;
 
       if (mounted) {
         setState(() {
-          _torrentFiles.addAll(Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
-            var _f = f as File;
+          _torrentFiles.addAll(
+              Map<String, MapEntry<File, int>>.fromIterable(files, key: (f) {
+            var _f = f as PlatformFile;
             return _f.path;
           }, value: (f) {
             var _f = f as File;

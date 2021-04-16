@@ -56,7 +56,7 @@ class MyAppState extends State<MyApp> {
       );
     }
 
-    BlocSupervisor.delegate = BlocLogDelegate();
+    Bloc.observer = BlocLogDelegate();
 
     return MultiBlocProvider(
       providers: [

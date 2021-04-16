@@ -22,8 +22,7 @@ class UiEventState {
 }
 
 class UiEventBloc extends Bloc<UiEventState, UiEventState> {
-  @override
-  UiEventState get initialState => UiEventState.empty();
+  UiEventBloc() : super(UiEventState.empty());
 
   @override
   Stream<UiEventState> mapEventToState(UiEventState event) async* {
