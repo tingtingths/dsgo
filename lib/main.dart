@@ -39,6 +39,12 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   UserSettings? settings;
   late UserSettingsProvider userSettingsProvider;
+  var lastConnection; // for connection change detection
+
+  // blocs
+  final connectionBloc = DSConnectionBloc();
+  final apiBloc = SynoApiBloc();
+  final uiBloc = UiEventBloc();
 
   MyAppState() {
     if (kIsWeb) {
@@ -46,6 +52,21 @@ class MyAppState extends State<MyApp> {
     } else {
       userSettingsProvider = MobileUserSettingsProvider();
     }
+
+    // auto update api context when connection changed
+    connectionBloc.stream.listen((event) {
+      if (event.activeConnection != null && lastConnection != event.activeConnection) {
+        var c = event.activeConnection!;
+        var context = APIContext(c.host!, proto: c.proto!, port: c.port!);
+        context.authApp('DownloadStation', c.user!, c.password!).then((authOk) {
+          if (authOk) {
+            apiBloc.apiContext = context;
+          } else {
+            l.info('Authentication failed!');
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -81,13 +102,13 @@ class MyAppState extends State<MyApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<DSConnectionBloc>(
-          create: (_) => DSConnectionBloc(),
+          create: (_) => connectionBloc,
         ),
         BlocProvider<UiEventBloc>(
-          create: (_) => UiEventBloc(),
+          create: (_) => uiBloc,
         ),
         BlocProvider<SynoApiBloc>(
-          create: (_) => SynoApiBloc(),
+          create: (_) => apiBloc,
         )
       ],
       child: MaterialApp(

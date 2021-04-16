@@ -111,8 +111,7 @@ class SynoApiState {
 class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   final l = Logger('SynoApiBloc');
   late ConnectionProvider _provider;
-  Connection? _connection;
-  late APIContext _apiCntx;
+  APIContext? context;
   DownloadStationAPI? _dsApi;
 
   SynoApiBloc() : super(SynoApiState(null, null)) {
@@ -121,22 +120,9 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
     } else {
       _provider = MobileConnectionProvider();
     }
-    _provider.getDefaultConnection().then((value) {
-      if (value != null) {
-        this.connection = value;
-      }
-    });
   }
 
   dispose() {}
-
-  _initContext() {
-    _apiCntx = APIContext(_connection!.host!,
-        proto: _connection!.proto!, port: _connection!.port!);
-    _apiCntx.authApp(
-        'DownloadStation', _connection!.user!, _connection!.password!);
-    _dsApi = DownloadStationAPI(_apiCntx);
-  }
 
   @override
   Stream<SynoApiState> mapEventToState(SynoApiEvent event) async* {
@@ -231,10 +217,14 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
     yield state;
   }
 
-  Connection? get connection => _connection;
+  set apiContext(APIContext? value) {
+    l.info('setApiContext(); $value');
+    context = value;
+    if (context != null)
+      _dsApi = DownloadStationAPI(context!);
+  }
 
-  set connection(Connection? value) {
-    _connection = value;
-    _initContext();
+  bool isReady() {
+    return _dsApi != null;
   }
 }

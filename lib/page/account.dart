@@ -194,7 +194,6 @@ class _AccountFormState extends State<AccountForm> {
                     }
                     _formKey.currentState!.save();
 
-                    apiBloc.connection = _connection;
                     if (_idx != null && _idx! >= 0) {
                       connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection));
                     } else {

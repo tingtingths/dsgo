@@ -26,7 +26,6 @@ class DSConnectionState {
 class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   final l = Logger('DSConnectionBloc');
   late ConnectionProvider _provider;
-  DSConnectionState? currentState;
 
   DSConnectionBloc(): super(DSConnectionBloc.initialState) {
     if (kIsWeb) {
@@ -51,6 +50,8 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     if (evt.action == DSConnectionAction.refresh) {
       connections = await _provider.getAll();
       active = await _provider.getDefaultConnection();
+      if (active == null && connections.length == 1)
+        active = connections[0];
       l.info('mapEventToState(); evt.action=${evt.action}, found ${connections.length} connections.');
     }
 
@@ -95,8 +96,7 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
 
     if (connections.length == 1) active = connections[0];
     if (connections.isEmpty) active = null;
-    currentState = DSConnectionState(active, connections);
-    yield currentState!;
+    yield DSConnectionState(active, connections);
   }
 
   bool _hasConnection(Connection target, List<Connection?> connections) =>

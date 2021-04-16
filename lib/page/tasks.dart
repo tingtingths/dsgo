@@ -27,7 +27,6 @@ class TaskList extends StatefulWidget {
 
 class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin {
   ListTaskInfo? taskInfo;
-  Connection? _connection;
   var filter = '';
   late TextTheme textTheme;
   List<GlobalKey> _cardKeys = [];
@@ -47,42 +46,20 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  void initFetch() {
-    if (_connection == null) return;
-    l.info('initFetch(); host=${_connection!.host}');
-    if (_connection == null) return;
-
-    _subscriptions[fetchingStreamKey]?.cancel();
-
-    uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
-    apiBloc.connection = _connection;
-    apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
-      'additional': ['transfer'],
-      '_reqId': 'init_state_request'
-    }));
-
-    apiBloc.stream.listen((state) {
-      if (state.event != null &&
-          state.event!.requestType == RequestType.task_list &&
-          'init_state_request' == state.event!.params['_reqId']) {
-        _subscriptions[fetchingStreamKey] =
-            Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
-          if (_connection == null) return;
-          uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
-          apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
-            'additional': ['transfer']
-          }));
-        });
-      }
-    });
-  }
-
   @override
   void initState() {
     super.initState();
 
     uiBloc = BlocProvider.of<UiEventBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
+
+    _subscriptions[fetchingStreamKey] =
+        Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
+      uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
+      apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
+        'additional': ['transfer']
+      }));
+    });
 
     apiBloc.stream.listen((state) {
       if (state.event != null && state.event!.requestType == RequestType.task_list) {
@@ -118,201 +95,187 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     textTheme = Theme.of(context).textTheme;
+    var info = taskInfo;
 
-    return BlocConsumer<DSConnectionBloc, DSConnectionState>(
-      bloc: BlocProvider.of<DSConnectionBloc>(context),
-      listener: (cntx, state) {
-        if (mounted) {
-          setState(() {
-            _connection = state.activeConnection;
-          });
-          initFetch();
+    if (!apiBloc.isReady()) {
+      return SliverFillRemaining(child: Center(child: Text('...')));
+    }
+
+    if (info == null) {
+      return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+    }
+
+    var count = info.tasks.length;
+    var tasks = List<Task>.from(info.tasks);
+    pendingRemove.forEach((pendingRemove) {
+      var found = tasks.firstWhereOrNull((task) => task.id == pendingRemove.id);
+      if (found == null) return;
+
+      count -= 1;
+      tasks.remove(found);
+    });
+
+    if (info.total == 0) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Text(
+            TXT_NOTHING,
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+        delegate: SliverChildBuilderDelegate((context, idx) {
+      if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
+
+      var task = tasks[idx];
+
+      if (filter != null && filter.trim().isNotEmpty) {
+        var sanitizedTitle = task.title!.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+        var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+        if (!sanitizedTitle.contains(sanitizedMatcher)) {
+          return SizedBox.shrink();
         }
-      },
-      builder: (cntx, state) {
-        var info = taskInfo;
+      }
 
-        if (_connection == null) {
-          return SliverFillRemaining(child: Center(child: Text('Select account first')));
-        }
+      var totalSize = humanifySize(task.size);
+      var downloaded = humanifySize(task.additional?.transfer?.sizeDownloaded);
+      var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size!;
+      progress = progress.isFinite ? progress : 0;
+      var downSpeed = humanifySize(task.additional?.transfer?.speedDownload ?? 0, p: 0) + '/s';
+      var upSpeed = humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) + '/s';
+      var progressText = fmtNum(progress * 100, p: 0);
 
-        if (info == null) {
-          return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
-        }
+      String? remainingTime;
+      if (task.status == TaskStatus.downloading) {
+        var remainingSeconds = (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) /
+            (task.additional?.transfer?.speedDownload ?? 0);
+        remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
+        remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 1);
+      }
 
-        var count = info.tasks.length;
-        var tasks = List<Task>.from(info.tasks);
-        pendingRemove.forEach((pendingRemove) {
-          var found = tasks.firstWhereOrNull((task) => task.id == pendingRemove.id);
-          if (found == null) return;
+      var progressBar = LinearProgressIndicator(
+        backgroundColor: Theme.of(context).backgroundColor,
+        value: progress,
+      );
 
-          count -= 1;
-          tasks.remove(found);
-        });
-
-        if (info.total == 0) {
-          return SliverFillRemaining(
-            child: Center(
-              child: Text(
-                TXT_NOTHING,
-              ),
-            ),
-          );
-        }
-
-        return SliverList(
-            delegate: SliverChildBuilderDelegate((context, idx) {
-          if (_cardKeys.length <= idx) _cardKeys.add(GlobalKey());
-
-          var task = tasks[idx];
-
-          if (filter != null && filter.trim().isNotEmpty) {
-            var sanitizedTitle = task.title!.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-            var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-            if (!sanitizedTitle.contains(sanitizedMatcher)) {
-              return SizedBox.shrink();
-            }
-          }
-
-          var totalSize = humanifySize(task.size);
-          var downloaded = humanifySize(task.additional?.transfer?.sizeDownloaded);
-          var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size!;
-          progress = progress.isFinite ? progress : 0;
-          var downSpeed = humanifySize(task.additional?.transfer?.speedDownload ?? 0, p: 0) + '/s';
-          var upSpeed = humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0) + '/s';
-          var progressText = fmtNum(progress * 100, p: 0);
-
-          String? remainingTime;
-          if (task.status == TaskStatus.downloading) {
-            var remainingSeconds = (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) /
-                (task.additional?.transfer?.speedDownload ?? 0);
-            remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
-            remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 1);
-          }
-
-          var progressBar = LinearProgressIndicator(
-            backgroundColor: Theme.of(context).backgroundColor,
-            value: progress,
-          );
-
-          var statusIcon = _getStatusIcon(task.status, () {
-            var params = {
-              'ids': [task.id]
-            };
-            /*
+      var statusIcon = _getStatusIcon(task.status, () {
+        var params = {
+          'ids': [task.id]
+        };
+        /*
               i.e.
                 Downloading -> Pause
                 Pause -> Downloading
                 ..etc?
                */
-            if (TaskStatus.downloading == task.status) {
-              // pause it
-              apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
-              setState(() {
-                task.status = TaskStatus.paused;
-              });
-            } else if (TaskStatus.paused == task.status) {
-              // resume it
-              apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
-              setState(() {
-                task.status = TaskStatus.waiting;
-              });
-            }
-          }, onLongPress: () {
-            // TODO : trigger multiple selection here
+        if (TaskStatus.downloading == task.status) {
+          // pause it
+          apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
+          setState(() {
+            task.status = TaskStatus.paused;
           });
+        } else if (TaskStatus.paused == task.status) {
+          // resume it
+          apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
+          setState(() {
+            task.status = TaskStatus.waiting;
+          });
+        }
+      }, onLongPress: () {
+        // TODO : trigger multiple selection here
+      });
 
-          return Dismissible(
-            direction: DismissDirection.horizontal,
-            key: ValueKey(task.id),
-            background: Container(
-              alignment: Alignment.centerLeft,
-              padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
-              color: Colors.red,
-              child: Icon(
-                Icons.delete_forever,
-                size: Theme.of(context).iconTheme.size ?? 42,
-              ),
+      return Dismissible(
+        direction: DismissDirection.horizontal,
+        key: ValueKey(task.id),
+        background: Container(
+          alignment: Alignment.centerLeft,
+          padding: EdgeInsets.fromLTRB(15, 0, 0, 0),
+          color: Colors.red,
+          child: Icon(
+            Icons.delete_forever,
+            size: Theme.of(context).iconTheme.size ?? 42,
+          ),
+        ),
+        secondaryBackground: Container(
+          margin: EdgeInsets.zero,
+          alignment: Alignment.centerRight,
+          padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
+          color: Colors.red,
+          child: Icon(
+            Icons.delete_forever,
+            size: Theme.of(context).iconTheme.size ?? 42,
+          ),
+        ),
+        child: Column(
+          key: _cardKeys[idx],
+          children: <Widget>[
+            Divider(
+              indent: 15,
+              endIndent: 15,
             ),
-            secondaryBackground: Container(
-              margin: EdgeInsets.zero,
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.fromLTRB(0, 0, 15, 0),
-              color: Colors.red,
-              child: Icon(
-                Icons.delete_forever,
-                size: Theme.of(context).iconTheme.size ?? 42,
+            ListTile(
+              dense: false,
+              leading: statusIcon,
+              //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MorpheusPageRoute(
+                        parentKey: _cardKeys[idx],
+                        builder: (context) {
+                          return BlocProvider.value(
+                            value: BlocProvider.of<DSConnectionBloc>(context),
+                            child: TaskDetailsPage(task, settings),
+                          );
+                        })).then((result) {
+                  result = (result ?? {});
+                  if (result['requestType'] == RequestType.remove_task && result['taskId'] != null) {
+                    removeTaskFromModel(result['taskId']);
+                  }
+                });
+              },
+              title: Text(
+                task.title!,
+                overflow: TextOverflow.fade,
+                softWrap: false,
+                style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
               ),
-            ),
-            child: Column(
-              key: _cardKeys[idx],
-              children: <Widget>[
-                Divider(
-                  indent: 15,
-                  endIndent: 15,
-                ),
-                ListTile(
-                  dense: false,
-                  leading: statusIcon,
-                  //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-                  onTap: () {
-                    Navigator.push(
-                        context,
-                        MorpheusPageRoute(
-                            parentKey: _cardKeys[idx],
-                            builder: (context) {
-                              return BlocProvider.value(
-                                value: BlocProvider.of<DSConnectionBloc>(context),
-                                child: TaskDetailsPage(task, settings),
-                              );
-                            })).then((result) {
-                      result = (result ?? {});
-                      if (result['requestType'] == RequestType.remove_task && result['taskId'] != null) {
-                        removeTaskFromModel(result['taskId']);
-                      }
-                    });
-                  },
-                  title: Text(
-                    task.title!,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Divider(
+                    height: 5,
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Divider(
-                        height: 5,
+                  Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
+                      ? '${task.status!.name.capitalize()}'
+                      : '$progressText% | ${task.status!.name.capitalize()}' +
+                          (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
+                  Text('$downloaded of $totalSize'),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_downward,
+                        size: textTheme.bodyText1!.fontSize,
                       ),
-                      Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
-                          ? '${task.status!.name.capitalize()}'
-                          : '$progressText% | ${task.status!.name.capitalize()}' +
-                              (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
-                      Text('$downloaded of $totalSize'),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.arrow_downward,
-                            size: textTheme.bodyText1!.fontSize,
-                          ),
-                          Text(downSpeed),
-                          Icon(Icons.arrow_upward, size: textTheme.bodyText1!.fontSize),
-                          Text(upSpeed),
-                        ],
-                      )
+                      Text(downSpeed),
+                      Icon(Icons.arrow_upward, size: textTheme.bodyText1!.fontSize),
+                      Text(upSpeed),
                     ],
-                  ),
-                ),
-                progressBar,
-              ],
+                  )
+                ],
+              ),
             ),
-            onDismissed: (direction) {
-              removeTaskFromModel(task.id);
-            },
-          );
-        }, childCount: count));
-      },
-    );
+            progressBar,
+          ],
+        ),
+        onDismissed: (direction) {
+          removeTaskFromModel(task.id);
+        },
+      );
+    }, childCount: count));
   }
 
   void removeTaskFromModel(String? taskId) {

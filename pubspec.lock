@@ -509,7 +509,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "1ea7f3bb791b4feaf0694a023ec93da49c4930ef"
+      resolved-ref: "21a1e6086d6f59ee7375d71d8f0251f21ce27312"
       url: "git@github.com:tingtingths/synoapi.git"
     source: git
     version: "0.1.0"
