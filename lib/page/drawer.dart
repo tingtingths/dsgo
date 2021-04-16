@@ -149,21 +149,6 @@ class _AppDrawerState extends State<AppDrawer> {
           _list.addAll([
             Divider(),
             ListTile(
-              leading: Icon(Icons.all_inclusive),
-              title: Text('All'),
-              onTap: () {
-                l.fine('tap: All'); // TODO ?
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.file_download),
-              title: Text('Downloading'),
-              onTap: () {
-                l.fine('tap: Downloading'); // TODO ?
-              },
-            ),
-            Divider(),
-            ListTile(
               key: _settingsBtnKey,
               leading: Icon(Icons.settings),
               title: Text('Settings'),

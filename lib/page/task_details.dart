@@ -18,7 +18,7 @@ class TaskDetailsPage extends StatefulWidget {
   Task _task;
   UserSettings? settings;
 
-  TaskDetailsPage(this._task, this.settings) : assert(_task != null, settings != null);
+  TaskDetailsPage(this._task, this.settings);
 
   @override
   State<StatefulWidget> createState() => TaskDetailsPageState(_task, settings);
@@ -34,7 +34,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
   List<StreamSubscription> _subs = [];
   UserSettings? settings;
 
-  TaskDetailsPageState(this._task, this.settings) : assert(_task != null, settings != null);
+  TaskDetailsPageState(this._task, this.settings);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -72,14 +72,14 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
       }
     }));
 
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info &&
           (state.event!.params)['_fetchingId'] == _fetchingId) {
         _fetching = false;
 
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
           return;
         }
@@ -127,7 +127,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
 class GeneralTaskInfoTab extends StatefulWidget {
   Task _task;
 
-  GeneralTaskInfoTab(this._task) : assert(_task != null);
+  GeneralTaskInfoTab(this._task);
 
   @override
   State<StatefulWidget> createState() => GeneralTaskInfoTabState(_task);
@@ -137,7 +137,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
   Task _task;
   DateFormat dtFmt = DateFormat.yMd().add_jm();
 
-  GeneralTaskInfoTabState(this._task) : assert(_task != null);
+  GeneralTaskInfoTabState(this._task);
   late SynoApiBloc apiBloc;
   late Uuid _uuid;
   String? _reqId;
@@ -147,11 +147,11 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     _uuid = Uuid();
 
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           return;
         }
 
@@ -165,7 +165,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
       }
 
       if (_reqId != null && state.event!.params['_reqId'] == _reqId) {
-        Scaffold.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
 
         // paused
         if (state.event!.requestType == RequestType.pause_task && state.resp!.success && mounted) {
@@ -199,7 +199,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     Widget playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow));
     if (_task.status == TaskStatus.downloading) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause), fillColor: Colors.amber, onPressed: () {
-        Scaffold.of(context)
+        ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Pausing...'));
 
@@ -212,7 +212,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
     }
     if (_task.status == TaskStatus.paused) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow), fillColor: Colors.green, onPressed: () {
-        Scaffold.of(context)
+        ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Resuming...'));
 
@@ -318,7 +318,7 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
 class TransferInfoTab extends StatefulWidget {
   Task _task;
 
-  TransferInfoTab(this._task) : assert(_task != null);
+  TransferInfoTab(this._task);
 
   @override
   State<StatefulWidget> createState() => TransferInfoTabState(_task);
@@ -328,18 +328,18 @@ class TransferInfoTabState extends State<TransferInfoTab> {
   Task _task;
   DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
 
-  TransferInfoTabState(this._task) : assert(_task != null);
+  TransferInfoTabState(this._task);
 
   @override
   void initState() {
     super.initState();
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           return;
         }
 
@@ -356,8 +356,6 @@ class TransferInfoTabState extends State<TransferInfoTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_task == null) return Text('Null task...');
-
     int? downSize = _task.additional?.transfer?.sizeDownloaded;
     int? upSize = _task.additional?.transfer?.sizeUploaded;
     double pct = (upSize ?? 0) / (downSize ?? 0) * 100;
@@ -432,7 +430,7 @@ class TransferInfoTabState extends State<TransferInfoTab> {
 class TrackerInfoTab extends StatefulWidget {
   Task _task;
 
-  TrackerInfoTab(this._task) : assert(_task != null);
+  TrackerInfoTab(this._task);
 
   @override
   State<StatefulWidget> createState() => TrackerInfoTabState(_task);
@@ -442,18 +440,18 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
   Task _task;
   DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
 
-  TrackerInfoTabState(this._task) : assert(_task != null);
+  TrackerInfoTabState(this._task);
 
   @override
   void initState() {
     super.initState();
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           return;
         }
 
@@ -534,7 +532,7 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
 class PeerInfoTab extends StatefulWidget {
   Task _task;
 
-  PeerInfoTab(this._task) : assert(_task != null);
+  PeerInfoTab(this._task);
 
   @override
   State<StatefulWidget> createState() => PeerInfoTabState(_task);
@@ -544,18 +542,18 @@ class PeerInfoTabState extends State<PeerInfoTab> {
   Task _task;
   DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
 
-  PeerInfoTabState(this._task) : assert(_task != null);
+  PeerInfoTabState(this._task);
 
   @override
   void initState() {
     super.initState();
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           return;
         }
 
@@ -634,7 +632,7 @@ class PeerInfoTabState extends State<PeerInfoTab> {
 class FileInfoTab extends StatefulWidget {
   Task _task;
 
-  FileInfoTab(this._task) : assert(_task != null);
+  FileInfoTab(this._task);
 
   @override
   State<StatefulWidget> createState() => FileInfoTabState(_task);
@@ -644,18 +642,18 @@ class FileInfoTabState extends State<FileInfoTab> {
   Task _task;
   DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
 
-  FileInfoTabState(this._task) : assert(_task != null);
+  FileInfoTabState(this._task);
 
   @override
   void initState() {
     super.initState();
 
     var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event!.requestType == RequestType.task_info) {
         List<Task> tasks = state.resp!.data ?? [];
         List<String?> ids = tasks.map((e) => e.id).toList();
-        if (ids == null || !ids.contains(_task.id)) {
+        if (!ids.contains(_task.id)) {
           return;
         }
 

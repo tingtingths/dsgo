@@ -39,7 +39,7 @@ String humanifySeconds(int? duration, {int accuracy: 0, int? maxUnits, int curre
       int rem = duration - floored * (unit[i].elementAt(0) as int);
       String trailing = '';
       if (rem > 0) {
-        if (maxUnits != null && currentUnit != null && maxUnits > currentUnit) {
+        if (maxUnits != null && maxUnits > currentUnit) {
           trailing = ' ' + humanifySeconds(rem, accuracy: accuracy, maxUnits: maxUnits, currentUnit: ++currentUnit);
         }
       }

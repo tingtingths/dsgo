@@ -2,21 +2,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:collection/collection.dart' show IterableExtension;
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
-
-import '../model/model.dart';
-import '../provider/connection.dart';
 
 enum RequestType {
   task_list,
   task_info,
   add_task,
   remove_task,
-  pause_task,
-  resume_task,
+  pause_task, resume_task,
   statistic_info
 }
 
@@ -103,6 +98,8 @@ class SynoApiState {
 
   SynoApiState(this._event, this._resp);
 
+  SynoApiState.empty();
+
   APIResponse<dynamic>? get resp => _resp;
 
   SynoApiEvent? get event => _event;
@@ -110,17 +107,10 @@ class SynoApiState {
 
 class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   final l = Logger('SynoApiBloc');
-  late ConnectionProvider _provider;
   APIContext? context;
   DownloadStationAPI? _dsApi;
 
-  SynoApiBloc() : super(SynoApiState(null, null)) {
-    if (kIsWeb) {
-      _provider = WebConnectionProvider();
-    } else {
-      _provider = MobileConnectionProvider();
-    }
-  }
+  SynoApiBloc() : super(SynoApiState.empty());
 
   dispose() {}
 

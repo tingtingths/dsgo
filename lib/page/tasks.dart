@@ -80,7 +80,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
       }
     });
 
-    BlocProvider.of<UiEventBloc>(context).listen((state) {
+    BlocProvider.of<UiEventBloc>(context).stream.listen((state) {
       if (state.event == UiEvent.tasks_filter_change) {
         var filterStr = state.payload.join();
         if (mounted) {
@@ -131,7 +131,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
       var task = tasks[idx];
 
-      if (filter != null && filter.trim().isNotEmpty) {
+      if (filter.trim().isNotEmpty) {
         var sanitizedTitle = task.title!.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
         var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
         if (!sanitizedTitle.contains(sanitizedMatcher)) {
@@ -298,7 +298,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
             .add(SynoApiEvent.params(RequestType.remove_task, {'ids': pendingRemove.map((task) => task.id).toList()}));
       });
 
-      Scaffold.of(context)
+      ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(
           buildSnackBar(

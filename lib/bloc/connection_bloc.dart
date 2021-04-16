@@ -2,7 +2,6 @@ import 'package:logging/logging.dart';
 
 import '../model/model.dart';
 import '../provider/connection.dart';
-import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tuple/tuple.dart';
@@ -48,7 +47,7 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   @override
   Stream<DSConnectionState> mapEventToState(DSConnectionEvent evt) async* {
     Connection? active = await _provider.getDefaultConnection();
-    List<Connection?> connections = await _provider.getAll();;
+    List<Connection?> connections = await _provider.getAll();
 
     if (evt.action == DSConnectionAction.refresh) {
       if (active == null && connections.length == 1)

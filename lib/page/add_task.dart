@@ -36,7 +36,7 @@ class AddTaskFormState extends State<AddTaskForm> {
     _uuid = Uuid();
 
     // listen add_task event feedback
-    apiBloc.listen((state) {
+    apiBloc.stream.listen((state) {
       if (state.event?.requestType != RequestType.add_task ||
           state.event?.params['_reqId'] != _reqId) {
         return;
@@ -50,7 +50,7 @@ class AddTaskFormState extends State<AddTaskForm> {
         setState(() {
           _submitBtn = true;
         });
-        Scaffold.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 5),
           content: Text('Failed to create task...'),
         ));
@@ -84,7 +84,7 @@ class AddTaskFormState extends State<AddTaskForm> {
             icon: Icon(Icons.done),
             onPressed: _submitBtn
                 ? () {
-                    _scaffoldKey.currentState!
+                    ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
                         .showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task

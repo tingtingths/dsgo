@@ -26,7 +26,6 @@ class _AccountFormState extends State<AccountForm> {
   final _formKey = GlobalKey<FormState>();
   int? _idx;
   Connection? _connection;
-  MobileConnectionProvider _connectionProvider = MobileConnectionProvider();
   late DSConnectionBloc connectionBloc;
   late SynoApiBloc apiBloc;
   Map<String, FocusNode> fieldFocus = {};
@@ -95,7 +94,7 @@ class _AccountFormState extends State<AccountForm> {
                   textInputAction: TextInputAction.next,
                   autofocus: true,
                   autocorrect: false,
-                  autovalidate: false,
+                  autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
                     labelText: 'Host',
                     hintText: 'Server address',
@@ -119,7 +118,7 @@ class _AccountFormState extends State<AccountForm> {
                   textInputAction: TextInputAction.next,
                   focusNode: fieldFocus['port'],
                   autocorrect: false,
-                  autovalidate: false,
+                  autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
                     labelText: 'Port',
                   ),
@@ -151,7 +150,7 @@ class _AccountFormState extends State<AccountForm> {
                   textInputAction: TextInputAction.next,
                   focusNode: fieldFocus['user'],
                   autocorrect: false,
-                  autovalidate: false,
+                  autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
                     labelText: 'Username',
                   ),
@@ -186,7 +185,7 @@ class _AccountFormState extends State<AccountForm> {
                 Divider(
                   color: Color.fromARGB(0, 0, 0, 0),
                 ),
-                RaisedButton(
+                ElevatedButton(
                   child: Text('Save'),
                   onPressed: () {
                     if (!_formKey.currentState!.validate()) {
