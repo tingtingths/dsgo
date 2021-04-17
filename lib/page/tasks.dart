@@ -98,11 +98,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     textTheme = Theme.of(context).textTheme;
     var info = taskInfo;
 
-    if (!apiBloc.isReady()) {
-      return SliverFillRemaining(child: Center(child: Text('...')));
-    }
-
-    if (info == null) {
+    if (!apiBloc.isReady() || info == null) {
       return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
     }
 

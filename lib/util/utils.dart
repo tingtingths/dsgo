@@ -45,3 +45,7 @@ V? mapGet<K, V>(Map<K, dynamic>? dict, K key, {otherwise, Function? mapper, Func
   if (mapper != null) return mapper(dict[key]);
   return dict[key];
 }
+
+bool isEmpty(String? str, {bool trim = false}) {
+  return str == null || (trim ? str.trim() : str) == '';
+}

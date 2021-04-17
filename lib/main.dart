@@ -56,7 +56,8 @@ class AppState extends State<App> {
     connectionBloc.stream.listen((event) {
       if (event.activeConnection != null && lastConnection != event.activeConnection) {
         var c = event.activeConnection!;
-        var context = APIContext(c.host!, proto: c.proto!, port: c.port!);
+        if (c.uri == null) return;
+        var context = APIContext.uri(c.uri!);
         context.authApp('DownloadStation', c.user!, c.password!).then((authOk) {
           if (authOk) {
             apiBloc.apiContext = context;

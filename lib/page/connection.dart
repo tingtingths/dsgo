@@ -1,28 +1,30 @@
 import 'package:animations/animations.dart';
-import '../bloc/connection_bloc.dart';
-import '../bloc/syno_api_bloc.dart';
-import '../model/model.dart';
-import '../provider/connection.dart';
+import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:synoapi/synoapi.dart';
 
-class AccountForm extends StatefulWidget {
+import '../bloc/connection_bloc.dart';
+import '../bloc/syno_api_bloc.dart';
+import '../model/model.dart';
+
+class ConnectionEditForm extends StatefulWidget {
   int? _idx;
   Connection? _connection;
 
-  AccountForm.edit(int idx, Connection? connection) {
+  ConnectionEditForm.edit(int idx, Connection? connection) {
     _idx = idx;
     _connection = connection;
   }
 
-  AccountForm();
+  ConnectionEditForm();
 
   @override
-  State<StatefulWidget> createState() => _AccountFormState(_idx, _connection);
+  State<StatefulWidget> createState() => _ConnectionEditFormState(_idx, _connection);
 }
 
-class _AccountFormState extends State<AccountForm> {
+class _ConnectionEditFormState extends State<ConnectionEditForm> {
   final _formKey = GlobalKey<FormState>();
   int? _idx;
   Connection? _connection;
@@ -30,7 +32,10 @@ class _AccountFormState extends State<AccountForm> {
   late SynoApiBloc apiBloc;
   Map<String, FocusNode> fieldFocus = {};
 
-  _AccountFormState(this._idx, this._connection);
+  // UI State
+  bool isTestingConnection = false;
+
+  _ConnectionEditFormState(this._idx, this._connection);
 
   @override
   void initState() {
@@ -54,12 +59,11 @@ class _AccountFormState extends State<AccountForm> {
   Widget build(BuildContext context) {
     if (_connection == null) {
       _connection = Connection.empty();
-      _connection!.proto = 'https';
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_idx == null ? 'Add Account' : 'Edit Account'),
+        title: Text(_idx == null ? 'Add Connection' : 'Edit Connection'),
       ),
       body: SingleChildScrollView(
         child: Form(
@@ -71,24 +75,6 @@ class _AccountFormState extends State<AccountForm> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                DropdownButtonFormField(
-                  decoration: InputDecoration(labelText: 'Protocol'),
-                  onChanged: (dynamic proto) {
-                    _connection!.proto = proto;
-                    setState(() {});
-                  },
-                  items: <DropdownMenuItem>[
-                    DropdownMenuItem(
-                      value: 'https',
-                      child: Text('HTTPS'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'http',
-                      child: Text('HTTP'),
-                    ),
-                  ],
-                  value: _connection!.proto,
-                ),
                 TextFormField(
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
@@ -96,52 +82,20 @@ class _AccountFormState extends State<AccountForm> {
                   autocorrect: false,
                   autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
-                    labelText: 'Host',
-                    hintText: 'Server address',
+                    labelText: 'URI',
+                    hintText: 'Server URI. e.g. https://ds:5001/myds',
                   ),
-                  initialValue: _connection?.host,
-                  onSaved: (host) {
-                    _connection!.host = host!.trim();
+                  initialValue: _connection?.uri,
+                  onChanged: (uri) {
+                    _connection!.uri = uri.trim();
+                    setState(() {}); // force re-render, to enable/disable test button
                   },
-                  onFieldSubmitted: (host) {
-                    fieldFocus['port']!.requestFocus();
+                  onFieldSubmitted: (uri) {
+                    fieldFocus['user']!.requestFocus();
                   },
                   validator: (value) {
                     if (value!.trim().isEmpty) {
                       return 'Cannot be empty';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
-                  focusNode: fieldFocus['port'],
-                  autocorrect: false,
-                  autovalidateMode: AutovalidateMode.disabled,
-                  decoration: InputDecoration(
-                    labelText: 'Port',
-                  ),
-                  initialValue: _connection?.port?.toString() ?? '',
-                  onSaved: (port) {
-                    try {
-                      _connection!.port = int.parse(port!.trim());
-                    } catch (e) {
-                      _connection!.port = null;
-                    }
-                    setState(() {});
-                  },
-                  onFieldSubmitted: (port) {
-                    fieldFocus['user']!.requestFocus();
-                  },
-                  validator: (port) {
-                    if (port!.trim().isEmpty) {
-                      return 'Cannot be empty';
-                    }
-                    try {
-                      int.parse(port.trim());
-                    } catch (e) {
-                      return 'Invalid input';
                     }
                     return null;
                   },
@@ -155,9 +109,8 @@ class _AccountFormState extends State<AccountForm> {
                     labelText: 'Username',
                   ),
                   initialValue: _connection?.user?.toString() ?? '',
-                  onSaved: (user) {
-                    _connection!.user = user!.trim();
-                    setState(() {});
+                  onChanged: (user) {
+                    _connection!.user = user.trim();
                   },
                   onFieldSubmitted: (user) {
                     fieldFocus['password']!.requestFocus();
@@ -177,29 +130,68 @@ class _AccountFormState extends State<AccountForm> {
                   ),
                   obscureText: true,
                   initialValue: _connection?.password?.toString() ?? '',
-                  onSaved: (password) {
+                  onChanged: (password) {
                     _connection!.password = password;
-                    setState(() {});
                   },
                 ),
                 Divider(
                   color: Color.fromARGB(0, 0, 0, 0),
                 ),
-                ElevatedButton(
-                  child: Text('Save'),
-                  onPressed: () {
-                    if (!_formKey.currentState!.validate()) {
-                      return;
-                    }
-                    _formKey.currentState!.save();
 
-                    if (_idx != null && _idx! >= 0) {
-                      connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection, _idx));
-                    } else {
-                      connectionBloc.add(DSConnectionEvent(DSConnectionAction.add, _connection, null));
-                    }
-                    Navigator.pop(context);
-                  },
+                Row(
+                  children: [
+                    ElevatedButton(
+                      child: Text('Save'),
+                      onPressed: () {
+                        if (!_formKey.currentState!.validate()) {
+                          return;
+                        }
+                        _formKey.currentState!.save();
+
+                        if (_idx != null && _idx! >= 0) {
+                          connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection, _idx));
+                        } else {
+                          connectionBloc.add(DSConnectionEvent(DSConnectionAction.add, _connection, null));
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                    Padding(padding: EdgeInsets.only(right: 10)),
+                    ElevatedButton(
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all<Color>(Colors.amberAccent)
+                      ),
+                        child: Text('Test'),
+                        onPressed: isEmpty(_connection?.uri) || isTestingConnection
+                            ? null
+                            : () {
+                          if ([_connection?.uri, _connection?.user, _connection?.password].any((e) => e == null)) {
+                            return;
+                          }
+
+                          var apiContext = APIContext.uri(_connection!.uri!);
+                          apiContext
+                              .authApp(Syno.DownloadStation.name, _connection!.user!, _connection!.password!)
+                              .then((authOK) {
+                            ScaffoldMessenger.of(context)
+                              ..removeCurrentSnackBar()
+                              ..showSnackBar(buildSnackBar(
+                                  'Connect ${authOK ? 'success' : 'failed'}',
+                                  duration: Duration(seconds: 2),
+                                  showProgressIndicator: false
+                              ));
+                            setState(() {
+                              isTestingConnection = false;
+                            });
+                          });
+                          ScaffoldMessenger.of(context)
+                            ..removeCurrentSnackBar()
+                            ..showSnackBar(buildSnackBar('Connecting...'));
+                          setState(() {
+                            isTestingConnection = true;
+                          });
+                        })
+                  ],
                 ),
               ],
             ),
@@ -210,12 +202,12 @@ class _AccountFormState extends State<AccountForm> {
   }
 }
 
-class ManageAccountPage extends StatefulWidget {
+class ManageConnectionsPage extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => ManageAccountPageState();
+  State<StatefulWidget> createState() => ManageConnectionsPageState();
 }
 
-class ManageAccountPageState extends State<ManageAccountPage> {
+class ManageConnectionsPageState extends State<ManageConnectionsPage> {
   GlobalKey _fabKey = GlobalKey();
 
   @override
@@ -225,7 +217,7 @@ class ManageAccountPageState extends State<ManageAccountPage> {
       builder: (context, DSConnectionState state) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Accounts'),
+            title: Text('Connections'),
           ),
           floatingActionButton: OpenContainer(
             closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
@@ -239,7 +231,7 @@ class ManageAccountPageState extends State<ManageAccountPage> {
               );
             },
             openBuilder: (context, closeContainerCallback) {
-              return AccountForm();
+              return ConnectionEditForm();
             },
           ),
           body: ListView.separated(
@@ -267,7 +259,7 @@ class ManageAccountPageState extends State<ManageAccountPage> {
                     );
                   },
                   openBuilder: (context, closeContainerCallback) {
-                    return AccountForm.edit(index, conn);
+                    return ConnectionEditForm.edit(index, conn);
                   },
                 );
               }),

@@ -17,10 +17,8 @@ class ConnectionMenuItem {
 
 class Connection {
   String? friendlyName;
-  String? proto;
   String? user;
-  String? host;
-  int? port;
+  String? uri;
   String? sid;
   String? password;
   DateTime? created;
@@ -28,19 +26,30 @@ class Connection {
 
   Connection.empty();
 
-  Connection.withoutCredential(this.friendlyName, this.proto, this.user, this.host, this.port);
+  Connection.withoutCredential(this.friendlyName, this.uri, this.user);
 
-  Connection(this.friendlyName, this.proto, this.user, this.host, this.port, this.sid, this.password);
+  Connection(this.friendlyName, this.uri, this.user, this.sid, this.password);
 
-  String buildUri() => Uri(scheme: proto, userInfo: user, host: host, port: port).toString();
+  String buildUri() {
+    var parsed = Uri.tryParse(uri ?? '');
+    if (parsed != null) {
+      return Uri(
+        scheme: parsed.scheme,
+        userInfo: user,
+        host: parsed.host,
+        port: parsed.port,
+        path: parsed.path
+      ).toString();
+    } else {
+      return '';
+    }
+  }
 
   Connection.fromJson(Map<String, dynamic>? json) {
     friendlyName = mapGet(json, 'friendlyName');
     friendlyName = mapGet(json, 'friendlyName');
-    proto = mapGet(json, 'proto');
+    uri = mapGet(json, 'uri');
     user = mapGet(json, 'user');
-    host = mapGet(json, 'host');
-    port = mapGet(json, 'port');
     sid = mapGet(json, 'sid');
     password = mapGet(json, 'password');
 
@@ -53,10 +62,8 @@ class Connection {
 
   Map<String, dynamic> toJson() => {
         'friendlyName': friendlyName,
-        'proto': proto,
+        'uri': uri,
         'user': user,
-        'host': host,
-        'port': port,
         'sid': sid,
         'password': password,
         'created': created?.millisecondsSinceEpoch,

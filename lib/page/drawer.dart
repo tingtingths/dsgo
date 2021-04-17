@@ -6,7 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../bloc/connection_bloc.dart';
 import '../model/model.dart';
-import '../page/account.dart';
+import '../page/connection.dart';
 import '../page/settings.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -63,7 +63,7 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
               Expanded(
                 child: BlocBuilder<DSConnectionBloc, DSConnectionState>(
                   builder: (cntx, state) {
-                    String? text = 'Add an account...';
+                    String? text = 'Add a connection...';
                     if (state.activeConnection != null) {
                       text = state.activeConnection!.friendlyName;
                       text = text == null ? state.activeConnection!.buildUri() : text;
@@ -98,7 +98,7 @@ class _AppDrawerState extends State<AppDrawer> {
   final l = Logger('_AppDrawerState');
   bool _inited = false;
   bool expandConnection = false;
-  bool accountUpdated = false;
+  bool connectionUpdated = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   var _list = <Widget>[];
   var _connectionListItemIdx = [];
@@ -106,7 +106,7 @@ class _AppDrawerState extends State<AppDrawer> {
   late DSConnectionBloc bloc;
   GlobalKey _addAcBtnKey = GlobalKey();
   GlobalKey _settingsBtnKey = GlobalKey();
-  GlobalKey _manageAccountBtnKey = GlobalKey();
+  GlobalKey _manageConnectionsBtnKey = GlobalKey();
   PackageInfo? packageInfo;
 
   @override
@@ -206,13 +206,13 @@ class _AppDrawerState extends State<AppDrawer> {
             _insertItem(
                 ++itmIdx,
                 ListTile(
-                  key: _manageAccountBtnKey,
+                  key: _manageConnectionsBtnKey,
                   leading: Icon(Icons.people),
-                  title: Text('Manage Accounts'),
+                  title: Text('Manage Connections'),
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(
                       builder: (context) {
-                        return ManageAccountPage();
+                        return ManageConnectionsPage();
                       },
                     ));
                   },
