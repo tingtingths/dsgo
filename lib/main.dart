@@ -2,23 +2,22 @@ import 'dart:async';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
+import 'package:synoapi/synoapi.dart';
+
 import 'bloc/connection_bloc.dart';
 import 'bloc/delegate.dart';
 import 'bloc/syno_api_bloc.dart';
 import 'bloc/ui_evt_bloc.dart';
+import 'model/model.dart';
 import 'page/add_task.dart';
+import 'page/drawer.dart';
 import 'page/tasks.dart';
 import 'provider/user_settings.dart';
-import 'util/format.dart';
 import 'util/utils.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:synoapi/synoapi.dart';
-
-import 'model/model.dart';
-import 'page/drawer.dart';
 
 void main() {
   // logger configuration
@@ -28,15 +27,15 @@ void main() {
   });
   Logger.detached('SynoAPI').level = Level.WARNING;
 
-  runApp(MyApp());
+  runApp(App());
 }
 
-class MyApp extends StatefulWidget {
+class App extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => MyAppState();
+  State<StatefulWidget> createState() => AppState();
 }
 
-class MyAppState extends State<MyApp> {
+class AppState extends State<App> {
   UserSettings? settings;
   late UserSettingsProvider userSettingsProvider;
   var lastConnection; // for connection change detection
@@ -46,7 +45,7 @@ class MyAppState extends State<MyApp> {
   final apiBloc = SynoApiBloc();
   final uiBloc = UiEventBloc();
 
-  MyAppState() {
+  AppState() {
     if (kIsWeb) {
       userSettingsProvider = WebUserSettingsProvider();
     } else {
@@ -112,7 +111,7 @@ class MyAppState extends State<MyApp> {
         )
       ],
       child: MaterialApp(
-        home: Material(child: MyScaffold(settings)),
+        home: Material(child: MainScaffold(settings)),
         themeMode: settings!.themeMode,
         theme: ThemeData.light().copyWith(
           iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
@@ -123,16 +122,16 @@ class MyAppState extends State<MyApp> {
   }
 }
 
-class MyScaffold extends StatefulWidget {
+class MainScaffold extends StatefulWidget {
   UserSettings? settings;
 
-  MyScaffold(this.settings);
+  MainScaffold(this.settings);
 
   @override
-  State<StatefulWidget> createState() => MyScaffoldState(settings);
+  State<StatefulWidget> createState() => MainScaffoldState(settings);
 }
 
-class MyScaffoldState extends State<MyScaffold> {
+class MainScaffoldState extends State<MainScaffold> {
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   var _searchController = TextEditingController();
   late UiEventBloc uiBloc;
@@ -146,7 +145,7 @@ class MyScaffoldState extends State<MyScaffold> {
   List<String?> taskIds = [];
   UserSettings? settings;
 
-  MyScaffoldState(this.settings);
+  MainScaffoldState(this.settings);
 
   @override
   void dispose() {
@@ -197,178 +196,12 @@ class MyScaffoldState extends State<MyScaffold> {
   Widget build(BuildContext context) {
     infoWidgets.clear();
 
+    // TODO - this would block buttons on narrow screen
     // total up/down speed
-    infoWidgets.add(Text(humanifySize(totalDown)));
-    infoWidgets.add(Icon(Icons.arrow_downward));
-    infoWidgets.add(Text(humanifySize(totalUp)));
-    infoWidgets.add(Icon(Icons.arrow_upward));
-
-    var scaffold = Scaffold(
-      key: _scaffoldKey,
-      body: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: <Widget>[
-            Expanded(
-              child: CustomScrollView(
-                slivers: <Widget>[
-                  SliverPadding(
-                    padding: EdgeInsets.only(left: 20, right: 20),
-                    sliver: SliverAppBar(
-                        backgroundColor: Theme.of(context).bottomAppBarColor,
-                        iconTheme: Theme.of(context).iconTheme,
-                        forceElevated: true,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        leading: IconButton(
-                          icon: Icon(Icons.menu),
-                          onPressed: () {
-                            _scaffoldKey.currentState!.openDrawer();
-                          },
-                        ),
-                        title: TextField(
-                          textInputAction: TextInputAction.search,
-                          controller: _searchController,
-                          decoration: InputDecoration(hintText: 'Search tasks', border: InputBorder.none),
-                        )),
-                  ),
-                  TaskList(settings),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: OpenContainer(
-        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-        closedBuilder: (context, openContainerCallback) {
-          return FloatingActionButton(
-            child: Icon(
-              Icons.add,
-              size: 32,
-            ),
-            onPressed: openContainerCallback,
-          );
-        },
-        openBuilder: (context, CloseContainerActionCallback<String> closeContainerCallback) {
-          return AddTaskForm();
-        },
-        onClosed: (String? data) {
-          if (data != null) {
-            var scaffold = _scaffoldKey.currentState!;
-            ScaffoldMessenger.of(context)
-                ..removeCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-              content: Text(data),
-            ));
-          }
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        child: Container(
-            padding: EdgeInsets.only(left: 5),
-            height: 45,
-            child: Stack(
-              children: <Widget>[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    IconButton(
-                      icon: Icon(Icons.play_arrow),
-                      onPressed: () {
-                        // start all tasks
-                        apiBloc.add(SynoApiEvent.resumeTask(taskIds, onCompleted: (state) {
-                          if (state.resp!.success) {
-                            ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                .showSnackBar(SnackBar(content: Text('Tasks resumed.')));
-                          }
-                        }));
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.pause),
-                      onPressed: () {
-                        // pause all tasks
-                        apiBloc.add(SynoApiEvent.pauseTask(taskIds, onCompleted: (state) {
-                          if (state.resp!.success) {
-                            ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                .showSnackBar(SnackBar(content: Text('Tasks paused.')));
-                          }
-                        }));
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.content_paste),
-                      onPressed: () {
-                        Clipboard.getData('text/plain').then((data) {
-                          var text = data?.text ?? '';
-                          if (Uri.parse(text).isAbsolute) {
-                            showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return AlertDialog(
-                                    title: Text('Add from clipboard'),
-                                    content: Text(text),
-                                    actions: <Widget>[
-                                      FlatButton(
-                                        child: Text('Cancel'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      FlatButton(
-                                        child: Text('Add'),
-                                        onPressed: () {
-                                          // submit task
-                                          Navigator.of(context).pop();
-                                          ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                              .showSnackBar(buildSnackBar('Submitting tasks...'));
-                                          apiBloc.add(SynoApiEvent.addTask(
-                                            uris: [text],
-                                            onCompleted: (state) {
-                                             ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                                 .removeCurrentSnackBar();
-                                              if (state.resp!.success) {
-                                               ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                                   .showSnackBar(SnackBar(
-                                                  content: Text('Task Submitted.'),
-                                                ));
-                                              }
-                                            },
-                                          ));
-                                        },
-                                      )
-                                    ],
-                                  );
-                                });
-                          } else {
-                           ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                               .removeCurrentSnackBar();
-                           ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                               .showSnackBar(SnackBar(
-                              content: Text('No Uri in clipboard...'),
-                              duration: Duration(milliseconds: 500),
-                            ));
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                Center(
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: infoWidgets)),
-              ],
-            )),
-      ),
-      drawer: AppDrawer(),
-    );
+    //infoWidgets.add(Text(humanifySize(totalDown)));
+    //infoWidgets.add(Icon(Icons.arrow_downward));
+    //infoWidgets.add(Text(humanifySize(totalUp)));
+    //infoWidgets.add(Icon(Icons.arrow_upward));
 
     return GestureDetector(
       onTap: () {
@@ -377,7 +210,169 @@ class MyScaffoldState extends State<MyScaffold> {
           node.unfocus();
         }
       },
-      child: scaffold,
+      child: SafeArea(
+          child: Scaffold(
+            key: _scaffoldKey,
+            body: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: <Widget>[
+                Expanded(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverPadding(
+                        padding: EdgeInsets.only(left: 20, right: 20, top: 5),
+                        sliver: SliverAppBar(
+                            backgroundColor: Theme.of(context).bottomAppBarColor,
+                            iconTheme: Theme.of(context).iconTheme,
+                            forceElevated: true,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            leading: IconButton(
+                              icon: Icon(Icons.menu),
+                              onPressed: () {
+                                _scaffoldKey.currentState!.openDrawer();
+                              },
+                            ),
+                            title: TextField(
+                              textInputAction: TextInputAction.search,
+                              controller: _searchController,
+                              decoration: InputDecoration(hintText: 'Search tasks', border: InputBorder.none),
+                            )),
+                      ),
+                      TaskList(settings),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            floatingActionButton: OpenContainer(
+              closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+              closedBuilder: (context, openContainerCallback) {
+                return FloatingActionButton(
+                  child: Icon(
+                    Icons.add,
+                    size: 32,
+                  ),
+                  onPressed: openContainerCallback,
+                );
+              },
+              openBuilder: (context, CloseContainerActionCallback<String> closeContainerCallback) {
+                return AddTaskForm();
+              },
+              onClosed: (String? data) {
+                if (data != null) {
+                  var scaffold = _scaffoldKey.currentState!;
+                  ScaffoldMessenger.of(context)
+                    ..removeCurrentSnackBar()
+                    ..showSnackBar(SnackBar(
+                      content: Text(data),
+                    ));
+                }
+              },
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+            bottomNavigationBar: BottomAppBar(
+              shape: const CircularNotchedRectangle(),
+              child: Container(
+                  padding: EdgeInsets.only(left: 5),
+                  height: 45 + (kIsWeb ? 20 : 0), // TODO - temporary solution for iphone bottom tab bar on fullscreen browser
+                  child: Stack(
+                    children: <Widget>[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          IconButton(
+                            icon: Icon(Icons.play_arrow),
+                            onPressed: () {
+                              // start all tasks
+                              apiBloc.add(SynoApiEvent.resumeTask(taskIds, onCompleted: (state) {
+                                if (state.resp!.success) {
+                                  ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                                      .showSnackBar(SnackBar(content: Text('Tasks resumed.')));
+                                }
+                              }));
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.pause),
+                            onPressed: () {
+                              // pause all tasks
+                              apiBloc.add(SynoApiEvent.pauseTask(taskIds, onCompleted: (state) {
+                                if (state.resp!.success) {
+                                  ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                                      .showSnackBar(SnackBar(content: Text('Tasks paused.')));
+                                }
+                              }));
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.content_paste),
+                            onPressed: () {
+                              Clipboard.getData('text/plain').then((data) {
+                                var text = data?.text ?? '';
+                                if (Uri.parse(text).isAbsolute) {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          title: Text('Add from clipboard'),
+                                          content: Text(text),
+                                          actions: <Widget>[
+                                            FlatButton(
+                                              child: Text('Cancel'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                            FlatButton(
+                                              child: Text('Add'),
+                                              onPressed: () {
+                                                // submit task
+                                                Navigator.of(context).pop();
+                                                ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                                                    .showSnackBar(buildSnackBar('Submitting tasks...'));
+                                                apiBloc.add(SynoApiEvent.addTask(
+                                                  uris: [text],
+                                                  onCompleted: (state) {
+                                                    ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                                                        .removeCurrentSnackBar();
+                                                    if (state.resp!.success) {
+                                                      ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                                                          .showSnackBar(SnackBar(
+                                                        content: Text('Task Submitted.'),
+                                                      ));
+                                                    }
+                                                  },
+                                                ));
+                                              },
+                                            )
+                                          ],
+                                        );
+                                      });
+                                } else {
+                                  ScaffoldMessenger.of(_scaffoldKey.currentState!.context).removeCurrentSnackBar();
+                                  ScaffoldMessenger.of(_scaffoldKey.currentState!.context).showSnackBar(SnackBar(
+                                    content: Text('No Uri in clipboard...'),
+                                    duration: Duration(milliseconds: 500),
+                                  ));
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      Center(
+                          child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.max,
+                              children: infoWidgets)),
+                    ],
+                  )),
+            ),
+            drawer: AppDrawer(),
+          )),
     );
   }
 }

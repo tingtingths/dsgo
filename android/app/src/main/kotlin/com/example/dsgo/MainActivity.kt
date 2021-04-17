@@ -1,4 +1,4 @@
-package me.itdog.dsgo
+package com.example.dsgo
 
 import io.flutter.embedding.android.FlutterActivity
 

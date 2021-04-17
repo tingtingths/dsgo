@@ -54,8 +54,7 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
         children: <Widget>[
           Text(
             packageInfo!.appName,
-            style:
-                DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
+            style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 1.5),
           ),
           Row(
             mainAxisSize: MainAxisSize.max,
@@ -67,9 +66,7 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
                     String? text = 'Add an account...';
                     if (state.activeConnection != null) {
                       text = state.activeConnection!.friendlyName;
-                      text = text == null
-                          ? state.activeConnection!.buildUri()
-                          : text;
+                      text = text == null ? state.activeConnection!.buildUri() : text;
                     }
 
                     return Text(
@@ -81,9 +78,7 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
                 ),
               ),
               IconButton(
-                icon: _expandConnection
-                    ? Icon(Icons.arrow_drop_up)
-                    : Icon(Icons.arrow_drop_down),
+                icon: _expandConnection ? Icon(Icons.arrow_drop_up) : Icon(Icons.arrow_drop_down),
                 onPressed: () {
                   setState(() {
                     _expandConnection = !_expandConnection;
@@ -167,8 +162,7 @@ class _AppDrawerState extends State<AppDrawer> {
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
               applicationName: packageInfo!.appName,
-              applicationVersion:
-                  '${packageInfo!.version}-${packageInfo!.buildNumber}',
+              applicationVersion: '${packageInfo!.version}-${packageInfo!.buildNumber}',
               applicationLegalese: '@ 2020 Ho Shing Ting',
               aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
             )
@@ -209,8 +203,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   leading: Icon(Icons.person_add),
                   title: Text('DEBUG Remove all'),
                   onTap: () {
-                    bloc.add(
-                        DSConnectionEvent.noPayload(DSConnectionAction.removeAll));
+                    bloc.add(DSConnectionEvent.noPayload(DSConnectionAction.removeAll));
                   },
                 ));
 
@@ -255,15 +248,6 @@ class _AppDrawerState extends State<AppDrawer> {
                     return _listItemBuilder(cntx, _list[idx], anim);
                   },
                 ),
-              ),
-              Text(
-                '@ 2020 Ho Shing Ting',
-                style: TextStyle(
-                    color: Theme.of(context)
-                        .textTheme
-                        .subtitle2!
-                        .color!
-                        .withAlpha(100)),
               )
             ],
           )),
@@ -274,8 +258,7 @@ class _AppDrawerState extends State<AppDrawer> {
 
   _insertItem(int idx, Widget widget) {
     _list.insert(idx, widget);
-    _listKey.currentState!
-        .insertItem(idx, duration: Duration(milliseconds: 150));
+    _listKey.currentState!.insertItem(idx, duration: Duration(milliseconds: 150));
   }
 
   _removeItem(int idx) {
@@ -286,8 +269,7 @@ class _AppDrawerState extends State<AppDrawer> {
     }, duration: Duration(milliseconds: 150));
   }
 
-  Widget _listItemBuilder(
-      BuildContext context, Widget widget, Animation<double> animation) {
+  Widget _listItemBuilder(BuildContext context, Widget widget, Animation<double> animation) {
     return SizeTransition(
       axis: Axis.vertical,
       sizeFactor: animation,
@@ -322,8 +304,7 @@ class _AppDrawerState extends State<AppDrawer> {
     if (isActive) {
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-              topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
+          borderRadius: BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
           color: bg,
         ),
         child: tile,

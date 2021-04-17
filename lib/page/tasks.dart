@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:morpheus/morpheus.dart';
@@ -165,11 +166,11 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
           'ids': [task.id]
         };
         /*
-              i.e.
-                Downloading -> Pause
-                Pause -> Downloading
-                ..etc?
-               */
+        i.e.
+          Downloading -> Pause
+          Pause -> Downloading
+          ..etc?
+         */
         if (TaskStatus.downloading == task.status) {
           // pause it
           apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
@@ -238,8 +239,9 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
                 });
               },
               title: Text(
-                task.title!,
-                overflow: TextOverflow.fade,
+                task.title ?? '',
+                // TODO - fade not working on mobile browser. https://github.com/flutter/flutter/issues/71413
+                overflow: kIsWeb ? TextOverflow.ellipsis : TextOverflow.fade,
                 softWrap: false,
                 style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
               ),

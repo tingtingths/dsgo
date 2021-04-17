@@ -11,9 +11,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>DS Go</string>
-	<key>CFBundleDisplayName</key>
-    <string>DS Go</string>
+	<string>dsgo</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
