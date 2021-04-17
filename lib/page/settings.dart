@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../model/model.dart';
 import '../provider/user_settings.dart';
 import '../util/const.dart';
@@ -14,7 +16,11 @@ class SettingsPageState extends State<SettingsPage> {
 
   @override
   void initState() {
-    settingsProvider = MobileUserSettingsProvider();
+    if (kIsWeb) {
+      settingsProvider = WebUserSettingsProvider();
+    } else {
+      settingsProvider = MobileUserSettingsProvider();
+    }
     settingsProvider.get().then((value) {
       setState(() {
         settings = value;

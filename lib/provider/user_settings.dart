@@ -48,21 +48,26 @@ class WebUserSettingsProvider extends UserSettingsProvider {
   @override
   Future<UserSettings> get() async {
     return _storage.ready.then((ready) {
-       var json = _storage.getItem(StorageKey.UserSettings.key) as String;
-       UserSettings settings = UserSettings();
-       try {
-         settings = decodeJson(json);
-       } catch (e) {
-         // ignored
-       }
-       return settings;
+      var json = _storage.getItem(StorageKey.UserSettings.key);
+      UserSettings settings = UserSettings();
+      if (json == null) return settings;
+      try {
+        settings = decodeJson(json);
+      } catch (e) {
+        // ignored
+      }
+      return settings;
     });
   }
 
   @override
   Future<void> set(UserSettings? settings) async {
     super.set(settings);
-    var json = encodeJson(settings!);
+    if (settings == null) {
+      await _storage.setItem(StorageKey.UserSettings.key, '{}');
+      return;
+    }
+    var json = encodeJson(settings);
     await _storage.setItem(StorageKey.UserSettings.key, json);
   }
 }
@@ -79,8 +84,9 @@ class MobileUserSettingsProvider extends UserSettingsProvider {
 
   @override
   Future<UserSettings> get() async {
-    var json = await (_storage.read(key: StorageKey.UserSettings.key) as FutureOr<String>);
+    var json = await (_storage.read(key: StorageKey.UserSettings.key));
     UserSettings settings = UserSettings(); // default
+    if (json == null) return settings;
     try {
       settings = decodeJson(json);
     } catch (e) {
@@ -92,7 +98,11 @@ class MobileUserSettingsProvider extends UserSettingsProvider {
   @override
   Future<void> set(UserSettings? settings) async {
     super.set(settings);
-    var json = encodeJson(settings!);
+    if (settings == null) {
+      await _storage.write(key: StorageKey.UserSettings.key, value: '{}');
+      return;
+    }
+    var json = encodeJson(settings);
     await _storage.write(key: StorageKey.UserSettings.key, value: json);
   }
 }

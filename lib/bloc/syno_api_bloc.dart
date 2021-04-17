@@ -6,14 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
 
-enum RequestType {
-  task_list,
-  task_info,
-  add_task,
-  remove_task,
-  pause_task, resume_task,
-  statistic_info
-}
+enum RequestType { task_list, task_info, add_task, remove_task, pause_task, resume_task, statistic_info }
 
 extension RequestTypeMember on RequestType {
   String? get name => const {
@@ -43,40 +36,33 @@ class SynoApiEvent {
     _params['additional'] = additional;
   }
 
-  SynoApiEvent.taskInfo(List<String> ids,
-      {List<String>? additional, Function(SynoApiState)? onCompleted}) {
+  SynoApiEvent.taskInfo(List<String> ids, {List<String>? additional, Function(SynoApiState)? onCompleted}) {
     _requestType = RequestType.task_info;
     _params['ids'] = ids;
     _params['additional'] = additional;
     _onCompleted = onCompleted;
   }
 
-  SynoApiEvent.addTask(
-      {List<String>? uris,
-      List<File>? torrentFiles,
-      Function(SynoApiState)? onCompleted}) {
+  SynoApiEvent.addTask({List<String>? uris, List<File>? torrentFiles, Function(SynoApiState)? onCompleted}) {
     _requestType = RequestType.add_task;
     _params['uris'] = uris;
     _params['torrent_files'] = torrentFiles;
     _onCompleted = onCompleted;
   }
 
-  SynoApiEvent.removeTask(List<String> ids,
-      {Function(SynoApiState)? onCompleted}) {
+  SynoApiEvent.removeTask(List<String> ids, {Function(SynoApiState)? onCompleted}) {
     _requestType = RequestType.remove_task;
     _params['ids'] = ids;
     _onCompleted = onCompleted;
   }
 
-  SynoApiEvent.pauseTask(List<String?> ids,
-      {Function(SynoApiState)? onCompleted}) {
+  SynoApiEvent.pauseTask(List<String?> ids, {Function(SynoApiState)? onCompleted}) {
     _requestType = RequestType.pause_task;
     _params['ids'] = ids;
     _onCompleted = onCompleted;
   }
 
-  SynoApiEvent.resumeTask(List<String?> ids,
-      {Function(SynoApiState)? onCompleted}) {
+  SynoApiEvent.resumeTask(List<String?> ids, {Function(SynoApiState)? onCompleted}) {
     _requestType = RequestType.resume_task;
     _params['ids'] = ids;
     _onCompleted = onCompleted;
@@ -140,17 +126,16 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
         additional = event._params['additional'];
       }
 
-      resp = await _dsApi!.task
-          .list(offset: offset!, limit: limit!, additional: additional!);
+      resp = await _dsApi!.task.list(offset: offset!, limit: limit!, additional: additional!);
     }
 
-    if (event.requestType == RequestType.task_info &&
-        event._params.containsKey('ids')) {
-      var additional = event._params['additional'] ??
-          ['detail', 'transfer', 'file', 'tracker', 'peer'];
-
-      resp = await _dsApi!.task
-          .getInfo(event._params['ids'], additional: additional);
+    if (event.requestType == RequestType.task_info && event._params.containsKey('ids')) {
+      var additional = event._params['additional'] ?? ['detail', 'transfer', 'file', 'tracker', 'peer'];
+      List<String> ids = [];
+      (event._params['ids'] as List<String?>).where((e) => e != null).forEach((e) {
+        ids.add(e!);
+      });
+      resp = await _dsApi!.task.getInfo(ids, additional: additional);
     }
 
     if (event.requestType == RequestType.add_task) {
@@ -176,22 +161,15 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
       resp = APIResponse(success, null, null);
     }
 
-    if ([
-      RequestType.remove_task,
-      RequestType.pause_task,
-      RequestType.resume_task
-    ].contains(event.requestType)) {
+    if ([RequestType.remove_task, RequestType.pause_task, RequestType.resume_task].contains(event.requestType)) {
       List<String> ids = event._params['ids'] ?? [];
 
       if (ids.isNotEmpty) {
-        if (event.requestType == RequestType.remove_task)
-          resp = await _dsApi!.task.delete(ids, false);
+        if (event.requestType == RequestType.remove_task) resp = await _dsApi!.task.delete(ids, false);
 
-        if (event.requestType == RequestType.resume_task)
-          resp = await _dsApi!.task.resume(ids);
+        if (event.requestType == RequestType.resume_task) resp = await _dsApi!.task.resume(ids);
 
-        if (event.requestType == RequestType.pause_task)
-          resp = await _dsApi!.task.pause(ids);
+        if (event.requestType == RequestType.pause_task) resp = await _dsApi!.task.pause(ids);
       }
     }
 
@@ -210,8 +188,7 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   set apiContext(APIContext? value) {
     l.info('setApiContext(); $value');
     context = value;
-    if (context != null)
-      _dsApi = DownloadStationAPI(context!);
+    if (context != null) _dsApi = DownloadStationAPI(context!);
   }
 
   bool isReady() {

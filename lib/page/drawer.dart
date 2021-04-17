@@ -1,7 +1,7 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
-import 'package:morpheus/morpheus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../bloc/connection_bloc.dart';
@@ -143,19 +143,15 @@ class _AppDrawerState extends State<AppDrawer> {
           itmIdx += _list.length - 1;
           _list.addAll([
             Divider(),
-            ListTile(
-              key: _settingsBtnKey,
-              leading: Icon(Icons.settings),
-              title: Text('Settings'),
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MorpheusPageRoute(
-                      parentKey: _settingsBtnKey,
-                      builder: (context) {
-                        return SettingsPage();
-                      },
-                    ));
+            OpenContainer(
+              closedColor: Colors.transparent,
+              closedElevation: 0,
+              closedBuilder: (context, action) {
+                return ListTile(
+                    key: _settingsBtnKey, leading: Icon(Icons.settings), title: Text('Settings'), onTap: action);
+              },
+              openBuilder: (context, action) {
+                return SettingsPage();
               },
             ),
             AboutListTile(
@@ -214,14 +210,11 @@ class _AppDrawerState extends State<AppDrawer> {
                   leading: Icon(Icons.people),
                   title: Text('Manage Accounts'),
                   onTap: () {
-                    Navigator.push(
-                        context,
-                        MorpheusPageRoute(
-                          parentKey: _manageAccountBtnKey,
-                          builder: (context) {
-                            return ManageAccountPage();
-                          },
-                        ));
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) {
+                        return ManageAccountPage();
+                      },
+                    ));
                   },
                 ));
             _connectionCntrListItemIdx.add(itmIdx);

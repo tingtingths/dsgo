@@ -1,10 +1,10 @@
 import 'dart:async';
 
+import 'package:animations/animations.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:morpheus/morpheus.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../bloc/connection_bloc.dart';
@@ -213,63 +213,61 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
         child: Column(
           key: _cardKeys[idx],
           children: <Widget>[
-            Divider(
-              indent: 15,
-              endIndent: 15,
-            ),
-            ListTile(
-              dense: false,
-              leading: statusIcon,
-              //contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MorpheusPageRoute(
-                        parentKey: _cardKeys[idx],
-                        builder: (context) {
-                          return BlocProvider.value(
-                            value: BlocProvider.of<DSConnectionBloc>(context),
-                            child: TaskDetailsPage(task, settings),
-                          );
-                        })).then((result) {
-                  result = (result ?? {});
+            OpenContainer(
+                closedColor: Colors.transparent,
+                closedElevation: 0,
+                transitionDuration: Duration(milliseconds: 400),
+                onClosed: (Map<String, dynamic>? result) {
+                  result ??= {};
                   if (result['requestType'] == RequestType.remove_task && result['taskId'] != null) {
                     removeTaskFromModel(result['taskId']);
                   }
-                });
-              },
-              title: Text(
-                task.title ?? '',
-                // TODO - fade not working on mobile browser. https://github.com/flutter/flutter/issues/71413
-                overflow: kIsWeb ? TextOverflow.ellipsis : TextOverflow.fade,
-                softWrap: false,
-                style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Divider(
-                    height: 5,
-                  ),
-                  Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
-                      ? '${task.status!.name.capitalize()}'
-                      : '$progressText% | ${task.status!.name.capitalize()}' +
-                          (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
-                  Text('$downloaded of $totalSize'),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.arrow_downward,
-                        size: textTheme.bodyText1!.fontSize,
-                      ),
-                      Text(downSpeed),
-                      Icon(Icons.arrow_upward, size: textTheme.bodyText1!.fontSize),
-                      Text(upSpeed),
-                    ],
-                  )
-                ],
-              ),
-            ),
+                },
+                closedBuilder: (context, action) {
+                  return ListTile(
+                    dense: false,
+                    leading: statusIcon,
+                    contentPadding: EdgeInsets.fromLTRB(5, 5, 5, 5),
+                    onTap: action,
+                    title: Text(
+                      task.title ?? '',
+                      // TODO - fade not working on mobile browser. https://github.com/flutter/flutter/issues/71413
+                      overflow: kIsWeb ? TextOverflow.ellipsis : TextOverflow.fade,
+                      softWrap: false,
+                      style: TextStyle(fontSize: Theme.of(context).textTheme.headline6!.fontSize),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Divider(
+                          height: 5,
+                        ),
+                        Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
+                            ? '${task.status!.name.capitalize()}'
+                            : '$progressText% | ${task.status!.name.capitalize()}' +
+                                (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
+                        Text('$downloaded of $totalSize'),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.arrow_downward,
+                              size: textTheme.bodyText1!.fontSize,
+                            ),
+                            Text(downSpeed),
+                            Icon(Icons.arrow_upward, size: textTheme.bodyText1!.fontSize),
+                            Text(upSpeed),
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                },
+                openBuilder: (context, CloseContainerActionCallback<Map<String, dynamic>?> action) {
+                  return BlocProvider.value(
+                    value: BlocProvider.of<DSConnectionBloc>(context),
+                    child: TaskDetailsPage(task, settings),
+                  );
+                }),
             progressBar,
           ],
         ),

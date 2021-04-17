@@ -248,6 +248,7 @@ class MainScaffoldState extends State<MainScaffold> {
             ),
             floatingActionButton: OpenContainer(
               closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+              closedColor: Colors.transparent,
               closedBuilder: (context, openContainerCallback) {
                 return FloatingActionButton(
                   child: Icon(

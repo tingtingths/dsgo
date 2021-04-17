@@ -18,7 +18,7 @@ abstract class ConnectionProvider {
     String? uri = await getDefaultConnectionUri();
     var connections = await getAll();
 
-    return _findByUri(uri, connections).item2;
+    return _findByUri(uri, connections)?.item2;
   }
 
   Future<void> setDefaultConnection(String uri);
@@ -31,7 +31,7 @@ abstract class ConnectionProvider {
 
   Future<void> removeAll();
 
-  Future<List<Connection?>> replace(int idx, Connection? updated);
+  Future<List<Connection>> replace(int idx, Connection updated);
 
   Future<Connection> get(int idx);
 
@@ -54,12 +54,11 @@ abstract class ConnectionProvider {
     return jsonEncode(lst);
   }
 
-  Tuple2<int, Connection?> _findByUri(
-      String? uri, List<Connection?> connections) {
-    return Tuple2(
-        connections.indexWhere((e) => uri == e!.buildUri()),
-        connections.firstWhere((e) => uri == e!.buildUri(),
-            orElse: () => null));
+  Tuple2<int, Connection>? _findByUri(String? uri, List<Connection> connections) {
+    var idx = connections.indexWhere((e) => uri == e.buildUri());
+    if (idx == -1) return null;
+    var conn = connections[idx];
+    return Tuple2(idx, conn);
   }
 }
 
@@ -116,8 +115,8 @@ class WebConnectionProvider extends ConnectionProvider {
   }
 
   @override
-  Future<List<Connection?>> replace(int idx, Connection? updated) async {
-    List<Connection?> lst = await getAll();
+  Future<List<Connection>> replace(int idx, Connection updated) async {
+    List<Connection> lst = await getAll();
     lst.replaceRange(idx, idx + 1, [updated]);
     _set(encodeJson(lst));
     return getAll();
@@ -126,8 +125,7 @@ class WebConnectionProvider extends ConnectionProvider {
   @override
   Future<void> setDefaultConnection(String uri) async {
     _storage.ready.then((ready) {
-      _storage.setItem(StorageKey.DefaultConnectionIndex.key,
-          jsonEncode({'defaultUri': uri}));
+      _storage.setItem(StorageKey.DefaultConnectionIndex.key, jsonEncode({'defaultUri': uri}));
     });
   }
 
@@ -140,8 +138,7 @@ class WebConnectionProvider extends ConnectionProvider {
 
 class MobileConnectionProvider extends ConnectionProvider {
   final l = Logger('MobileConnectionProvider');
-  static MobileConnectionProvider _instance =
-      MobileConnectionProvider._internal();
+  static MobileConnectionProvider _instance = MobileConnectionProvider._internal();
   final FlutterSecureStorage _storage = FlutterSecureStorage();
   static final String _key = StorageKey.Connections.key;
 
@@ -160,8 +157,8 @@ class MobileConnectionProvider extends ConnectionProvider {
       return connections[0]!.buildUri();
     }
 
-    String value = await (_storage.read(
-        key: StorageKey.DefaultConnectionIndex.key) as FutureOr<String>);
+    String? value = await (_storage.read(key: StorageKey.DefaultConnectionIndex.key));
+    if (value == null) return ret;
     try {
       Map<String, dynamic> json = jsonDecode(value);
       ret = json['defaultUri'];
@@ -174,14 +171,13 @@ class MobileConnectionProvider extends ConnectionProvider {
 
   @override
   Future<void> setDefaultConnection(String? uri) async {
-    await _storage.write(
-        key: StorageKey.DefaultConnectionIndex.key,
-        value: jsonEncode({'defaultUri': uri}));
+    await _storage.write(key: StorageKey.DefaultConnectionIndex.key, value: jsonEncode({'defaultUri': uri}));
   }
 
   @override
   Future<List<Connection>> getAll() async {
-    String value = await (_storage.read(key: _key) as FutureOr<String>);
+    String? value = await (_storage.read(key: _key));
+    if (value == null) return [];
     return decodeJson(value);
   }
 
@@ -207,8 +203,8 @@ class MobileConnectionProvider extends ConnectionProvider {
   }
 
   @override
-  Future<List<Connection?>> replace(int idx, Connection? updated) async {
-    List<Connection?> lst = await getAll();
+  Future<List<Connection>> replace(int idx, Connection updated) async {
+    List<Connection> lst = await getAll();
     lst.replaceRange(idx, idx + 1, [updated]);
     await _storage.write(key: _key, value: encodeJson(lst));
     return getAll();

@@ -30,7 +30,6 @@ dependencies:
   flutter_secure_storage: ^4.0.0
   flutter_bloc: ^7.0.0
   tuple: ^2.0.0
-  morpheus: ^1.2.2+1
   intl: ^0.17.0
   uuid: ^3.0.0
   file_picker: ^3.0.1

@@ -47,7 +47,7 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   @override
   Stream<DSConnectionState> mapEventToState(DSConnectionEvent evt) async* {
     Connection? active = await _provider.getDefaultConnection();
-    List<Connection?> connections = await _provider.getAll();
+    List<Connection> connections = await _provider.getAll();
 
     if (evt.action == DSConnectionAction.refresh) {
       if (active == null && connections.length == 1)
@@ -66,7 +66,7 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     // remove connection
     if (evt.action == DSConnectionAction.remove) {
       if (_hasConnection(evt.connection!, connections)) {
-        var idx = connections.indexWhere((e) => evt.connection!.buildUri() == e!.buildUri());
+        var idx = connections.indexWhere((e) => evt.connection!.buildUri() == e.buildUri());
         await _provider.remove(idx);
         connections = await _provider.getAll();
       }
@@ -81,8 +81,8 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     // edit connection
     if (evt.action == DSConnectionAction.edit) {
       var idx = evt.idx;
-      if (idx != null && connections.length > idx) {
-        connections = await _provider.replace(idx, evt.connection);
+      if (idx != null && connections.length > idx && evt.connection != null) {
+        connections = await _provider.replace(idx, evt.connection!);
       }
     }
 
@@ -99,12 +99,13 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     yield DSConnectionState(active, connections);
   }
 
-  bool _hasConnection(Connection target, List<Connection?> connections) =>
-      _find(target, connections).item1 != -1;
+  bool _hasConnection(Connection target, List<Connection> connections) =>
+      _find(target, connections) != null;
 
-  Tuple2<int, Connection?> _find(Connection target, List<Connection?> connections) {
+  Tuple2<int, Connection>? _find(Connection target, List<Connection> connections) {
     var uri = target.buildUri();
-    return Tuple2(connections.indexWhere((e) => uri == e!.buildUri()),
-        connections.firstWhere((e) => uri == e!.buildUri(), orElse: () => null));
+    var idx = connections.indexWhere((e) => uri == e.buildUri());
+    if (idx == -1) return null;
+    return Tuple2(idx, connections[idx]);
   }
 }
