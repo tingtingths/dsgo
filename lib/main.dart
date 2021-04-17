@@ -54,6 +54,10 @@ class AppState extends State<App> {
 
     // auto update api context when connection changed
     connectionBloc.stream.listen((event) {
+      if (event.activeConnection == null) {
+        apiBloc.apiContext = null;
+      }
+
       if (event.activeConnection != null && lastConnection != event.activeConnection) {
         var c = event.activeConnection!;
         if (c.uri == null) return;

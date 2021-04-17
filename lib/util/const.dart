@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 final String TXT_NOTHING = 'Wow, such empty';
+final String STYLED_APP_NAME = 'DS Go';
 
 enum StorageKey { Connections, DefaultConnectionIndex, UserSettings }
 

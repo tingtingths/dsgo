@@ -34,6 +34,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
   Map<String, StreamSubscription> _subscriptions = {};
   late SynoApiBloc apiBloc;
   late UiEventBloc uiBloc;
+  late DSConnectionBloc connectionBloc;
   List<Task> pendingRemove = [];
   Timer? pendingRemoveCountdown;
   static const String fetchingStreamKey = 'STREAM_FETCH';
@@ -53,6 +54,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
     uiBloc = BlocProvider.of<UiEventBloc>(context);
     apiBloc = BlocProvider.of<SynoApiBloc>(context);
+    connectionBloc = BlocProvider.of<DSConnectionBloc>(context);
 
     _subscriptions[fetchingStreamKey] =
         Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
@@ -81,6 +83,14 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
       }
     });
 
+    connectionBloc.stream.listen((state) {
+      if (state.activeConnection == null) {
+        setState(() {
+          taskInfo = null;
+        });
+      }
+    });
+
     BlocProvider.of<UiEventBloc>(context).stream.listen((state) {
       if (state.event == UiEvent.tasks_filter_change) {
         var filterStr = state.payload.join();
@@ -98,7 +108,14 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
     textTheme = Theme.of(context).textTheme;
     var info = taskInfo;
 
-    if (!apiBloc.isReady() || info == null) {
+    if (!apiBloc.isReady()) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Text(''),
+        ),
+      );
+    }
+    if (info == null) {
       return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
     }
 

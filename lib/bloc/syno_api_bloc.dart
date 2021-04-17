@@ -188,6 +188,7 @@ class SynoApiBloc extends Bloc<SynoApiEvent, SynoApiState> {
   set apiContext(APIContext? value) {
     l.info('setApiContext(); $value');
     context = value;
+    _dsApi = null;
     if (context != null) _dsApi = DownloadStationAPI(context!);
   }
 
