@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../model/model.dart';
-import '../provider/user_settings.dart';
+import '../datasource/user_settings.dart';
 import '../util/const.dart';
 import 'package:flutter/material.dart';
 
@@ -11,17 +11,17 @@ class SettingsPage extends StatefulWidget {
 }
 
 class SettingsPageState extends State<SettingsPage> {
-  late UserSettingsProvider settingsProvider;
+  late UserSettingsDatasource settingsDatasource;
   UserSettings? settings;
 
   @override
   void initState() {
     if (kIsWeb) {
-      settingsProvider = WebUserSettingsProvider();
+      settingsDatasource = WebUserSettingsDatasource();
     } else {
-      settingsProvider = MobileUserSettingsProvider();
+      settingsDatasource = MobileUserSettingsDatasource();
     }
-    settingsProvider.get().then((value) {
+    settingsDatasource.get().then((value) {
       setState(() {
         settings = value;
       });
@@ -58,7 +58,7 @@ class SettingsPageState extends State<SettingsPage> {
                       setState(() {
                         settings!.apiRequestFrequency = int.parse(value);
                       });
-                      settingsProvider.set(settings);
+                      settingsDatasource.set(settings);
                     },
                   ),
                 )),
@@ -79,7 +79,7 @@ class SettingsPageState extends State<SettingsPage> {
                         setState(() {
                           settings!.themeMode = val;
                         });
-                        settingsProvider.set(settings);
+                        settingsDatasource.set(settings);
                       },
                     ))),
           ],

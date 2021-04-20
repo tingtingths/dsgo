@@ -16,7 +16,7 @@ import 'model/model.dart';
 import 'page/add_task.dart';
 import 'page/drawer.dart';
 import 'page/tasks.dart';
-import 'provider/user_settings.dart';
+import 'datasource/user_settings.dart';
 import 'util/utils.dart';
 
 void main() {
@@ -37,7 +37,7 @@ class App extends StatefulWidget {
 
 class AppState extends State<App> {
   UserSettings? settings;
-  late UserSettingsProvider userSettingsProvider;
+  late UserSettingsDatasource userSettingsProvider;
   var lastConnection; // for connection change detection
 
   // blocs
@@ -47,9 +47,9 @@ class AppState extends State<App> {
 
   AppState() {
     if (kIsWeb) {
-      userSettingsProvider = WebUserSettingsProvider();
+      userSettingsProvider = WebUserSettingsDatasource();
     } else {
-      userSettingsProvider = MobileUserSettingsProvider();
+      userSettingsProvider = MobileUserSettingsDatasource();
     }
 
     // auto update api context when connection changed

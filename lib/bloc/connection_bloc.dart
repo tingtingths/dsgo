@@ -1,7 +1,7 @@
 import 'package:logging/logging.dart';
 
 import '../model/model.dart';
-import '../provider/connection.dart';
+import '../datasource/connection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tuple/tuple.dart';
@@ -27,13 +27,13 @@ class DSConnectionState {
 
 class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
   final l = Logger('DSConnectionBloc');
-  late ConnectionProvider _provider;
+  late ConnectionDatasource _datasource;
 
   DSConnectionBloc(): super(DSConnectionBloc.initialState) {
     if (kIsWeb) {
-      _provider = WebConnectionProvider();
+      _datasource = WebConnectionDatasource();
     } else {
-      _provider = MobileConnectionProvider();
+      _datasource = MobileConnectionDatasource();
     }
     this.add(DSConnectionEvent.noPayload(DSConnectionAction.refresh));
   }
@@ -46,8 +46,8 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
 
   @override
   Stream<DSConnectionState> mapEventToState(DSConnectionEvent evt) async* {
-    Connection? active = await _provider.getDefaultConnection();
-    List<Connection> connections = await _provider.getAll();
+    Connection? active = await _datasource.getDefaultConnection();
+    List<Connection> connections = await _datasource.getAll();
 
     if (evt.action == DSConnectionAction.refresh) {
       if (active == null && connections.length == 1)
@@ -58,8 +58,8 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     // new connection
     if (evt.action == DSConnectionAction.add) {
       if (!_hasConnection(evt.connection!, connections)) {
-        await _provider.add(evt.connection);
-        connections = await _provider.getAll();
+        await _datasource.add(evt.connection);
+        connections = await _datasource.getAll();
       }
     }
 
@@ -67,14 +67,14 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     if (evt.action == DSConnectionAction.remove) {
       if (_hasConnection(evt.connection!, connections)) {
         var idx = connections.indexWhere((e) => evt.connection!.buildUri() == e.buildUri());
-        await _provider.remove(idx);
-        connections = await _provider.getAll();
+        await _datasource.remove(idx);
+        connections = await _datasource.getAll();
       }
     }
 
     // remove all connections
     if (evt.action == DSConnectionAction.removeAll) {
-      await _provider.removeAll();
+      await _datasource.removeAll();
       connections = [];
     }
 
@@ -82,14 +82,14 @@ class DSConnectionBloc extends Bloc<DSConnectionEvent, DSConnectionState> {
     if (evt.action == DSConnectionAction.edit) {
       var idx = evt.idx;
       if (idx != null && connections.length > idx && evt.connection != null) {
-        connections = await _provider.replace(idx, evt.connection!);
+        connections = await _datasource.replace(idx, evt.connection!);
       }
     }
 
     // select connection
     if (evt.action == DSConnectionAction.select) {
       if (_hasConnection(evt.connection!, connections)) {
-        await _provider.setDefaultConnection(evt.connection!.buildUri());
+        await _datasource.setDefaultConnection(evt.connection!.buildUri());
         active = evt.connection;
       }
     }

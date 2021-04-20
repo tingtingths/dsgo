@@ -8,13 +8,13 @@ import '../model/model.dart';
 import '../util/const.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-abstract class UserSettingsProvider {
+abstract class UserSettingsDatasource {
   static const String STREAM_NAME = 'STREAM_USER_SETTINGS';
   StreamManager _streamManager = StreamManager();
 
   Future<UserSettings> get();
 
-  UserSettingsProvider() {
+  UserSettingsDatasource() {
     _streamManager.register(STREAM_NAME, StreamController<UserSettings>());
   }
 
@@ -35,15 +35,15 @@ abstract class UserSettingsProvider {
   }
 }
 
-class WebUserSettingsProvider extends UserSettingsProvider {
-  static WebUserSettingsProvider _instance = WebUserSettingsProvider._internal();
+class WebUserSettingsDatasource extends UserSettingsDatasource {
+  static WebUserSettingsDatasource _instance = WebUserSettingsDatasource._internal();
   final LocalStorage _storage = new LocalStorage('_dsgo');
 
-  factory WebUserSettingsProvider() {
+  factory WebUserSettingsDatasource() {
     return _instance;
   }
 
-  WebUserSettingsProvider._internal();
+  WebUserSettingsDatasource._internal();
 
   @override
   Future<UserSettings> get() async {
@@ -72,15 +72,15 @@ class WebUserSettingsProvider extends UserSettingsProvider {
   }
 }
 
-class MobileUserSettingsProvider extends UserSettingsProvider {
-  static MobileUserSettingsProvider _instance = MobileUserSettingsProvider._internal();
+class MobileUserSettingsDatasource extends UserSettingsDatasource {
+  static MobileUserSettingsDatasource _instance = MobileUserSettingsDatasource._internal();
   final FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  factory MobileUserSettingsProvider() {
+  factory MobileUserSettingsDatasource() {
     return _instance;
   }
 
-  MobileUserSettingsProvider._internal();
+  MobileUserSettingsDatasource._internal();
 
   @override
   Future<UserSettings> get() async {
