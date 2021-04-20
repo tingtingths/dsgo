@@ -1,20 +1,19 @@
 import 'package:animations/animations.dart';
-import 'package:dsgo/bloc/syno_api_bloc.dart';
+import 'package:dsgo/datasource/connection.dart';
+import 'package:dsgo/main.dart';
+import 'package:dsgo/model/model.dart';
 import 'package:dsgo/util/const.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:logging/logging.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../bloc/connection_bloc.dart';
-import '../model/model.dart';
 import '../page/connection.dart';
 import '../page/settings.dart';
 
-class AppDrawer extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() => _AppDrawerState();
-}
+// ignore: top_level_function_literal_block
+final packageInfoProvider = FutureProvider((ref) async {
+  return await PackageInfo.fromPlatform();
+});
 
 class _AppDrawerHeader extends StatefulWidget {
   @override
@@ -48,10 +47,12 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
         children: <Widget>[
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(STYLED_APP_NAME,
+            title: Text(
+              STYLED_APP_NAME,
               style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 2.0, fontWeightDelta: 2),
             ),
-            subtitle: Text('${packageInfo!.version}',
+            subtitle: Text(
+              '${packageInfo!.version}',
               style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 0.8),
             ),
           )
@@ -61,162 +62,106 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
   }
 }
 
-class _AppDrawerState extends State<AppDrawer> {
-  final l = Logger('_AppDrawerState');
-  late DSConnectionBloc connectionBloc;
-  late SynoApiBloc apiBloc;
-  GlobalKey _settingsBtnKey = GlobalKey();
-  PackageInfo? packageInfo;
-
+class AppDrawer extends ConsumerWidget {
   @override
-  void initState() {
-    connectionBloc = BlocProvider.of<DSConnectionBloc>(context);
-    apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    PackageInfo.fromPlatform().then((packageInfo) {
-      setState(() {
-        this.packageInfo = packageInfo;
-      });
-    });
-    super.initState();
-  }
+  Widget build(BuildContext context, watch) {
+    var connection = watch(connectionProvider).state;
+    return watch(packageInfoProvider).when(
+        data: (packageInfo) {
+          var drawerItems = <Widget>[_AppDrawerHeader()];
 
-  @override
-  Widget build(BuildContext context) {
-    if (packageInfo == null) {
-      return CircularProgressIndicator();
-    }
-    return BlocBuilder<DSConnectionBloc, DSConnectionState>(
-      builder: (BuildContext context, DSConnectionState state) {
-        var activeConnection = state.activeConnection;
-        var drawerItems = <Widget>[_AppDrawerHeader()];
+          if (connection != null) {
+            // add current connection
+            drawerItems.add(OpenContainer(
+              closedColor: Colors.transparent,
+              closedElevation: 0,
+              closedBuilder: (context, action) {
+                return ListTile(
+                  leading: Icon(
+                    Icons.person,
+                  ),
+                  title: Text(
+                    connection.user ?? connection.uri ?? '',
+                    style: TextStyle(),
+                  ),
+                  onTap: action,
+                );
+              },
+              onClosed: (Connection? updatedConnection) {
+                if (updatedConnection == null) return;
+                // save connection
+                context.read(connectionProvider).state = updatedConnection;
+              },
+              openBuilder: (context, CloseContainerActionCallback<Connection?> action) {
+                return ConnectionEditForm.edit(0, connection);
+              },
+            ));
+          }
 
-        if (activeConnection != null) {
-          // add current connection
-          drawerItems.add(
-              OpenContainer(
-                closedColor: Colors.transparent,
-                closedElevation: 0,
-                closedBuilder: (context, action) {
-                  return ListTile(
-                    leading: Icon(
-                      Icons.person,
-                    ),
-                    title: Text(
-                      activeConnection.user ?? activeConnection.uri ?? '',
-                      style: TextStyle(
-                      ),
-                    ),
-                    onTap: action,
-                  );
-                },
-                openBuilder: (context, action) {
-                  return ConnectionEditForm.edit(0, activeConnection);
-                },
-              )
-          );
-        }
-
-        drawerItems.add(
-          OpenContainer(
+          drawerItems.add(OpenContainer(
             closedColor: Colors.transparent,
             closedElevation: 0,
             openColor: Colors.transparent,
             openElevation: 0,
             closedBuilder: (context, action) {
-              if (activeConnection == null) {
-                return ListTile(
-                    leading: Icon(Icons.login),
-                    title: Text('Login'),
-                    onTap: action
-                );
+              if (connection == null) {
+                return ListTile(leading: Icon(Icons.login), title: Text('Login'), onTap: action);
               } else {
                 return ListTile(
-                  leading: Icon(Icons.logout),
-                  title: Text('Logout'),
-                  onTap: () {
-                    connectionBloc.add(DSConnectionEvent.noPayload(DSConnectionAction.removeAll));
-                  }
-                );
+                    leading: Icon(Icons.logout),
+                    title: Text('Logout'),
+                    onTap: () {
+                      context.read(connectionDatastoreProvider).removeAll();
+                      watch(connectionProvider).state = null;
+                    });
               }
             },
-            openBuilder: (context, action) {
+            onClosed: (Connection? updatedConnection) {
+              if (updatedConnection == null) return;
+              // save connection
+              context.read(connectionProvider).state = updatedConnection;
+            },
+            openBuilder: (context, CloseContainerActionCallback<Connection?> action) {
               return ConnectionEditForm();
             },
-          )
-        );
+          ));
 
-        drawerItems.addAll([
-          Divider(),
-          OpenContainer(
-            closedColor: Colors.transparent,
-            closedElevation: 0,
-            closedBuilder: (context, action) {
-              return ListTile(
-                  key: _settingsBtnKey, leading: Icon(Icons.settings), title: Text('Settings'), onTap: action);
-            },
-            openBuilder: (context, action) {
-              return SettingsPage();
-            },
-          ),
-          AboutListTile(
-            icon: Icon(Icons.info),
-            applicationIcon: FlutterLogo(),
-            applicationName: STYLED_APP_NAME,
-            applicationVersion: '${packageInfo!.version}-${packageInfo!.buildNumber}',
-            applicationLegalese: '@ 2020 Ho Shing Ting',
-            aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
-          )
-        ]);
+          drawerItems.addAll([
+            Divider(),
+            OpenContainer(
+              closedColor: Colors.transparent,
+              closedElevation: 0,
+              closedBuilder: (context, action) {
+                return ListTile(leading: Icon(Icons.settings), title: Text('Settings'), onTap: action);
+              },
+              openBuilder: (context, action) {
+                return SettingsPage();
+              },
+            ),
+            AboutListTile(
+              icon: Icon(Icons.info),
+              applicationIcon: FlutterLogo(),
+              applicationName: STYLED_APP_NAME,
+              applicationVersion: '${packageInfo.version}-${packageInfo.buildNumber}',
+              applicationLegalese: '@ 2020 Ho Shing Ting',
+              aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
+            )
+          ]);
 
-        print(drawerItems);
-        return Drawer(
-          child: SafeArea(
-              child: Column(
-            children: <Widget>[
-              Expanded(
-                child: ListView(
-                  children: drawerItems,
-                ),
-              )
-            ],
-          )),
-        );
-      },
-    );
-  }
-
-  Widget _buildConnectionWidget(Connection conn, bool isActive) {
-    var bg = Theme.of(context).accentColor.withOpacity(0.2);
-    var fg = Theme.of(context).accentColor;
-    DSConnectionBloc bloc = BlocProvider.of<DSConnectionBloc>(context);
-
-    var tile = ListTile(
-      leading: Icon(
-        Icons.person,
-        color: isActive ? fg : null,
-      ),
-      title: Text(
-        conn.buildUri(),
-        style: TextStyle(
-          color: isActive ? fg : null,
-        ),
-      ),
-      onTap: () {
-        bloc.add(DSConnectionEvent(DSConnectionAction.select, conn, null));
-        apiBloc.apiContext = null;
-      },
-    );
-
-    if (isActive) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
-          color: bg,
-        ),
-        child: tile,
-      );
-    }
-
-    return tile;
+          return Drawer(
+            child: SafeArea(
+                child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: ListView(
+                    children: drawerItems,
+                  ),
+                )
+              ],
+            )),
+          );
+        },
+        loading: () => Container(),
+        error: (err, stack) => Text('Error: $err'));
   }
 }

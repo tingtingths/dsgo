@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:logging/logging.dart';
@@ -8,6 +10,9 @@ import 'package:tuple/tuple.dart';
 
 import '../model/model.dart';
 import '../util/const.dart';
+
+final connectionDatastoreProvider =
+    Provider((ref) => kIsWeb ? WebConnectionDatasource() : MobileConnectionDatasource());
 
 abstract class ConnectionDatasource {
   ConnectionDatasource();

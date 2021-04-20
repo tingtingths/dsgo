@@ -1,27 +1,29 @@
 import 'dart:async';
 
-import '../bloc/syno_api_bloc.dart';
+import 'package:collection/collection.dart' show IterableExtension;
+import 'package:dsgo/main.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:synoapi/synoapi.dart';
+
 import '../model/model.dart';
 import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
-import 'package:collection/collection.dart' show IterableExtension;
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:synoapi/synoapi.dart';
-import 'package:uuid/uuid.dart';
+
+final DateFormat _dtFmt = DateFormat.yMd().add_jm();
 
 class TaskDetailsPage extends StatefulWidget {
-  Task _task;
-  UserSettings? settings;
+  final Task task;
+  final UserSettings settings;
 
-  TaskDetailsPage(this._task, this.settings);
+  TaskDetailsPage(this.task, this.settings);
 
   @override
-  State<StatefulWidget> createState() => TaskDetailsPageState(_task, settings);
+  State<StatefulWidget> createState() => TaskDetailsPageState(task, settings);
 }
 
 class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderStateMixin {
@@ -29,12 +31,12 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
   late List<Tab> tabs;
   TabController? tabController;
   bool _fetching = false;
-  String? _fetchingId;
-  late Uuid _uuid;
   List<StreamSubscription> _subs = [];
-  UserSettings? settings;
+  UserSettings settings;
+  late final StateProvider<Task> taskProvider;
 
   TaskDetailsPageState(this._task, this.settings);
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -45,9 +47,6 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
 
   @override
   void initState() {
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    _uuid = Uuid();
-
     tabs = <Tab>[
       Tab(icon: Icon(Icons.info)), // general info
       Tab(icon: Icon(Icons.import_export)), // transfer
@@ -56,43 +55,35 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
       Tab(icon: Icon(Icons.folder)), // files
     ];
 
-    _fetchingId = _uuid.v4();
-    apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
-      'ids': [_task.id],
-      '_fetchingId': _fetchingId
-    }));
+    taskProvider = StateProvider<Task>((ref) => _task);
 
-    _subs.add(Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) {
+    _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
       if (!_fetching) {
-        _fetchingId = _uuid.v4();
-        apiBloc.add(SynoApiEvent.params(RequestType.task_info, {
-          'ids': [_task.id],
-          '_fetchingId': _fetchingId
-        }));
+        var api = context.read(dsAPIProvider)!;
+        var task = context.read(taskProvider).state;
+        api.task.getInfo([task.id!]).then((resp) {
+          _fetching = false;
+          if (!resp.success) return;
+          List<Task> tasks = resp.data ?? [];
+          List<String?> ids = tasks.map((e) => e.id).toList();
+
+          if (!ids.contains(_task.id)) {
+            if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+            return;
+          }
+
+          Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
+          if (task == null) {
+            if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+            return;
+          } else {
+            context.read(taskProvider).state = task;
+          }
+        }, onError: () {
+          _fetching = false;
+        });
       }
     }));
-
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info &&
-          (state.event!.params)['_fetchingId'] == _fetchingId) {
-        _fetching = false;
-
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
 
     tabController = TabController(
       vsync: this,
@@ -113,122 +104,55 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
       body: TabBarView(
         controller: tabController,
         children: [
-          GeneralTaskInfoTab(_task),
-          TransferInfoTab(_task),
-          TrackerInfoTab(_task),
-          PeerInfoTab(_task),
-          FileInfoTab(_task),
+          GeneralTaskInfoTab(taskProvider),
+          TransferInfoTab(taskProvider),
+          TrackerInfoTab(taskProvider),
+          PeerInfoTab(taskProvider),
+          FileInfoTab(taskProvider),
         ],
       ),
     );
   }
 }
 
-class GeneralTaskInfoTab extends StatefulWidget {
-  Task _task;
+class GeneralTaskInfoTab extends ConsumerWidget {
+  late final StateProvider<Task> taskProvider;
 
-  GeneralTaskInfoTab(this._task);
-
-  @override
-  State<StatefulWidget> createState() => GeneralTaskInfoTabState(_task);
-}
-
-class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
-  Task _task;
-  DateFormat dtFmt = DateFormat.yMd().add_jm();
-
-  GeneralTaskInfoTabState(this._task);
-  late SynoApiBloc apiBloc;
-  late Uuid _uuid;
-  String? _reqId;
+  GeneralTaskInfoTab(this.taskProvider);
 
   @override
-  void initState() {
-    _uuid = Uuid();
-
-    apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-
-      if (_reqId != null && state.event!.params['_reqId'] == _reqId) {
-        ScaffoldMessenger.of(context).removeCurrentSnackBar();
-
-        // paused
-        if (state.event!.requestType == RequestType.pause_task && state.resp!.success && mounted) {
-          setState(() {
-            _task.status = TaskStatus.paused;
-          });
-        }
-
-        // resumed
-        if (state.event?.requestType == RequestType.resume_task && state.resp!.success && mounted) {
-          setState(() {
-            _task.status = TaskStatus.downloading;
-          });
-        }
-
-        if (state.event?.requestType == RequestType.remove_task &&
-            state.resp!.success &&
-            mounted &&
-            Navigator.of(context).canPop()) {
-          Navigator.pop(context, {'requestType': RequestType.remove_task, 'taskId': _task.id});
-        }
-      }
-    });
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_task == null) return Text('Null task...');
-
+  Widget build(BuildContext context, watch) {
+    var task = watch(taskProvider).state;
+    var api = context.read(dsAPIProvider)!;
     Widget playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow));
-    if (_task.status == TaskStatus.downloading) {
+
+    if (task.status == TaskStatus.downloading) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause), fillColor: Colors.amber, onPressed: () {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Pausing...'));
-
-        _reqId = _uuid.v4();
-        apiBloc.add(SynoApiEvent.params(RequestType.pause_task, {
-          '_reqId': _reqId,
-          'ids': [_task.id]
-        }));
+        api.task.pause([task.id!]).then((resp) {
+          context.read(taskProvider).state..status = TaskStatus.paused;
+        });
       });
     }
-    if (_task.status == TaskStatus.paused) {
+    if (task.status == TaskStatus.paused) {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow), fillColor: Colors.green, onPressed: () {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('Resuming...'));
-
-        _reqId = _uuid.v4();
-        apiBloc.add(SynoApiEvent.params(RequestType.resume_task, {
-          '_reqId': _reqId,
-          'ids': [_task.id]
-        }));
+        api.task.resume([task.id!]).then((resp) {
+          context.read(taskProvider).state..status = TaskStatus.downloading;
+        });
       });
     }
 
-    Widget deleteBtn = _buildCircleIconBtn(Icon(Icons.delete), fillColor: Colors.red, onPressed: () {
-      Navigator.of(context).pop({'requestType': RequestType.remove_task, 'taskId': _task.id});
-    });
-
-    List<Widget> actionBtns = [playPauseBtn, deleteBtn];
+    List<Widget> actionBtns = [
+      playPauseBtn,
+      _buildCircleIconBtn(Icon(Icons.delete), fillColor: Colors.red, onPressed: () {
+        Navigator.of(context).pop({'action': 'remove', 'taskId': task.id!});
+      })
+    ];
 
     return Column(
       children: [
@@ -248,43 +172,43 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
             shrinkWrap: true,
             children: [
               ListTile(
-                onTap: () => copyToClipboard(_task.title, context),
-                title: Text(_task.title ?? UNKNOWN),
+                onTap: () => copyToClipboard(task.title, context),
+                title: Text(task.title ?? UNKNOWN),
                 subtitle: Text('Title'),
               ),
               ListTile(
-                title: Text(_task.status!.name.capitalize()),
+                title: Text(task.status!.name.capitalize()),
                 subtitle: Text('Status'),
               ),
               ListTile(
-                onTap: () => copyToClipboard(_task.additional?.detail?.destination, context),
-                title: Text(_task.additional?.detail?.destination ?? UNKNOWN),
+                onTap: () => copyToClipboard(task.additional?.detail?.destination, context),
+                title: Text(task.additional?.detail?.destination ?? UNKNOWN),
                 subtitle: Text('Destination'),
               ),
               ListTile(
-                title: Text(humanifySize(_task.size)),
+                title: Text(humanifySize(task.size)),
                 subtitle: Text('Size'),
               ),
               ListTile(
-                onTap: () => copyToClipboard(_task.username, context),
-                title: Text(_task.username ?? UNKNOWN),
+                onTap: () => copyToClipboard(task.username, context),
+                title: Text(task.username ?? UNKNOWN),
                 subtitle: Text('Owner'),
               ),
               ListTile(
-                onTap: () => copyToClipboard(_task.additional?.detail?.uri, context),
-                title: Text(_task.additional?.detail?.uri ?? UNKNOWN),
+                onTap: () => copyToClipboard(task.additional?.detail?.uri, context),
+                title: Text(task.additional?.detail?.uri ?? UNKNOWN),
                 subtitle: Text('URI'),
               ),
               ListTile(
-                title: Text(_task.additional?.detail?.createTime == null
+                title: Text(task.additional?.detail?.createTime == null
                     ? UNKNOWN
-                    : dtFmt.format(_task.additional?.detail?.createTime ?? UNKNOWN as DateTime)),
+                    : _dtFmt.format(task.additional?.detail?.createTime ?? UNKNOWN as DateTime)),
                 subtitle: Text('Created Time'),
               ),
               ListTile(
-                title: Text(_task.additional?.detail?.completedTime == null
+                title: Text(task.additional?.detail?.completedTime == null
                     ? UNKNOWN
-                    : dtFmt.format(_task.additional?.detail?.completedTime ?? UNKNOWN as DateTime)),
+                    : _dtFmt.format(task.additional?.detail?.completedTime ?? UNKNOWN as DateTime)),
                 subtitle: Text('Completed Time'),
               ),
             ],
@@ -315,63 +239,30 @@ class GeneralTaskInfoTabState extends State<GeneralTaskInfoTab> {
   }
 }
 
-class TransferInfoTab extends StatefulWidget {
-  Task _task;
+class TransferInfoTab extends ConsumerWidget {
+  final StateProvider<Task> taskProvider;
 
-  TransferInfoTab(this._task);
-
-  @override
-  State<StatefulWidget> createState() => TransferInfoTabState(_task);
-}
-
-class TransferInfoTabState extends State<TransferInfoTab> {
-  Task _task;
-  DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
-
-  TransferInfoTabState(this._task);
+  TransferInfoTab(this.taskProvider);
 
   @override
-  void initState() {
-    super.initState();
-
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    int? downSize = _task.additional?.transfer?.sizeDownloaded;
-    int? upSize = _task.additional?.transfer?.sizeUploaded;
+  Widget build(BuildContext context, watch) {
+    var task = watch(taskProvider).state;
+    int? downSize = task.additional?.transfer?.sizeDownloaded;
+    int? upSize = task.additional?.transfer?.sizeUploaded;
     double pct = (upSize ?? 0) / (downSize ?? 0) * 100;
     pct = pct.isFinite ? pct : 0;
 
-    var downSpeed = humanifySize(_task.additional?.transfer?.speedDownload ?? 0, p: 0);
-    var upSpeed = humanifySize(_task.additional?.transfer?.speedUpload ?? 0, p: 0);
+    var downSpeed = humanifySize(task.additional?.transfer?.speedDownload ?? 0, p: 0);
+    var upSpeed = humanifySize(task.additional?.transfer?.speedUpload ?? 0, p: 0);
 
-    var progress = (_task.additional?.transfer?.sizeDownloaded ?? 0) / _task.size!;
+    var progress = (task.additional?.transfer?.sizeDownloaded ?? 0) / task.size!;
     progress = progress.isFinite ? progress : 0;
 
     String remainingTime = '-';
     double remainingSeconds;
-    if (_task.status == TaskStatus.downloading) {
-      remainingSeconds =
-          (_task.size! - (_task.additional?.transfer?.sizeDownloaded ?? 0)) / (_task.additional?.transfer?.speedDownload ?? 0);
+    if (task.status == TaskStatus.downloading) {
+      remainingSeconds = (task.size! - (task.additional?.transfer?.sizeDownloaded ?? 0)) /
+          (task.additional?.transfer?.speedDownload ?? 0);
       remainingSeconds = remainingSeconds.isFinite ? remainingSeconds : 0;
       remainingTime = humanifySeconds(remainingSeconds.round(), maxUnits: 2, defaultStr: "-");
     }
@@ -392,30 +283,30 @@ class TransferInfoTabState extends State<TransferInfoTab> {
           subtitle: Text('Speed (UL / DL)'),
         ),
         ListTile(
-          title: Text('${_task.additional?.detail?.totalPeers ?? UNKNOWN}'),
+          title: Text('${task.additional?.detail?.totalPeers ?? UNKNOWN}'),
           subtitle: Text('Total Peers'),
         ),
         ListTile(
-          title: Text('${_task.additional?.detail?.connectedPeers ?? UNKNOWN}'),
+          title: Text('${task.additional?.detail?.connectedPeers ?? UNKNOWN}'),
           subtitle: Text('Connected Peers'),
         ),
         ListTile(
-          title: Text('${_task.additional?.transfer?.downloadedPieces ?? 0} / ' +
-              '${_task.additional?.detail?.totalPieces ?? UNKNOWN}'),
+          title: Text('${task.additional?.transfer?.downloadedPieces ?? 0} / ' +
+              '${task.additional?.detail?.totalPieces ?? UNKNOWN}'),
           subtitle: Text('Downloaded Blocks'),
         ),
         ListTile(
-          title: Text('${humanifySeconds(_task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
+          title: Text('${humanifySeconds(task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
           subtitle: Text('Seeding Duration'),
         ),
         ListTile(
-          title: Text('${_task.additional?.detail?.connectedSeeders} / ${_task.additional?.detail?.connectedLeechers}'),
+          title: Text('${task.additional?.detail?.connectedSeeders} / ${task.additional?.detail?.connectedLeechers}'),
           subtitle: Text('Seeds / Leechers'),
         ),
         ListTile(
-          title: Text(_task.additional?.detail?.startedTime == null
+          title: Text(task.additional?.detail?.startedTime == null
               ? UNKNOWN
-              : '${dtFmt.format(_task.additional!.detail!.startedTime!)}'),
+              : '${_dtFmt.format(task.additional!.detail!.startedTime!)}'),
           subtitle: Text('Started Time'),
         ),
         ListTile(
@@ -427,50 +318,15 @@ class TransferInfoTabState extends State<TransferInfoTab> {
   }
 }
 
-class TrackerInfoTab extends StatefulWidget {
-  Task _task;
+class TrackerInfoTab extends ConsumerWidget {
+  final StateProvider<Task> taskProvider;
 
-  TrackerInfoTab(this._task);
-
-  @override
-  State<StatefulWidget> createState() => TrackerInfoTabState(_task);
-}
-
-class TrackerInfoTabState extends State<TrackerInfoTab> {
-  Task _task;
-  DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
-
-  TrackerInfoTabState(this._task);
+  TrackerInfoTab(this.taskProvider);
 
   @override
-  void initState() {
-    super.initState();
-
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_task == null) return Text('Null task...');
-
-    var trackers = _task.additional?.tracker ?? [];
+  Widget build(BuildContext context, watch) {
+    var task = watch(taskProvider).state;
+    var trackers = task.additional?.tracker ?? [];
     trackers.sort((x, y) => x.url!.compareTo(y.url!));
 
     if (trackers.isEmpty) {
@@ -529,50 +385,15 @@ class TrackerInfoTabState extends State<TrackerInfoTab> {
   }
 }
 
-class PeerInfoTab extends StatefulWidget {
-  Task _task;
+class PeerInfoTab extends ConsumerWidget {
+  final StateProvider<Task> taskProvider;
 
-  PeerInfoTab(this._task);
-
-  @override
-  State<StatefulWidget> createState() => PeerInfoTabState(_task);
-}
-
-class PeerInfoTabState extends State<PeerInfoTab> {
-  Task _task;
-  DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
-
-  PeerInfoTabState(this._task);
+  PeerInfoTab(this.taskProvider);
 
   @override
-  void initState() {
-    super.initState();
-
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_task == null) return Text('Null task...');
-
-    var peer = _task.additional?.peer ?? [];
+  Widget build(BuildContext context, watch) {
+    var task = watch(taskProvider).state;
+    var peer = task.additional?.peer ?? [];
     peer.sort((x, y) => x.address!.compareTo(y.address!));
 
     if (peer.isEmpty) {
@@ -629,50 +450,15 @@ class PeerInfoTabState extends State<PeerInfoTab> {
   }
 }
 
-class FileInfoTab extends StatefulWidget {
-  Task _task;
+class FileInfoTab extends ConsumerWidget {
+  final StateProvider<Task> taskProvider;
 
-  FileInfoTab(this._task);
-
-  @override
-  State<StatefulWidget> createState() => FileInfoTabState(_task);
-}
-
-class FileInfoTabState extends State<FileInfoTab> {
-  Task _task;
-  DateFormat dtFmt = DateFormat.yMMMMd().add_jm();
-
-  FileInfoTabState(this._task);
+  FileInfoTab(this.taskProvider);
 
   @override
-  void initState() {
-    super.initState();
-
-    var apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    apiBloc.stream.listen((state) {
-      if (state.event!.requestType == RequestType.task_info) {
-        List<Task> tasks = state.resp!.data ?? [];
-        List<String?> ids = tasks.map((e) => e.id).toList();
-        if (!ids.contains(_task.id)) {
-          return;
-        }
-
-        Task? task = tasks.firstWhereOrNull((t) => t.id == _task.id);
-
-        if (task != null && mounted) {
-          setState(() {
-            _task = task;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_task == null) return Text('Null task...');
-
-    var files = _task.additional?.file ?? [];
+  Widget build(BuildContext context, watch) {
+    var task = watch(taskProvider).state;
+    var files = task.additional?.file ?? [];
     files.sort((x, y) => x.filename!.compareTo(y.filename!));
 
     if (files.isEmpty) {

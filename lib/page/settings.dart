@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-
-import '../model/model.dart';
-import '../datasource/user_settings.dart';
-import '../util/const.dart';
 import 'package:flutter/material.dart';
+
+import '../datasource/user_settings.dart';
+import '../model/model.dart';
+import '../util/const.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -52,7 +52,7 @@ class SettingsPageState extends State<SettingsPage> {
                 trailing: Container(
                   width: 50,
                   child: TextFormField(
-                    initialValue: settings!.apiRequestFrequency!.toRadixString(10),
+                    initialValue: settings!.apiRequestFrequency.toRadixString(10),
                     keyboardType: TextInputType.number,
                     onChanged: (value) {
                       setState(() {

@@ -1,24 +1,21 @@
-import 'package:animations/animations.dart';
+import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
-import '../bloc/connection_bloc.dart';
-import '../bloc/syno_api_bloc.dart';
 import '../model/model.dart';
 
 class ConnectionEditForm extends StatefulWidget {
-  int? _idx;
-  Connection? _connection;
+  final int? _idx;
+  final Connection? _connection;
 
-  ConnectionEditForm.edit(int idx, Connection? connection) {
-    _idx = idx;
-    _connection = connection;
-  }
+  ConnectionEditForm.edit(this._idx, this._connection);
 
-  ConnectionEditForm();
+  ConnectionEditForm()
+      : _idx = null,
+        _connection = null;
 
   @override
   State<StatefulWidget> createState() => _ConnectionEditFormState(_idx, _connection);
@@ -28,8 +25,6 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
   final _formKey = GlobalKey<FormState>();
   int? _idx;
   Connection? _connection;
-  late DSConnectionBloc connectionBloc;
-  late SynoApiBloc apiBloc;
   Map<String, FocusNode> fieldFocus = {};
 
   // UI State
@@ -39,14 +34,12 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
   @override
   void initState() {
-    connectionBloc = BlocProvider.of<DSConnectionBloc>(context);
-    apiBloc = BlocProvider.of<SynoApiBloc>(context);
-
     fieldFocus = {
       'port': FocusNode(),
       'user': FocusNode(),
       'password': FocusNode(),
     };
+    super.initState();
   }
 
   @override
@@ -137,7 +130,6 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                 Divider(
                   color: Color.fromARGB(0, 0, 0, 0),
                 ),
-
                 Row(
                   children: [
                     ElevatedButton(
@@ -149,48 +141,44 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                         _formKey.currentState!.save();
 
                         if (_idx != null && _idx! >= 0) {
-                          connectionBloc.add(DSConnectionEvent(DSConnectionAction.edit, _connection, _idx));
+                          context.read(connectionDatastoreProvider).replace(_idx!, _connection!);
                         } else {
-                          connectionBloc.add(DSConnectionEvent(DSConnectionAction.add, _connection, null));
+                          context.read(connectionDatastoreProvider).add(_connection!);
                         }
-                        Navigator.pop(context);
+                        Navigator.pop(context, _connection);
                       },
                     ),
                     Padding(padding: EdgeInsets.only(right: 10)),
                     ElevatedButton(
-                      style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all<Color>(Colors.amberAccent)
-                      ),
+                        style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.amberAccent)),
                         child: Text('Test'),
                         onPressed: isEmpty(_connection?.uri) || isTestingConnection
                             ? null
                             : () {
-                          if ([_connection?.uri, _connection?.user, _connection?.password].any((e) => e == null)) {
-                            return;
-                          }
+                                if ([_connection?.uri, _connection?.user, _connection?.password]
+                                    .any((e) => e == null)) {
+                                  return;
+                                }
 
-                          var apiContext = APIContext.uri(_connection!.uri!);
-                          apiContext
-                              .authApp(Syno.DownloadStation.name, _connection!.user!, _connection!.password!)
-                              .then((authOK) {
-                            ScaffoldMessenger.of(context)
-                              ..removeCurrentSnackBar()
-                              ..showSnackBar(buildSnackBar(
-                                  'Connect ${authOK ? 'success' : 'failed'}',
-                                  duration: Duration(seconds: 2),
-                                  showProgressIndicator: false
-                              ));
-                            setState(() {
-                              isTestingConnection = false;
-                            });
-                          });
-                          ScaffoldMessenger.of(context)
-                            ..removeCurrentSnackBar()
-                            ..showSnackBar(buildSnackBar('Connecting...'));
-                          setState(() {
-                            isTestingConnection = true;
-                          });
-                        })
+                                var apiContext = APIContext.uri(_connection!.uri!);
+                                apiContext
+                                    .authApp(Syno.DownloadStation.name, _connection!.user!, _connection!.password!)
+                                    .then((authOK) {
+                                  ScaffoldMessenger.of(context)
+                                    ..removeCurrentSnackBar()
+                                    ..showSnackBar(buildSnackBar('Connect ${authOK ? 'success' : 'failed'}',
+                                        duration: Duration(seconds: 2), showProgressIndicator: false));
+                                  setState(() {
+                                    isTestingConnection = false;
+                                  });
+                                });
+                                ScaffoldMessenger.of(context)
+                                  ..removeCurrentSnackBar()
+                                  ..showSnackBar(buildSnackBar('Connecting...'));
+                                setState(() {
+                                  isTestingConnection = true;
+                                });
+                              })
                   ],
                 ),
               ],
@@ -198,73 +186,6 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ManageConnectionsPage extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() => ManageConnectionsPageState();
-}
-
-class ManageConnectionsPageState extends State<ManageConnectionsPage> {
-  GlobalKey _fabKey = GlobalKey();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder(
-      bloc: BlocProvider.of<DSConnectionBloc>(context),
-      builder: (context, DSConnectionState state) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('Connections'),
-          ),
-          floatingActionButton: OpenContainer(
-            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-            closedBuilder: (context, openContainerCallback) {
-              return FloatingActionButton(
-                child: Icon(
-                  Icons.add,
-                  size: 32,
-                ),
-                onPressed: openContainerCallback,
-              );
-            },
-            openBuilder: (context, closeContainerCallback) {
-              return ConnectionEditForm();
-            },
-          ),
-          body: ListView.separated(
-              itemCount: state.connections.length,
-              separatorBuilder: (context, index) {
-                return Divider(
-                  indent: 15,
-                  endIndent: 15,
-                );
-              },
-              itemBuilder: (context, index) {
-                Connection? conn = state.connections[index];
-                return OpenContainer(
-                  closedColor: Theme.of(context).scaffoldBackgroundColor,
-                  closedBuilder: (context, openContainerCallback) {
-                    return ListTile(
-                      title: Text(conn!.buildUri()),
-                      subtitle: conn.buildUri() == state.activeConnection?.buildUri()
-                          ? Text(
-                              'Active',
-                              style: TextStyle(color: Theme.of(context).accentColor),
-                            )
-                          : null,
-                      onTap: openContainerCallback,
-                    );
-                  },
-                  openBuilder: (context, closeContainerCallback) {
-                    return ConnectionEditForm.edit(index, conn);
-                  },
-                );
-              }),
-        );
-      },
     );
   }
 }

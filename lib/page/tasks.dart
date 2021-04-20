@@ -4,12 +4,10 @@ import 'package:animations/animations.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
-import '../bloc/connection_bloc.dart';
-import '../bloc/syno_api_bloc.dart';
-import '../bloc/ui_evt_bloc.dart';
+import '../main.dart';
 import '../model/model.dart';
 import '../page/task_details.dart';
 import '../util/const.dart';
@@ -17,110 +15,34 @@ import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
 
-class TaskList extends StatefulWidget {
-  UserSettings? settings;
+class TaskList extends ConsumerWidget {
+  final UserSettings settings;
+  final List<GlobalKey> _cardKeys = [];
+  final pendingRemove = [];
+  Timer? pendingRemoveCountdown;
 
   TaskList(this.settings);
 
   @override
-  State<StatefulWidget> createState() => _TaskListState(settings);
-}
+  Widget build(BuildContext context, watch) {
+    var textTheme = Theme.of(context).textTheme;
+    var tasksInfo = watch(tasksInfoProvider).state;
+    var searchText = watch(searchTextProvider).state;
+    var api = watch(dsAPIProvider);
 
-class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin {
-  ListTaskInfo? taskInfo;
-  var filter = '';
-  late TextTheme textTheme;
-  List<GlobalKey> _cardKeys = [];
-  Map<String, StreamSubscription> _subscriptions = {};
-  late SynoApiBloc apiBloc;
-  late UiEventBloc uiBloc;
-  late DSConnectionBloc connectionBloc;
-  List<Task> pendingRemove = [];
-  Timer? pendingRemoveCountdown;
-  static const String fetchingStreamKey = 'STREAM_FETCH';
-  UserSettings? settings;
-
-  _TaskListState(this.settings);
-
-  @override
-  void dispose() {
-    _subscriptions.values.forEach((e) => e.cancel());
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    uiBloc = BlocProvider.of<UiEventBloc>(context);
-    apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    connectionBloc = BlocProvider.of<DSConnectionBloc>(context);
-
-    _subscriptions[fetchingStreamKey] =
-        Stream.periodic(Duration(milliseconds: settings!.apiRequestFrequency!)).listen((event) async {
-      uiBloc.add(UiEventState.noPayload(this, UiEvent.task_fetching));
-      apiBloc.add(SynoApiEvent.params(RequestType.task_list, {
-        'additional': ['transfer']
-      }));
-    });
-
-    apiBloc.stream.listen((state) {
-      if (state.event != null && state.event!.requestType == RequestType.task_list) {
-        APIResponse<ListTaskInfo>? info = state.resp as APIResponse<ListTaskInfo>?;
-        if (info == null) return;
-
-        if (mounted && info.success) {
-          setState(() {
-            taskInfo = info.data;
-          });
-          BlocProvider.of<UiEventBloc>(context)
-              .add(UiEventState(null, UiEvent.tasks_fetched, [DateTime.now(), info.data]));
-        }
-      }
-
-      if (state.event != null && state.event!.requestType == RequestType.remove_task) {
-        pendingRemove.removeWhere((task) => state.event!.params['ids'].contains(task.id));
-      }
-    });
-
-    connectionBloc.stream.listen((state) {
-      if (state.activeConnection == null) {
-        setState(() {
-          taskInfo = null;
-        });
-      }
-    });
-
-    BlocProvider.of<UiEventBloc>(context).stream.listen((state) {
-      if (state.event == UiEvent.tasks_filter_change) {
-        var filterStr = state.payload.join();
-        if (mounted) {
-          setState(() {
-            filter = filterStr;
-          });
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    textTheme = Theme.of(context).textTheme;
-    var info = taskInfo;
-
-    if (!apiBloc.isReady()) {
+    if (api == null) {
       return SliverFillRemaining(
         child: Center(
           child: Text(''),
         ),
       );
     }
-    if (info == null) {
+    if (tasksInfo == null) {
       return SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
     }
 
-    var count = info.tasks.length;
-    var tasks = List<Task>.from(info.tasks);
+    var count = tasksInfo.tasks.length;
+    var tasks = List<Task>.from(tasksInfo.tasks);
     pendingRemove.forEach((pendingRemove) {
       var found = tasks.firstWhereOrNull((task) => task.id == pendingRemove.id);
       if (found == null) return;
@@ -129,7 +51,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
       tasks.remove(found);
     });
 
-    if (info.total == 0) {
+    if (count == 0) {
       return SliverFillRemaining(
         child: Center(
           child: Text(
@@ -145,9 +67,9 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
 
       var task = tasks[idx];
 
-      if (filter.trim().isNotEmpty) {
+      if (searchText.trim().isNotEmpty) {
         var sanitizedTitle = task.title!.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
-        var sanitizedMatcher = filter.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
+        var sanitizedMatcher = searchText.replaceAll(RegExp(r'[^\w+]'), '').toUpperCase();
         if (!sanitizedTitle.contains(sanitizedMatcher)) {
           return SizedBox.shrink();
         }
@@ -175,27 +97,18 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
       );
 
       var statusIcon = _getStatusIcon(task.status, () {
-        var params = {
-          'ids': [task.id]
-        };
-        /*
-        i.e.
-          Downloading -> Pause
-          Pause -> Downloading
-          ..etc?
-         */
         if (TaskStatus.downloading == task.status) {
           // pause it
-          apiBloc.add(SynoApiEvent.params(RequestType.pause_task, params));
-          setState(() {
-            task.status = TaskStatus.paused;
-          });
+          api.task.pause([task.id!]);
+          var tasksInfo = context.read(tasksInfoProvider).state;
+          tasksInfo!.tasks.where((t) => t.id == task.id).first.status = TaskStatus.paused;
+          context.read(tasksInfoProvider).state = tasksInfo;
         } else if (TaskStatus.paused == task.status) {
           // resume it
-          apiBloc.add(SynoApiEvent.params(RequestType.resume_task, params));
-          setState(() {
-            task.status = TaskStatus.waiting;
-          });
+          api.task.resume([task.id!]);
+          var tasksInfo = context.read(tasksInfoProvider).state;
+          tasksInfo!.tasks.where((t) => t.id == task.id).first.status = TaskStatus.waiting;
+          context.read(tasksInfoProvider).state = tasksInfo;
         }
       }, onLongPress: () {
         // TODO : trigger multiple selection here
@@ -230,10 +143,10 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
                 closedColor: Colors.transparent,
                 closedElevation: 0,
                 transitionDuration: Duration(milliseconds: 400),
-                onClosed: (Map<String, dynamic>? result) {
-                  result ??= {};
-                  if (result['requestType'] == RequestType.remove_task && result['taskId'] != null) {
-                    removeTaskFromModel(result['taskId']);
+                onClosed: (Map<String, String>? result) {
+                  if (result == null) return;
+                  if (result['action'] == 'remove') {
+                    removeTaskFromModel(context, result['taskId']);
                   }
                 },
                 closedBuilder: (context, action) {
@@ -275,41 +188,37 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
                     ),
                   );
                 },
-                openBuilder: (context, CloseContainerActionCallback<Map<String, dynamic>?> action) {
-                  return BlocProvider.value(
-                    value: BlocProvider.of<DSConnectionBloc>(context),
-                    child: TaskDetailsPage(task, settings),
-                  );
+                openBuilder: (context, CloseContainerActionCallback<Map<String, String>?> action) {
+                  return TaskDetailsPage(task, settings);
                 }),
             progressBar,
           ],
         ),
         onDismissed: (direction) {
-          removeTaskFromModel(task.id);
+          // removeTaskFromModel(task.id); // FIXME
         },
       );
     }, childCount: count));
   }
 
-  void removeTaskFromModel(String? taskId) {
+  void removeTaskFromModel(BuildContext context, String? taskId) {
+    var taskInfo = context.read(tasksInfoProvider).state;
     var found = taskInfo!.tasks.firstWhereOrNull((t) => t.id == taskId);
 
     if (found != null) {
-      setState(() {
-        taskInfo!.tasks.remove(found);
-        taskInfo!.total -= 1;
-      });
       pendingRemove.add(found);
       var confirmDuration = Duration(seconds: 4);
 
       // reset timer
-      if (pendingRemoveCountdown != null) {
-        pendingRemoveCountdown!.cancel();
-      }
+      pendingRemoveCountdown?.cancel();
       pendingRemoveCountdown = Timer(confirmDuration, () {
-        apiBloc
-            .add(SynoApiEvent.params(RequestType.remove_task, {'ids': pendingRemove.map((task) => task.id).toList()}));
+        var ids = pendingRemove.map((task) => task.id!).toList() as List<String>;
+        context.read(dsAPIProvider)!.task.delete(ids, false);
       });
+
+      taskInfo.tasks.remove(found);
+      taskInfo.total -= 1;
+      context.read(tasksInfoProvider).state = taskInfo;
 
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
@@ -323,9 +232,7 @@ class _TaskListState extends State<TaskList> with SingleTickerProviderStateMixin
               onPressed: () {
                 pendingRemoveCountdown!.cancel();
                 pendingRemoveCountdown = null;
-                setState(() {
-                  pendingRemove.clear();
-                });
+                pendingRemove.clear();
               },
             ),
           ),

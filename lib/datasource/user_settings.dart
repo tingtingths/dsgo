@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:localstorage/localstorage.dart';
 
 import '../event/streams.dart';
 import '../model/model.dart';
 import '../util/const.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 abstract class UserSettingsDatasource {
   static const String STREAM_NAME = 'STREAM_USER_SETTINGS';

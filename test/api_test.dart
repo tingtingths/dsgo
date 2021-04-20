@@ -1,8 +1,8 @@
 import 'package:synoapi/synoapi.dart';
 import 'package:test/test.dart';
-import '../lib/util/format.dart';
 
 import './config.dart';
+import '../lib/util/format.dart';
 
 void main() {
   test('Test json', () {});
@@ -56,8 +56,7 @@ void main() {
     APIResponse<Map<String, APIInfoQuery>> info = await queryApi.info.apiInfo();
     if (info.success) {
       info.data!.forEach((key, value) {
-        print(
-            '$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
+        print('$key => min=${value.minVersion},max=${value.maxVersion},path=${value.path}');
       });
     }
 
@@ -82,8 +81,7 @@ void main() {
       });
     }
 
-    APIResponse<DownloadStationStatisticGetInfo> stats =
-        await dsApi.statistic.getInfo();
+    APIResponse<DownloadStationStatisticGetInfo> stats = await dsApi.statistic.getInfo();
     if (stats.success) {
       print('Total download speed=${stats.data!.speedDownload}');
       print('Total upload speed=${stats.data!.speedUpload}');

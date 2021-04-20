@@ -1,15 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dsgo/main.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
-import 'package:uuid/uuid.dart';
 
-import '../bloc/syno_api_bloc.dart';
-import '../bloc/ui_evt_bloc.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
 
@@ -24,56 +22,16 @@ class AddTaskFormState extends State<AddTaskForm> {
   final _formKey = GlobalKey<FormState>();
   var _formModel = {};
   Map<String?, MapEntry<File, int>> _torrentFiles = {};
-  late SynoApiBloc apiBloc;
-  String? _reqId;
-  late Uuid _uuid;
   bool _submitBtn = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
-  void initState() {
-    apiBloc = BlocProvider.of<SynoApiBloc>(context);
-    _uuid = Uuid();
-
-    // listen add_task event feedback
-    apiBloc.stream.listen((state) {
-      if (state.event?.requestType != RequestType.add_task ||
-          state.event?.params['_reqId'] != _reqId) {
-        return;
-      }
-
-      if (state.resp?.success ?? false) {
-        if (mounted && Navigator.of(context).canPop()) {
-          Navigator.of(context).pop('Task submitted.');
-        }
-      } else {
-        setState(() {
-          _submitBtn = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          duration: Duration(seconds: 5),
-          content: Text('Failed to create task...'),
-        ));
-      }
-    });
-
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final uiBloc = BlocProvider.of<UiEventBloc>(context);
-    final textBtnStyle = Theme.of(context)
-        .textTheme
-        .button!
-        .copyWith(color: Theme.of(context).accentColor);
-    final textHdrStyle = Theme.of(context).textTheme.headline6;
     final textSeparatorStyle = Theme.of(context).textTheme.caption;
 
     var urlCount = _formModel['url']?.length ?? 0;
 
-    _submitBtn = _torrentFiles.isNotEmpty ||
-        (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
+    _submitBtn = _torrentFiles.isNotEmpty || (_formModel['url'] != null && (_formModel['url'] as List).isNotEmpty);
 
     var scaffold = Scaffold(
       key: _scaffoldKey,
@@ -82,27 +40,39 @@ class AddTaskFormState extends State<AddTaskForm> {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.done),
-            onPressed: _submitBtn
-                ? () {
+            onPressed: !_submitBtn
+                ? null
+                : () {
+                    var api = context.read(dsAPIProvider);
+                    if (api == null) {
+                      ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                          .showSnackBar(buildSnackBar('API not ready...', duration: Duration(seconds: 3)));
+                      return;
+                    }
                     ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
                         .showSnackBar(buildSnackBar('Submitting tasks...'));
 
                     // submit task
-                    _reqId = _uuid.v4();
-                    var params = {
-                      '_reqId': _reqId,
-                      'uris': _formModel['url'],
-                      'torrent_files': _torrentFiles.values
-                          .map((entry) => entry.key)
-                          .toList(),
-                    };
-                    apiBloc
-                        .add(SynoApiEvent.params(RequestType.add_task, params));
                     setState(() {
                       _submitBtn = false;
                     });
-                  }
-                : null,
+                    var futures = <Future>[];
+                    _torrentFiles.values.map((entry) => entry.key).forEach((f) {
+                      futures.add(api.task.create(file: f));
+                    });
+                    futures.add(api.task.create(uris: _formModel['url']));
+                    Future.wait(futures).then((value) {
+                      Navigator.of(context).pop('Task submitted.');
+                    }, onError: () {
+                      setState(() {
+                        _submitBtn = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        duration: Duration(seconds: 3),
+                        content: Text('Failed to create task...'),
+                      ));
+                    });
+                  },
           )
         ],
       ),
@@ -222,7 +192,7 @@ class AddTaskFormState extends State<AddTaskForm> {
   }
 
   List<String> _splitAndTrim(String delimiter, String? s) {
-    return s?.split(delimiter)?.where((e) => e.trim() != '')?.toList() ?? [];
+    return s?.split(delimiter).where((e) => e.trim() != '').toList() ?? [];
   }
 
   void _openFilePicker() async {
@@ -235,8 +205,7 @@ class AddTaskFormState extends State<AddTaskForm> {
 
       if (mounted) {
         setState(() {
-          _torrentFiles.addAll(
-              Map<String?, MapEntry<File, int>>.fromIterable(files, key: (f) {
+          _torrentFiles.addAll(Map<String?, MapEntry<File, int>>.fromIterable(files, key: (f) {
             var _f = f as PlatformFile;
             return _f.path;
           }, value: (f) {

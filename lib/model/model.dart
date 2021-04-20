@@ -33,13 +33,8 @@ class Connection {
   String buildUri() {
     var parsed = Uri.tryParse(uri ?? '');
     if (parsed != null) {
-      return Uri(
-        scheme: parsed.scheme,
-        userInfo: user,
-        host: parsed.host,
-        port: parsed.port,
-        path: parsed.path
-      ).toString();
+      return Uri(scheme: parsed.scheme, userInfo: user, host: parsed.host, port: parsed.port, path: parsed.path)
+          .toString();
     } else {
       return '';
     }
@@ -72,8 +67,8 @@ class Connection {
 }
 
 class UserSettings {
-  int? apiRequestFrequency = 5000; // ms
-  ThemeMode? themeMode = ThemeMode.system;
+  int apiRequestFrequency = 5000; // ms
+  ThemeMode themeMode = ThemeMode.system;
 
   UserSettings({int? apiRequestFrequency, ThemeMode? themeMode}) {
     if (apiRequestFrequency != null) this.apiRequestFrequency = apiRequestFrequency;
