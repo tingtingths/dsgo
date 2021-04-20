@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
+import '../main.dart';
 import '../model/model.dart';
 
 class ConnectionEditForm extends StatefulWidget {
@@ -24,13 +25,13 @@ class ConnectionEditForm extends StatefulWidget {
 class _ConnectionEditFormState extends State<ConnectionEditForm> {
   final _formKey = GlobalKey<FormState>();
   int? _idx;
-  Connection? _connection;
+  Connection _connection;
   Map<String, FocusNode> fieldFocus = {};
 
   // UI State
   bool isTestingConnection = false;
 
-  _ConnectionEditFormState(this._idx, this._connection);
+  _ConnectionEditFormState(this._idx, Connection? connection) : _connection = connection ?? Connection.empty();
 
   @override
   void initState() {
@@ -78,9 +79,9 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                     labelText: 'URI',
                     hintText: 'Server URI. e.g. https://ds:5001/myds',
                   ),
-                  initialValue: _connection?.uri,
+                  initialValue: _connection.uri,
                   onChanged: (uri) {
-                    _connection!.uri = uri.trim();
+                    _connection.uri = uri.trim();
                     setState(() {}); // force re-render, to enable/disable test button
                   },
                   onFieldSubmitted: (uri) {
@@ -92,6 +93,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                     }
                     return null;
                   },
+                  enabled: !isTestingConnection,
                 ),
                 TextFormField(
                   textInputAction: TextInputAction.next,
@@ -101,9 +103,9 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   decoration: InputDecoration(
                     labelText: 'Username',
                   ),
-                  initialValue: _connection?.user?.toString() ?? '',
+                  initialValue: _connection.user?.toString() ?? '',
                   onChanged: (user) {
-                    _connection!.user = user.trim();
+                    _connection.user = user.trim();
                   },
                   onFieldSubmitted: (user) {
                     fieldFocus['password']!.requestFocus();
@@ -114,6 +116,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                     }
                     return null;
                   },
+                  enabled: !isTestingConnection,
                 ),
                 TextFormField(
                   textInputAction: TextInputAction.done,
@@ -122,10 +125,11 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                     labelText: 'Password',
                   ),
                   obscureText: true,
-                  initialValue: _connection?.password?.toString() ?? '',
+                  initialValue: _connection.password?.toString() ?? '',
                   onChanged: (password) {
-                    _connection!.password = password;
+                    _connection.password = password;
                   },
+                  enabled: !isTestingConnection,
                 ),
                 Divider(
                   color: Color.fromARGB(0, 0, 0, 0),
@@ -133,52 +137,48 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                 Row(
                   children: [
                     ElevatedButton(
-                      child: Text('Save'),
-                      onPressed: () {
-                        if (!_formKey.currentState!.validate()) {
-                          return;
-                        }
-                        _formKey.currentState!.save();
+                      child: Text('Connect'),
+                      onPressed: isEmpty(_connection.uri) || isTestingConnection
+                          ? null
+                          : () {
+                              if (!_formKey.currentState!.validate()) {
+                                return;
+                              }
+                              setState(() {
+                                isTestingConnection = true;
+                              });
+                              ScaffoldMessenger.of(context)
+                                ..removeCurrentSnackBar()
+                                ..showSnackBar(buildSnackBar('Connecting'));
+                              _formKey.currentState!.save();
 
-                        if (_idx != null && _idx! >= 0) {
-                          context.read(connectionDatastoreProvider).replace(_idx!, _connection!);
-                        } else {
-                          context.read(connectionDatastoreProvider).add(_connection!);
-                        }
-                        Navigator.pop(context, _connection);
-                      },
-                    ),
-                    Padding(padding: EdgeInsets.only(right: 10)),
-                    ElevatedButton(
-                        style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.amberAccent)),
-                        child: Text('Test'),
-                        onPressed: isEmpty(_connection?.uri) || isTestingConnection
-                            ? null
-                            : () {
-                                if ([_connection?.uri, _connection?.user, _connection?.password]
-                                    .any((e) => e == null)) {
-                                  return;
-                                }
-
-                                var apiContext = APIContext.uri(_connection!.uri!);
-                                apiContext
-                                    .authApp(Syno.DownloadStation.name, _connection!.user!, _connection!.password!)
-                                    .then((authOK) {
-                                  ScaffoldMessenger.of(context)
-                                    ..removeCurrentSnackBar()
-                                    ..showSnackBar(buildSnackBar('Connect ${authOK ? 'success' : 'failed'}',
-                                        duration: Duration(seconds: 2), showProgressIndicator: false));
+                              // test connection
+                              var apiContext = APIContext.uri(_connection.uri!);
+                              apiContext.authApp(Syno.DownloadStation.name, _connection.user!, _connection.password!,
+                                  otpCallback: () async {
+                                return await showOTPDialog(context) ?? '';
+                              }).then((authOK) {
+                                ScaffoldMessenger.of(context)
+                                  ..removeCurrentSnackBar()
+                                  ..showSnackBar(buildSnackBar('Login ${authOK ? 'success' : 'failed'}!',
+                                      duration: Duration(seconds: 3), showProgressIndicator: false));
+                                if (authOK) {
+                                  _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
+                                  context.read(connectionProvider).state = _connection;
+                                  if (_idx != null && _idx! >= 0) {
+                                    context.read(connectionDatastoreProvider).replace(_idx!, _connection);
+                                  } else {
+                                    context.read(connectionDatastoreProvider).add(_connection);
+                                  }
+                                  Navigator.pop(context, _connection);
+                                } else {
                                   setState(() {
                                     isTestingConnection = false;
                                   });
-                                });
-                                ScaffoldMessenger.of(context)
-                                  ..removeCurrentSnackBar()
-                                  ..showSnackBar(buildSnackBar('Connecting...'));
-                                setState(() {
-                                  isTestingConnection = true;
-                                });
-                              })
+                                }
+                              });
+                            },
+                    ),
                   ],
                 ),
               ],
@@ -188,4 +188,31 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
       ),
     );
   }
+}
+
+Future<String?> showOTPDialog(context) {
+  String _value = '';
+  return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+            title: Text('One-time password'),
+            content: TextFormField(
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              autocorrect: false,
+              autovalidateMode: AutovalidateMode.disabled,
+              onChanged: (value) {
+                _value = value;
+              },
+            ),
+            actions: [
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop(_value);
+                },
+              )
+            ]);
+      });
 }

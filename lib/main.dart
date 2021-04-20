@@ -12,19 +12,20 @@ import 'package:synoapi/synoapi.dart';
 import 'datasource/user_settings.dart';
 import 'model/model.dart';
 import 'page/add_task.dart';
+import 'page/connection.dart';
 import 'page/drawer.dart';
 import 'page/tasks.dart';
 import 'util/utils.dart';
 
-final userSettingsProvider = FutureProvider<UserSettings>((ref) async {
-  var settings = kIsWeb ? await WebUserSettingsDatasource().get() : await MobileUserSettingsDatasource().get();
-  return settings;
-});
+final userSettingsProvider = StateProvider<UserSettings>((ref) => UserSettings());
 final connectionProvider = StateProvider<Connection?>((ref) => null);
 final apiContextProvider = StateProvider<APIContext?>((ref) {
   var connection = ref.watch(connectionProvider).state;
   if (connection == null || connection.uri == null) return null;
-  return APIContext.uri(connection.uri!);
+  if (connection.sid == null)
+    return APIContext.uri(connection.uri!);
+  else
+    return APIContext.uri(connection.uri!, sid: {Syno.DownloadStation.name: connection.sid!});
 });
 final dsAPIProvider = Provider<DownloadStationAPI?>((ref) {
   var context = ref.watch(apiContextProvider).state;
@@ -39,7 +40,7 @@ final searchTextProvider = StateProvider((ref) => '');
 
 void main() {
   // logger configuration
-  Logger.root.level = Level.FINE;
+  Logger.root.level = Level.INFO;
   Logger.root.onRecord.listen((l) {
     print('${l.time} ${l.level} ${l.loggerName} | ${l.message}${l.error ?? ''}${l.stackTrace ?? ''}');
   });
@@ -56,28 +57,31 @@ class App extends StatefulWidget {
 class AppState extends State<App> {
   @override
   void initState() {
+    // load configurations from storage
+    context.read(userSettingsDatastoreProvider).get().then((userSettings) {
+      context.read(userSettingsProvider).state = userSettings;
+    });
     context.read(connectionDatastoreProvider).getAll().then((connections) {
       if (connections.length > 0) {
         context.read(connectionProvider).state = connections[0];
       }
     });
+
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, watch, _) {
-      return watch(userSettingsProvider).when(
-          data: (settings) => MaterialApp(
-                home: Material(child: MainScaffold(settings)),
-                themeMode: settings.themeMode,
-                theme: ThemeData.light().copyWith(
-                  iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
-                ),
-                darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
-              ),
-          loading: () => Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')));
+      var settings = watch(userSettingsProvider).state;
+      return MaterialApp(
+        home: Material(child: MainScaffold(settings)),
+        themeMode: settings.themeMode,
+        theme: ThemeData.light().copyWith(
+          iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
+        ),
+        darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
+      );
     });
   }
 }
@@ -96,6 +100,8 @@ class MainScaffoldState extends State<MainScaffold> {
   final searchController = TextEditingController();
   final List<StreamSubscription> subscriptions = [];
   final UserSettings settings;
+  final otpProvider = StateProvider((ref) => '');
+  bool isLoginInProgress = false;
 
   MainScaffoldState(this.settings);
 
@@ -112,6 +118,9 @@ class MainScaffoldState extends State<MainScaffold> {
     });
 
     subscriptions.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) async {
+      var apiContext = context.read(apiContextProvider).state;
+      if (!apiContext!.hasSid(Syno.DownloadStation.name)) return;
+
       var api = context.read(dsAPIProvider);
       if (api != null) {
         api.task.list(additional: ['transfer']).then((resp) {
@@ -128,14 +137,24 @@ class MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    var infoWidgets = <Widget>[];
-
-    // TODO - this would block buttons on narrow screen
-    // total up/down speed
-    //infoWidgets.add(Text(humanifySize(totalDown)));
-    //infoWidgets.add(Icon(Icons.arrow_downward));
-    //infoWidgets.add(Text(humanifySize(totalUp)));
-    //infoWidgets.add(Icon(Icons.arrow_upward));
+    var apiContext = context.read(apiContextProvider).state;
+    if (apiContext != null && !apiContext.hasSid(Syno.DownloadStation.name) && !isLoginInProgress) {
+      isLoginInProgress = true;
+      var connection = context.read(connectionProvider).state!;
+      apiContext.authApp(Syno.DownloadStation.name, connection.user ?? '', connection.password ?? '',
+          otpCallback: () async {
+        return await showOTPDialog(context) ?? '';
+      }).then((authOK) {
+        isLoginInProgress = false;
+        connection.sid = apiContext.getSid(Syno.DownloadStation.name);
+        context.read(connectionProvider).state = connection;
+        context.read(connectionDatastoreProvider).replace(0, connection);
+        ScaffoldMessenger.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(buildSnackBar('Login ${authOK ? 'success' : 'failed'}!',
+              duration: Duration(seconds: 3), showProgressIndicator: false));
+      });
+    }
 
     return GestureDetector(
       onTap: () {
@@ -304,11 +323,6 @@ class MainScaffoldState extends State<MainScaffold> {
                       ),
                     ],
                   ),
-                  Center(
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: infoWidgets)),
                 ],
               )),
         ),

@@ -195,7 +195,7 @@ class TaskList extends ConsumerWidget {
           ],
         ),
         onDismissed: (direction) {
-          // removeTaskFromModel(task.id); // FIXME
+          removeTaskFromModel(context, task.id);
         },
       );
     }, childCount: count));
@@ -212,7 +212,8 @@ class TaskList extends ConsumerWidget {
       // reset timer
       pendingRemoveCountdown?.cancel();
       pendingRemoveCountdown = Timer(confirmDuration, () {
-        var ids = pendingRemove.map((task) => task.id!).toList() as List<String>;
+        var ids = pendingRemove.map((task) => task.id!).map((e) => e.toString()).toList();
+        // context call no long stable at this point (onDismissed)
         context.read(dsAPIProvider)!.task.delete(ids, false);
       });
 

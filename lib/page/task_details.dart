@@ -79,7 +79,8 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
           } else {
             context.read(taskProvider).state = task;
           }
-        }, onError: () {
+        }, onError: (err, stack) {
+          l.warning('task.getInfo failed', err, stack);
           _fetching = false;
         });
       }

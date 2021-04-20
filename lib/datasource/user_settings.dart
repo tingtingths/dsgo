@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:localstorage/localstorage.dart';
 
 import '../event/streams.dart';
 import '../model/model.dart';
 import '../util/const.dart';
+
+final userSettingsDatastoreProvider =
+    Provider((ref) => kIsWeb ? WebUserSettingsDatasource() : MobileUserSettingsDatasource());
 
 abstract class UserSettingsDatasource {
   static const String STREAM_NAME = 'STREAM_USER_SETTINGS';
