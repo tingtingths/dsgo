@@ -121,7 +121,6 @@ class AddTaskFormState extends State<AddTaskForm> {
                               padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
                               icon: Icon(
                                 Icons.add,
-                                color: Theme.of(context).primaryColor,
                               ),
                               iconSize: 30,
                               onPressed: () {

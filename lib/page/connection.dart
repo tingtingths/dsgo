@@ -36,9 +36,10 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
   @override
   void initState() {
     fieldFocus = {
-      'port': FocusNode(),
+      'uri': FocusNode(),
       'user': FocusNode(),
       'password': FocusNode(),
+      'connectBtn': FocusNode()
     };
     super.initState();
   }
@@ -51,10 +52,6 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
   @override
   Widget build(BuildContext context) {
-    if (_connection == null) {
-      _connection = Connection.empty();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_idx == null ? 'Add Connection' : 'Edit Connection'),
@@ -70,6 +67,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 TextFormField(
+                  focusNode: fieldFocus['uri'],
                   keyboardType: TextInputType.url,
                   textInputAction: TextInputAction.next,
                   autofocus: true,
@@ -129,6 +127,9 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   onChanged: (password) {
                     _connection.password = password;
                   },
+                  onFieldSubmitted: (_) {
+                    fieldFocus['connectBtn']!.requestFocus();
+                  },
                   enabled: !isTestingConnection,
                 ),
                 Divider(
@@ -137,6 +138,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                 Row(
                   children: [
                     ElevatedButton(
+                      focusNode: fieldFocus['connectBtn'],
                       child: Text('Connect'),
                       onPressed: isEmpty(_connection.uri) || isTestingConnection
                           ? null

@@ -54,7 +54,7 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
               style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 2.0, fontWeightDelta: 2),
             ),
             subtitle: Text(
-              '${packageInfo!.version}',
+              '${versionString(packageInfo!)}',
               style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 0.8),
             ),
           )
@@ -187,12 +187,12 @@ class AppDrawer extends ConsumerWidget {
         loading: () => Container(),
         error: (err, stack) => Text('Error: $err'));
   }
+}
 
-  String versionString(PackageInfo packageInfo) {
-    var ret = '${packageInfo.version}';
-    if (packageInfo.buildNumber.isNotEmpty) {
-      ret += '-${packageInfo.buildNumber}';
-    }
-    return ret;
+String versionString(PackageInfo packageInfo) {
+  var ret = '${packageInfo.version}';
+  if (packageInfo.buildNumber.isNotEmpty) {
+    ret += '+${packageInfo.buildNumber}';
   }
+  return ret;
 }
