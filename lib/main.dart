@@ -117,9 +117,10 @@ class MainScaffoldState extends State<MainScaffold> {
       context.read(searchTextProvider).state = searchController.text;
     });
 
+    // periodically retrieve overall tasks info from server
     subscriptions.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) async {
       var apiContext = context.read(apiContextProvider).state;
-      if (!apiContext!.hasSid(Syno.DownloadStation.name)) return;
+      if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
 
       var api = context.read(dsAPIProvider);
       if (api != null) {
