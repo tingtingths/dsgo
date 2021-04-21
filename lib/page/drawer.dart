@@ -142,7 +142,7 @@ class AppDrawer extends ConsumerWidget {
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
               applicationName: STYLED_APP_NAME,
-              applicationVersion: '${packageInfo.version}-${packageInfo.buildNumber}',
+              applicationVersion: '${versionString(packageInfo)}',
               applicationLegalese: '@ 2020 Ho Shing Ting',
               aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
             )
@@ -163,5 +163,13 @@ class AppDrawer extends ConsumerWidget {
         },
         loading: () => Container(),
         error: (err, stack) => Text('Error: $err'));
+  }
+
+  String versionString(PackageInfo packageInfo) {
+    var ret = '${packageInfo.version}';
+    if (packageInfo.buildNumber.isNotEmpty) {
+      ret += '-${packageInfo.buildNumber}';
+    }
+    return ret;
   }
 }
