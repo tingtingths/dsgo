@@ -209,12 +209,12 @@ class TaskList extends ConsumerWidget {
       pendingRemove.add(found);
       var confirmDuration = Duration(seconds: 4);
 
-      // reset timer
-      pendingRemoveCountdown?.cancel();
+      var api = context.read(dsAPIProvider)!;
+      pendingRemoveCountdown?.cancel(); // reset timer
       pendingRemoveCountdown = Timer(confirmDuration, () {
         var ids = pendingRemove.map((task) => task.id!).map((e) => e.toString()).toList();
-        // context call no long stable at this point (onDismissed)
-        context.read(dsAPIProvider)!.task.delete(ids, false);
+        api.task.delete(ids, false);
+        pendingRemove.clear();
       });
 
       taskInfo.tasks.remove(found);
@@ -231,7 +231,7 @@ class TaskList extends ConsumerWidget {
             action: SnackBarAction(
               label: 'Undo',
               onPressed: () {
-                pendingRemoveCountdown!.cancel();
+                pendingRemoveCountdown?.cancel();
                 pendingRemoveCountdown = null;
                 pendingRemove.clear();
               },
