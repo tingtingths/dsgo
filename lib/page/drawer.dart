@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 
 import '../page/connection.dart';
 import '../page/settings.dart';
@@ -170,29 +169,6 @@ class AppDrawer extends ConsumerWidget {
                 )
               ],
             ),
-            ListTile(leading: Icon(Icons.copyright), title: Text('License'), onTap: () {
-              rootBundle.loadString('LICENSE').then((license) {
-                // show license dialog
-                showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        scrollable: true,
-                        title: Text('License'),
-                        content: Text(license, style: textStyle,),
-                        actions: <Widget>[
-                          FlatButton(
-                            child: Text('Close'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                );
-              });
-            })
           ]);
 
           return Drawer(
