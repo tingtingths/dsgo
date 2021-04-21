@@ -208,7 +208,7 @@ Future<String?> showOTPDialog(context) {
             ),
             actions: [
               TextButton(
-                child: Text('OK'),
+                child: Text('Submit'),
                 onPressed: () {
                   Navigator.of(context).pop(_value);
                 },

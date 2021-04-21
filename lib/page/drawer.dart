@@ -3,9 +3,12 @@ import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/main.dart';
 import 'package:dsgo/model/model.dart';
 import 'package:dsgo/util/const.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 import '../page/connection.dart';
 import '../page/settings.dart';
@@ -126,6 +129,9 @@ class AppDrawer extends ConsumerWidget {
             },
           ));
 
+          final theme = Theme.of(context);
+          final textStyle = theme.textTheme.bodyText2;
+          final highlightTextStyle = Theme.of(context).textTheme.bodyText2!.copyWith(color: theme.colorScheme.primary);
           drawerItems.addAll([
             Divider(),
             OpenContainer(
@@ -143,9 +149,50 @@ class AppDrawer extends ConsumerWidget {
               applicationIcon: FlutterLogo(),
               applicationName: STYLED_APP_NAME,
               applicationVersion: '${versionString(packageInfo)}',
-              applicationLegalese: '@ 2020 Ho Shing Ting',
-              aboutBoxChildren: <Widget>[Text('❤ from Hong Kong.')],
-            )
+              applicationLegalese: '@ 2020 DS Go authors',
+              aboutBoxChildren: <Widget>[
+                const SizedBox(height: 24),
+                RichText(
+                    text: TextSpan(children: <TextSpan>[
+                  TextSpan(style: textStyle, text: 'Homepage: '),
+                  TextSpan(
+                      style: highlightTextStyle,
+                      text: 'https://github.com/tingtingths/dsgo',
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          launch('https://github.com/tingtingths/dsgo');
+                        })
+                ])),
+                const SizedBox(height: 16),
+                Text(
+                  'Control your Synology Download Station on the go!',
+                  style: textStyle,
+                )
+              ],
+            ),
+            ListTile(leading: Icon(Icons.copyright), title: Text('License'), onTap: () {
+              rootBundle.loadString('LICENSE').then((license) {
+                // show license dialog
+                showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        scrollable: true,
+                        title: Text('License'),
+                        content: Text(license, style: textStyle,),
+                        actions: <Widget>[
+                          FlatButton(
+                            child: Text('Close'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                );
+              });
+            })
           ]);
 
           return Drawer(
