@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:chunked_stream/chunked_stream.dart';
 import 'package:dsgo/main.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
+import 'package:synoapi/synoapi.dart';
 
 import '../util/format.dart';
 import '../util/utils.dart';
@@ -21,13 +23,16 @@ class AddTaskFormState extends State<AddTaskForm> {
 
   final _formKey = GlobalKey<FormState>();
   var _formModel = {};
-  Map<String?, MapEntry<File, int>> _torrentFiles = {};
+  Map<String?, Stream<List<int>>> _torrentFiles = {};
   bool _submitBtn = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    final textSeparatorStyle = Theme.of(context).textTheme.caption;
+    final textSeparatorStyle = Theme
+        .of(context)
+        .textTheme
+        .caption;
 
     var urlCount = _formModel['url']?.length ?? 0;
 
@@ -43,36 +48,41 @@ class AddTaskFormState extends State<AddTaskForm> {
             onPressed: !_submitBtn
                 ? null
                 : () {
-                    var api = context.read(dsAPIProvider);
-                    if (api == null) {
-                      ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                          .showSnackBar(buildSnackBar('API not ready...', duration: Duration(seconds: 3)));
-                      return;
-                    }
-                    ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                        .showSnackBar(buildSnackBar('Submitting tasks...'));
+              var api = context.read(dsAPIProvider);
+              if (api == null) {
+                ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                    .showSnackBar(buildSnackBar('API not ready...', duration: Duration(seconds: 3)));
+                return;
+              }
+              ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                  .showSnackBar(buildSnackBar('Submitting tasks...'));
 
-                    // submit task
-                    setState(() {
-                      _submitBtn = false;
-                    });
-                    var futures = <Future>[];
-                    _torrentFiles.values.map((entry) => entry.key).forEach((f) {
-                      futures.add(api.task.create(file: f));
-                    });
-                    futures.add(api.task.create(uris: _formModel['url']));
-                    Future.wait(futures).then((value) {
-                      Navigator.of(context).pop('Task submitted.');
-                    }, onError: () {
-                      setState(() {
-                        _submitBtn = true;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        duration: Duration(seconds: 3),
-                        content: Text('Failed to create task...'),
-                      ));
-                    });
-                  },
+              // submit task
+              setState(() {
+                _submitBtn = false;
+              });
+              var futures = <Future<APIResponse<void>>>[];
+              _torrentFiles.values.forEach((byteStream) {
+                futures.add(readByteStream(byteStream).then((bytes) {
+                  return api.task.create(torrentBytes: bytes);
+                }));
+              });
+              if (_formModel['url'] != null) {
+                futures.add(api.task.create(uris: _formModel['url']));
+              }
+              Future.wait(futures).then((value) {
+                l.shout('Submit result, $value');
+                Navigator.of(context).pop('Task submitted.');
+              }, onError: () {
+                setState(() {
+                  _submitBtn = true;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  duration: Duration(seconds: 3),
+                  content: Text('Failed to create task...'),
+                ));
+              });
+            },
           )
         ],
       ),
@@ -107,30 +117,21 @@ class AddTaskFormState extends State<AddTaskForm> {
                         setState(() {});
                       },
                     ),
+                    Divider(
+                      height: 0,
+                    ),
                     Padding(
-                        padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
-                        child: Row(
+                        padding: EdgeInsets.only(top: 15, bottom: 15),
+                        child: Container(child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '${_torrentFiles.isEmpty ? '' : _torrentFiles.length.toString() + " "}Torrent File${_torrentFiles.length > 1 ? "s" : ""}',
+                              '${_torrentFiles.isEmpty ? '' : _torrentFiles.length.toString() +
+                                  " "}Torrent File${_torrentFiles.length > 1 ? "s" : ""}',
                               style: textSeparatorStyle,
-                            ),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                              icon: Icon(
-                                Icons.add,
-                              ),
-                              iconSize: 30,
-                              onPressed: () {
-                                _openFilePicker();
-                              },
                             ),
                           ],
                         )),
-                    Divider(
-                      height: 0,
                     ),
                     ListView.separated(
                         physics: NeverScrollableScrollPhysics(),
@@ -144,7 +145,6 @@ class AddTaskFormState extends State<AddTaskForm> {
                         itemBuilder: (context, idx) {
                           var filepath = _torrentFiles.keys.toList()[idx]!;
                           var entry = _torrentFiles[filepath]!;
-                          var len = entry.value;
 
                           return Dismissible(
                             direction: DismissDirection.horizontal,
@@ -164,7 +164,6 @@ class AddTaskFormState extends State<AddTaskForm> {
                             ),
                             child: ListTile(
                               title: Text(path.basename(filepath)),
-                              subtitle: Text(humanifySize(len)),
                             ),
                             onDismissed: (direction) {
                               setState(() {
@@ -179,6 +178,11 @@ class AddTaskFormState extends State<AddTaskForm> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Torrent file',
+        child: Icon(Icons.insert_drive_file_outlined),
+        onPressed: _openFilePicker,
       ),
     );
 
@@ -199,22 +203,24 @@ class AddTaskFormState extends State<AddTaskForm> {
       FilePickerResult filePickerResult = await (FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['torrent'],
+        withData: false,
+        withReadStream: true,
       ) as FutureOr<FilePickerResult>);
       List<PlatformFile> files = filePickerResult.files;
 
       if (mounted) {
         setState(() {
-          _torrentFiles.addAll(Map<String?, MapEntry<File, int>>.fromIterable(files, key: (f) {
+          _torrentFiles.addAll(Map<String?, Stream<List<int>>>.fromIterable(files, key: (f) {
             var _f = f as PlatformFile;
-            return _f.path;
+            return _f.name;
           }, value: (f) {
-            var _f = f as File;
-            return MapEntry(_f, _f.lengthSync());
+            var _f = f as PlatformFile;
+            return _f.readStream!;
           }));
         });
       }
-    } catch (e) {
-      l.severe('_openFilePicker(); failed.', e);
+    } catch (e, stack) {
+      l.severe('_openFilePicker(); failed.', e, stack);
     }
   }
 }

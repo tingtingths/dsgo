@@ -52,13 +52,7 @@ class TaskList extends ConsumerWidget {
     });
 
     if (count == 0) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Text(
-            TXT_NOTHING,
-          ),
-        ),
-      );
+      return SliverFillRemaining(child: Center(child: Text(TXT_NOTHING)));
     }
 
     return SliverList(

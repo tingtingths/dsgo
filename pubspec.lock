@@ -57,6 +57,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.0"
+  chunked_stream:
+    dependency: "direct main"
+    description:
+      name: chunked_stream
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.4.0"
   cli_util:
     dependency: transitive
     description:
@@ -509,7 +516,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "5b216f3e37f3ff427290b51d715acaabaa1069c0"
+      resolved-ref: "936cee60f1146c54b22510e05a211a0240b9d189"
       url: "git@github.com:tingtingths/synoapi.git"
     source: git
     version: "0.1.0"
