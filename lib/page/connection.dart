@@ -2,6 +2,7 @@ import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
@@ -35,12 +36,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
   @override
   void initState() {
-    fieldFocus = {
-      'uri': FocusNode(),
-      'user': FocusNode(),
-      'password': FocusNode(),
-      'connectBtn': FocusNode()
-    };
+    fieldFocus = {'uri': FocusNode(), 'user': FocusNode(), 'password': FocusNode(), 'connectBtn': FocusNode()};
     super.initState();
   }
 
@@ -52,9 +48,10 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_idx == null ? 'Add Connection' : 'Edit Connection'),
+        title: Text(_idx == null ? l10n.addConnection : l10n.editConnection),
       ),
       body: SingleChildScrollView(
         child: Form(
@@ -74,8 +71,8 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   autocorrect: false,
                   autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
-                    labelText: 'URI',
-                    hintText: 'Server URI. e.g. https://ds:5001/myds',
+                    labelText: l10n.uri,
+                    hintText: l10n.connectionFormUriHint,
                   ),
                   initialValue: _connection.uri,
                   onChanged: (uri) {
@@ -87,7 +84,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   },
                   validator: (value) {
                     if (value!.trim().isEmpty) {
-                      return 'Cannot be empty';
+                      return l10n.inputWarningEmpty;
                     }
                     return null;
                   },
@@ -99,7 +96,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   autocorrect: false,
                   autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
-                    labelText: 'Username',
+                    labelText: l10n.username,
                   ),
                   initialValue: _connection.user?.toString() ?? '',
                   onChanged: (user) {
@@ -110,7 +107,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   },
                   validator: (user) {
                     if (user!.trim().isEmpty) {
-                      return 'Cannot be empty';
+                      return l10n.inputWarningEmpty;
                     }
                     return null;
                   },
@@ -120,7 +117,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   textInputAction: TextInputAction.done,
                   focusNode: fieldFocus['password'],
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: l10n.password,
                   ),
                   obscureText: true,
                   initialValue: _connection.password?.toString() ?? '',
@@ -139,7 +136,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   children: [
                     ElevatedButton(
                       focusNode: fieldFocus['connectBtn'],
-                      child: Text('Connect'),
+                      child: Text(l10n.login),
                       onPressed: isEmpty(_connection.uri) || isTestingConnection
                           ? null
                           : () {
@@ -151,7 +148,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                               });
                               ScaffoldMessenger.of(context)
                                 ..removeCurrentSnackBar()
-                                ..showSnackBar(buildSnackBar('Connecting'));
+                                ..showSnackBar(buildSnackBar(l10n.connecting));
                               _formKey.currentState!.save();
 
                               // test connection
@@ -162,7 +159,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                               }).then((authOK) {
                                 ScaffoldMessenger.of(context)
                                   ..removeCurrentSnackBar()
-                                  ..showSnackBar(buildSnackBar('Login ${authOK ? 'success' : 'failed'}!',
+                                  ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
                                       duration: Duration(seconds: 3), showProgressIndicator: false));
                                 if (authOK) {
                                   _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
@@ -193,12 +190,13 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 }
 
 Future<String?> showOTPDialog(context) {
+  final l10n = AppLocalizations.of(context)!;
   String _value = '';
   return showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-            title: Text('One-time password'),
+            title: Text(l10n.oneTimePassword),
             content: TextFormField(
               keyboardType: TextInputType.number,
               autofocus: true,
@@ -210,7 +208,7 @@ Future<String?> showOTPDialog(context) {
             ),
             actions: [
               TextButton(
-                child: Text('Submit'),
+                child: Text(l10n.submit),
                 onPressed: () {
                   Navigator.of(context).pop(_value);
                 },

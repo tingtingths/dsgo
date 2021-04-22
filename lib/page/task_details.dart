@@ -4,12 +4,12 @@ import 'package:collection/collection.dart' show IterableExtension;
 import 'package:dsgo/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../model/model.dart';
-import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
@@ -123,6 +123,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var task = watch(taskProvider).state;
     var api = context.read(dsAPIProvider)!;
     Widget playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow));
@@ -131,7 +132,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.pause), fillColor: Colors.amber, onPressed: () {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
-          ..showSnackBar(buildSnackBar('Pausing...'));
+          ..showSnackBar(buildSnackBar(l10n.pausing));
         api.task.pause([task.id!]).then((resp) {
           context.read(taskProvider).state..status = TaskStatus.paused;
         });
@@ -141,7 +142,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
       playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow), fillColor: Colors.green, onPressed: () {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
-          ..showSnackBar(buildSnackBar('Resuming...'));
+          ..showSnackBar(buildSnackBar(l10n.resuming));
         api.task.resume([task.id!]).then((resp) {
           context.read(taskProvider).state..status = TaskStatus.downloading;
         });
@@ -175,42 +176,42 @@ class GeneralTaskInfoTab extends ConsumerWidget {
               ListTile(
                 onTap: () => copyToClipboard(task.title, context),
                 title: Text(task.title ?? UNKNOWN),
-                subtitle: Text('Title'),
+                subtitle: Text(l10n.taskDetailsTitleSubtitle),
               ),
               ListTile(
-                title: Text(task.status!.name.capitalize()),
-                subtitle: Text('Status'),
+                title: Text(taskStatusNameLocalized(task.status!, l10n)),
+                subtitle: Text(l10n.taskDetailsStatusSubtitle),
               ),
               ListTile(
                 onTap: () => copyToClipboard(task.additional?.detail?.destination, context),
                 title: Text(task.additional?.detail?.destination ?? UNKNOWN),
-                subtitle: Text('Destination'),
+                subtitle: Text(l10n.taskDetailsDestinationSubtitle),
               ),
               ListTile(
                 title: Text(humanifySize(task.size)),
-                subtitle: Text('Size'),
+                subtitle: Text(l10n.taskDetailsSizeSubtitle),
               ),
               ListTile(
                 onTap: () => copyToClipboard(task.username, context),
                 title: Text(task.username ?? UNKNOWN),
-                subtitle: Text('Owner'),
+                subtitle: Text(l10n.taskDetailsOwnerSubtitle),
               ),
               ListTile(
                 onTap: () => copyToClipboard(task.additional?.detail?.uri, context),
                 title: Text(task.additional?.detail?.uri ?? UNKNOWN),
-                subtitle: Text('URI'),
+                subtitle: Text(l10n.taskDetailsURLSubtitle),
               ),
               ListTile(
                 title: Text(task.additional?.detail?.createTime == null
                     ? UNKNOWN
                     : _dtFmt.format(task.additional?.detail?.createTime ?? UNKNOWN as DateTime)),
-                subtitle: Text('Created Time'),
+                subtitle: Text(l10n.taskDetailsCreatedTimeSubtitle),
               ),
               ListTile(
                 title: Text(task.additional?.detail?.completedTime == null
                     ? UNKNOWN
                     : _dtFmt.format(task.additional?.detail?.completedTime ?? UNKNOWN as DateTime)),
-                subtitle: Text('Completed Time'),
+                subtitle: Text(l10n.taskDetailsCompletedTimeSubtitle),
               ),
             ],
           ),
@@ -247,6 +248,7 @@ class TransferInfoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var task = watch(taskProvider).state;
     int? downSize = task.additional?.transfer?.sizeDownloaded;
     int? upSize = task.additional?.transfer?.sizeUploaded;
@@ -273,46 +275,46 @@ class TransferInfoTab extends ConsumerWidget {
       children: [
         ListTile(
           title: Text('${humanifySize(upSize)}' + ' / ${humanifySize(downSize)}' + ' (${fmtNum(pct)}%)'),
-          subtitle: Text('Transferred (UL / DL)'),
+          subtitle: Text(l10n.taskDetailsTitleSubtitle),
         ),
         ListTile(
           title: Text('${fmtNum(progress * 100)}%'),
-          subtitle: Text('Progress'),
+          subtitle: Text(l10n.taskDetailsStatusSubtitle),
         ),
         ListTile(
           title: Text('$upSpeed / $downSpeed'),
-          subtitle: Text('Speed (UL / DL)'),
+          subtitle: Text(l10n.taskDetailsDestinationSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.totalPeers ?? UNKNOWN}'),
-          subtitle: Text('Total Peers'),
+          subtitle: Text(l10n.taskDetailsSizeSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.connectedPeers ?? UNKNOWN}'),
-          subtitle: Text('Connected Peers'),
+          subtitle: Text(l10n.taskDetailsConnectedPeersSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.transfer?.downloadedPieces ?? 0} / ' +
               '${task.additional?.detail?.totalPieces ?? UNKNOWN}'),
-          subtitle: Text('Downloaded Blocks'),
+          subtitle: Text(l10n.taskDetailsURLSubtitle),
         ),
         ListTile(
           title: Text('${humanifySeconds(task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
-          subtitle: Text('Seeding Duration'),
+          subtitle: Text(l10n.taskDetailsCreatedTimeSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.connectedSeeders} / ${task.additional?.detail?.connectedLeechers}'),
-          subtitle: Text('Seeds / Leechers'),
+          subtitle: Text(l10n.taskDetailsCompletedTimeSubtitle),
         ),
         ListTile(
           title: Text(task.additional?.detail?.startedTime == null
               ? UNKNOWN
               : '${_dtFmt.format(task.additional!.detail!.startedTime!)}'),
-          subtitle: Text('Started Time'),
+          subtitle: Text(l10n.taskDetailsTransferredSubtitle),
         ),
         ListTile(
           title: Text(remainingTime),
-          subtitle: Text('Time left'),
+          subtitle: Text(l10n.taskDetailsProgressSubtitle),
         ),
       ],
     );
@@ -326,6 +328,7 @@ class TrackerInfoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var task = watch(taskProvider).state;
     var trackers = task.additional?.tracker ?? [];
     trackers.sort((x, y) => x.url!.compareTo(y.url!));
@@ -333,7 +336,7 @@ class TrackerInfoTab extends ConsumerWidget {
     if (trackers.isEmpty) {
       return Center(
         child: Text(
-          TXT_NOTHING,
+          l10n.placeholderText,
         ),
       );
     }
@@ -362,20 +365,20 @@ class TrackerInfoTab extends ConsumerWidget {
                     ListTile(
                       onTap: () => copyToClipboard(tracker.url, context),
                       title: Text(tracker.url!),
-                      subtitle: Text('Tracker Url'),
+                      subtitle: Text(l10n.taskDetailsTrackerUrl),
                     ),
                     ListTile(
                       title: Text(tracker.status!.isEmpty ? UNKNOWN : tracker.status!),
-                      subtitle: Text('Status'),
+                      subtitle: Text(l10n.taskDetailsTrackerStatus),
                     ),
                     ListTile(
                       title: Text(humanifySeconds(tracker.updateTimer, maxUnits: 2)),
-                      subtitle: Text('Next update'),
+                      subtitle: Text(l10n.taskDetailsTrackerNextUpdate),
                     ),
                     ListTile(
                       title: Text(
                           '${tracker.seeds == -1 ? 0 : tracker.seeds} / ${tracker.peers == -1 ? 0 : tracker.peers}'),
-                      subtitle: Text('Seeds / Peers'),
+                      subtitle: Text(l10n.taskDetailsTrackerSeedsAndPeers),
                     )
                   ],
                 ),
@@ -393,6 +396,7 @@ class PeerInfoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var task = watch(taskProvider).state;
     var peer = task.additional?.peer ?? [];
     peer.sort((x, y) => x.address!.compareTo(y.address!));
@@ -400,7 +404,7 @@ class PeerInfoTab extends ConsumerWidget {
     if (peer.isEmpty) {
       return Center(
         child: Text(
-          TXT_NOTHING,
+          l10n.placeholderText,
         ),
       );
     }
@@ -429,18 +433,18 @@ class PeerInfoTab extends ConsumerWidget {
                     ListTile(
                       onTap: () => copyToClipboard(p.address, context),
                       title: Text(p.address!),
-                      subtitle: Text('Peer IP Address'),
+                      subtitle: Text(l10n.taskDetailsPeerIPAddress),
                     ),
                     ListTile(
                       onTap: () => copyToClipboard(p.agent, context),
                       title: Text(p.agent!),
-                      subtitle: Text('Agent'),
+                      subtitle: Text(l10n.taskDetailsPeerAgent),
                     ),
                     ListTile(
                       title: Text('${fmtNum(p.progress!)}% ' +
                           '| ${humanifySize(p.speedUpload, p: 0)} ' +
                           '/ ${humanifySize(p.speedDownload, p: 0)}'),
-                      subtitle: Text('Progress | Speed (UL / DL)'),
+                      subtitle: Text(l10n.taskDetailsPeerProgressAndSpeed),
                     )
                   ],
                 ),
@@ -458,6 +462,7 @@ class FileInfoTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var task = watch(taskProvider).state;
     var files = task.additional?.file ?? [];
     files.sort((x, y) => x.filename!.compareTo(y.filename!));
@@ -465,7 +470,7 @@ class FileInfoTab extends ConsumerWidget {
     if (files.isEmpty) {
       return Center(
         child: Text(
-          TXT_NOTHING,
+          l10n.placeholderText,
         ),
       );
     }
@@ -497,17 +502,17 @@ class FileInfoTab extends ConsumerWidget {
                     ListTile(
                       onTap: () => copyToClipboard(f.filename, context),
                       title: Text(f.filename!),
-                      subtitle: Text('Filename'),
+                      subtitle: Text(l10n.taskDetailsFilename),
                     ),
                     ListTile(
                       title: Text('${fmtNum(progress, p: 1)}% | ' +
                           '${humanifySize(f.sizeDownloaded)} ' +
                           '/ ${humanifySize(f.size)}'),
-                      subtitle: Text('Downloaded'),
+                      subtitle: Text(l10n.taskDetailsFileDownloaded),
                     ),
                     ListTile(
                       title: Text('${f.priority!.capitalize()}'),
-                      subtitle: Text('Priority'),
+                      subtitle: Text(l10n.taskDetailsFilePriority),
                     ),
                   ],
                 ),

@@ -1,5 +1,9 @@
+import 'dart:ui';
+
 import 'package:dsgo/datasource/connection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
@@ -65,22 +69,29 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return Consumer(builder: (context, watch, _) {
       var settings = watch(userSettingsProvider).state;
+      final locale = settings.locale ?? PlatformDispatcher.instance.locale;
+
       return MaterialApp(
-        home: Material(child: MainScaffold(settings)),
-        themeMode: settings.themeMode,
-        theme: ThemeData.light().copyWith(
-          colorScheme: ColorScheme.fromSwatch(
-            primarySwatch: Colors.teal
+          home: Material(child: MainScaffold(settings)),
+          themeMode: settings.themeMode,
+          theme: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal),
+            appBarTheme: ThemeData.light().appBarTheme.copyWith(color: Colors.teal),
+            iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
           ),
-          appBarTheme: ThemeData.light().appBarTheme.copyWith(
-            color: Colors.teal
-          ),
-          iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
-        ),
-        darkTheme: ThemeData.dark().copyWith(
-          appBarTheme: AppBarTheme(color: Color(0xff404040))
-        ),
-      );
+          darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
+          // localization
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [
+            const Locale('en'),
+            const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+          ],
+          locale: locale);
     });
   }
 }

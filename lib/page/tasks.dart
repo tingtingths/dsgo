@@ -4,14 +4,13 @@ import 'package:animations/animations.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../main.dart';
 import '../model/model.dart';
 import '../page/task_details.dart';
-import '../util/const.dart';
-import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
 
@@ -25,6 +24,7 @@ class TaskList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var textTheme = Theme.of(context).textTheme;
     var tasksInfo = watch(tasksInfoProvider).state;
     var searchText = watch(searchTextProvider).state;
@@ -52,7 +52,7 @@ class TaskList extends ConsumerWidget {
     });
 
     if (count == 0) {
-      return SliverFillRemaining(child: Center(child: Text(TXT_NOTHING)));
+      return SliverFillRemaining(child: Center(child: Text(l10n.placeholderText)));
     }
 
     return SliverList(
@@ -163,8 +163,8 @@ class TaskList extends ConsumerWidget {
                           height: 5,
                         ),
                         Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
-                            ? '${task.status!.name.capitalize()}'
-                            : '$progressText% | ${task.status!.name.capitalize()}' +
+                            ? '${taskStatusNameLocalized(task.status!, l10n)}'
+                            : '$progressText% | ${taskStatusNameLocalized(task.status!, l10n)}' +
                                 (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
                         Text('$downloaded of $totalSize'),
                         Row(

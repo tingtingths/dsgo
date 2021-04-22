@@ -5,6 +5,7 @@ import 'package:dsgo/model/model.dart';
 import 'package:dsgo/util/const.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -107,11 +108,12 @@ class AppDrawer extends ConsumerWidget {
             openElevation: 0,
             closedBuilder: (context, action) {
               if (connection == null) {
-                return ListTile(leading: Icon(Icons.login), title: Text('Login'), onTap: action);
+                return ListTile(
+                    leading: Icon(Icons.login), title: Text(AppLocalizations.of(context)!.login), onTap: action);
               } else {
                 return ListTile(
                     leading: Icon(Icons.logout),
-                    title: Text('Logout'),
+                    title: Text(AppLocalizations.of(context)!.logout),
                     onTap: () {
                       context.read(connectionDatastoreProvider).removeAll();
                       watch(connectionProvider).state = null;
@@ -137,7 +139,8 @@ class AppDrawer extends ConsumerWidget {
               closedColor: Colors.transparent,
               closedElevation: 0,
               closedBuilder: (context, action) {
-                return ListTile(leading: Icon(Icons.settings), title: Text('Settings'), onTap: action);
+                return ListTile(
+                    leading: Icon(Icons.settings), title: Text(AppLocalizations.of(context)!.settings), onTap: action);
               },
               openBuilder: (context, action) {
                 return SettingsPage();
@@ -147,7 +150,7 @@ class AppDrawer extends ConsumerWidget {
               icon: Icon(Icons.info),
               applicationIcon: FlutterLogo(),
               applicationName: STYLED_APP_NAME,
-              applicationVersion: '${versionString(packageInfo)}',
+              applicationVersion: '${versionString(packageInfo)} (${AppLocalizations.of(context)!.localeName})',
               applicationLegalese: '@ 2020 DS Go authors',
               aboutBoxChildren: <Widget>[
                 const SizedBox(height: 24),
