@@ -33,7 +33,7 @@ class SettingsPageState extends State<SettingsPage> {
           child: ListView(
             children: <Widget>[
               ListTile(
-                  title: Text(l10n.settings_request_interval),
+                  title: Text(l10n.settingsRequestInterval),
                   leading: Icon(Icons.repeat),
                   trailing: Container(
                     width: 50,
@@ -58,9 +58,9 @@ class SettingsPageState extends State<SettingsPage> {
                           return DropdownMenuItem<ThemeMode>(
                             value: val,
                             child: Text({
-                              ThemeMode.system: l10n.settings_theme_system,
-                              ThemeMode.dark: l10n.settings_theme_dark,
-                              ThemeMode.light: l10n.settings_theme_light,
+                              ThemeMode.system: l10n.settingsThemeSystem,
+                              ThemeMode.dark: l10n.settingsThemeDark,
+                              ThemeMode.light: l10n.settingsThemeLight,
                             }[val]!),
                           );
                         }).toList(),

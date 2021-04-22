@@ -13,6 +13,9 @@ import 'package:synoapi/synoapi.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+
 class AddTaskForm extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => AddTaskFormState();
@@ -29,6 +32,7 @@ class AddTaskFormState extends State<AddTaskForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textSeparatorStyle = Theme
         .of(context)
         .textTheme
@@ -41,7 +45,7 @@ class AddTaskFormState extends State<AddTaskForm> {
     var scaffold = Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('New Task'),
+        title: Text(l10n.newTask),
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.done),
@@ -51,11 +55,11 @@ class AddTaskFormState extends State<AddTaskForm> {
               var api = context.read(dsAPIProvider);
               if (api == null) {
                 ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                    .showSnackBar(buildSnackBar('API not ready...', duration: Duration(seconds: 3)));
+                    .showSnackBar(buildSnackBar(l10n.taskCreateFailed, duration: Duration(seconds: 3)));
                 return;
               }
               ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                  .showSnackBar(buildSnackBar('Submitting tasks...'));
+                  .showSnackBar(buildSnackBar(l10n.taskSubmitting));
 
               // submit task
               setState(() {
@@ -71,15 +75,14 @@ class AddTaskFormState extends State<AddTaskForm> {
                 futures.add(api.task.create(uris: _formModel['url']));
               }
               Future.wait(futures).then((value) {
-                l.shout('Submit result, $value');
-                Navigator.of(context).pop('Task submitted.');
+                Navigator.of(context).pop(l10n.taskCreated);
               }, onError: () {
                 setState(() {
                   _submitBtn = true;
                 });
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   duration: Duration(seconds: 3),
-                  content: Text('Failed to create task...'),
+                  content: Text(l10n.taskCreateFailed),
                 ));
               });
             },
@@ -102,10 +105,10 @@ class AddTaskFormState extends State<AddTaskForm> {
                       maxLines: 10,
                       decoration: InputDecoration(
                         icon: Icon(Icons.link),
-                        labelText: 'Paste the URL(s) here',
+                        labelText: l10n.newTaskFormMagnetTitle,
                         hintStyle: TextStyle(),
-                        hintText: 'Separate with new line...',
-                        counterText: '$urlCount URL${urlCount > 1 ? 's' : ''}',
+                        hintText: l10n.newTaskFormMagnetHint,
+                        counterText: l10n.nThings(urlCount, 'URL'),
                         alignLabelWithHint: true,
                       ),
                       onChanged: (val) {
@@ -126,8 +129,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '${_torrentFiles.isEmpty ? '' : _torrentFiles.length.toString() +
-                                  " "}Torrent File${_torrentFiles.length > 1 ? "s" : ""}',
+                              l10n.nThings(_torrentFiles.length, l10n.torrentFile),
                               style: textSeparatorStyle,
                             ),
                           ],
@@ -180,7 +182,6 @@ class AddTaskFormState extends State<AddTaskForm> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Torrent file',
         child: Icon(Icons.insert_drive_file_outlined),
         onPressed: _openFilePicker,
       ),

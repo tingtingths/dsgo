@@ -84,7 +84,7 @@ class MainScaffoldState extends State<MainScaffold> {
         context.read(connectionDatastoreProvider).replace(0, connection);
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
-          ..showSnackBar(buildSnackBar('Login ${authOK ? 'success' : 'failed'}!',
+          ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
               duration: Duration(seconds: 3), showProgressIndicator: false));
       });
     }
@@ -123,7 +123,7 @@ class MainScaffoldState extends State<MainScaffold> {
                         title: TextField(
                           textInputAction: TextInputAction.search,
                           controller: searchController,
-                          decoration: InputDecoration(hintText: l10n.search_bar_text, border: InputBorder.none),
+                          decoration: InputDecoration(hintText: l10n.searchBarText, border: InputBorder.none),
                         )),
                   ),
                   TaskList(settings),
@@ -178,7 +178,7 @@ class MainScaffoldState extends State<MainScaffold> {
                           if (api != null && tasksInfo?.tasks.isNotEmpty == true) {
                             api.task.resume(tasksInfo!.tasks.map((t) => t.id).toList() as List<String>).then((resp) {
                               if (resp.success) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tasks resumed.')));
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.taskResumed)));
                               }
                             });
                           }
@@ -193,7 +193,7 @@ class MainScaffoldState extends State<MainScaffold> {
                           if (api != null && tasksInfo?.tasks.isNotEmpty == true) {
                             api.task.pause(tasksInfo!.tasks.map((t) => t.id).toList() as List<String>).then((resp) {
                               if (resp.success) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tasks paused.')));
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.taskPaused)));
                               }
                             });
                           }
@@ -211,31 +211,31 @@ class MainScaffoldState extends State<MainScaffold> {
                                   context: context,
                                   builder: (context) {
                                     return AlertDialog(
-                                      title: Text('Add from clipboard'),
+                                      title: Text(l10n.clipboard),
                                       content: Text(text),
                                       actions: <Widget>[
                                         FlatButton(
-                                          child: Text('Cancel'),
+                                          child: Text(l10n.cancel),
                                           onPressed: () {
                                             Navigator.of(context).pop();
                                           },
                                         ),
                                         FlatButton(
-                                          child: Text('Add'),
+                                          child: Text(l10n.add),
                                           onPressed: () {
                                             var api = context.read(dsAPIProvider);
                                             if (api == null) return;
                                             // submit task
                                             Navigator.of(context).pop();
                                             ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                                                .showSnackBar(buildSnackBar('Submitting tasks...'));
+                                                .showSnackBar(buildSnackBar(l10n.taskSubmitting));
                                             api.task.create(uris: [text]).then((resp) {
                                               if (resp.success) {
                                                 ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
                                                     .removeCurrentSnackBar();
                                                 ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
                                                     .showSnackBar(SnackBar(
-                                                  content: Text('Task Submitted.'),
+                                                  content: Text(l10n.taskCreated),
                                                 ));
                                               }
                                             });
@@ -247,7 +247,7 @@ class MainScaffoldState extends State<MainScaffold> {
                             } else {
                               ScaffoldMessenger.of(_scaffoldKey.currentState!.context).removeCurrentSnackBar();
                               ScaffoldMessenger.of(_scaffoldKey.currentState!.context).showSnackBar(SnackBar(
-                                content: Text('No Uri in clipboard...'),
+                                content: Text(l10n.warningClipboardEmpty),
                                 duration: Duration(milliseconds: 500),
                               ));
                             }

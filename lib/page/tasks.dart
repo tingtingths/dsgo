@@ -14,6 +14,7 @@ import '../util/const.dart';
 import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class TaskList extends ConsumerWidget {
   final UserSettings settings;
@@ -25,6 +26,7 @@ class TaskList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, watch) {
+    final l10n = AppLocalizations.of(context)!;
     var textTheme = Theme.of(context).textTheme;
     var tasksInfo = watch(tasksInfoProvider).state;
     var searchText = watch(searchTextProvider).state;
@@ -52,7 +54,7 @@ class TaskList extends ConsumerWidget {
     });
 
     if (count == 0) {
-      return SliverFillRemaining(child: Center(child: Text(TXT_NOTHING)));
+      return SliverFillRemaining(child: Center(child: Text(l10n.placeholderText)));
     }
 
     return SliverList(

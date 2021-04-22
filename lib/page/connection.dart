@@ -57,7 +57,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_idx == null ? l10n.add_connection : l10n.edit_connection),
+        title: Text(_idx == null ? l10n.addConnection : l10n.editConnection),
       ),
       body: SingleChildScrollView(
         child: Form(
@@ -78,7 +78,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   autovalidateMode: AutovalidateMode.disabled,
                   decoration: InputDecoration(
                     labelText: l10n.uri,
-                    hintText: l10n.connection_form_uri_hint,
+                    hintText: l10n.connectionFormUriHint,
                   ),
                   initialValue: _connection.uri,
                   onChanged: (uri) {
@@ -90,7 +90,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   },
                   validator: (value) {
                     if (value!.trim().isEmpty) {
-                      return l10n.input_warning_empty;
+                      return l10n.inputWarningEmpty;
                     }
                     return null;
                   },
@@ -113,7 +113,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   },
                   validator: (user) {
                     if (user!.trim().isEmpty) {
-                      return l10n.input_warning_empty;
+                      return l10n.inputWarningEmpty;
                     }
                     return null;
                   },
@@ -165,7 +165,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                               }).then((authOK) {
                                 ScaffoldMessenger.of(context)
                                   ..removeCurrentSnackBar()
-                                  ..showSnackBar(buildSnackBar('${authOK ? l10n.login_success : l10n.login_failed}',
+                                  ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
                                       duration: Duration(seconds: 3), showProgressIndicator: false));
                                 if (authOK) {
                                   _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
@@ -202,7 +202,7 @@ Future<String?> showOTPDialog(context) {
       context: context,
       builder: (context) {
         return AlertDialog(
-            title: Text(l10n.one_time_password),
+            title: Text(l10n.oneTimePassword),
             content: TextFormField(
               keyboardType: TextInputType.number,
               autofocus: true,
