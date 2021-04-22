@@ -1,20 +1,16 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:chunked_stream/chunked_stream.dart';
 import 'package:dsgo/main.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 import 'package:synoapi/synoapi.dart';
 
-import '../util/format.dart';
 import '../util/utils.dart';
-
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 
 class AddTaskForm extends StatefulWidget {
   @override
@@ -33,10 +29,7 @@ class AddTaskFormState extends State<AddTaskForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final textSeparatorStyle = Theme
-        .of(context)
-        .textTheme
-        .caption;
+    final textSeparatorStyle = Theme.of(context).textTheme.caption;
 
     var urlCount = _formModel['url']?.length ?? 0;
 
@@ -52,40 +45,40 @@ class AddTaskFormState extends State<AddTaskForm> {
             onPressed: !_submitBtn
                 ? null
                 : () {
-              var api = context.read(dsAPIProvider);
-              if (api == null) {
-                ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                    .showSnackBar(buildSnackBar(l10n.taskCreateFailed, duration: Duration(seconds: 3)));
-                return;
-              }
-              ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
-                  .showSnackBar(buildSnackBar(l10n.taskSubmitting));
+                    var api = context.read(dsAPIProvider);
+                    if (api == null) {
+                      ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                          .showSnackBar(buildSnackBar(l10n.taskCreateFailed, duration: Duration(seconds: 3)));
+                      return;
+                    }
+                    ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
+                        .showSnackBar(buildSnackBar(l10n.taskSubmitting));
 
-              // submit task
-              setState(() {
-                _submitBtn = false;
-              });
-              var futures = <Future<APIResponse<void>>>[];
-              _torrentFiles.values.forEach((byteStream) {
-                futures.add(readByteStream(byteStream).then((bytes) {
-                  return api.task.create(torrentBytes: bytes);
-                }));
-              });
-              if (_formModel['url'] != null) {
-                futures.add(api.task.create(uris: _formModel['url']));
-              }
-              Future.wait(futures).then((value) {
-                Navigator.of(context).pop(l10n.taskCreated);
-              }, onError: () {
-                setState(() {
-                  _submitBtn = true;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  duration: Duration(seconds: 3),
-                  content: Text(l10n.taskCreateFailed),
-                ));
-              });
-            },
+                    // submit task
+                    setState(() {
+                      _submitBtn = false;
+                    });
+                    var futures = <Future<APIResponse<void>>>[];
+                    _torrentFiles.values.forEach((byteStream) {
+                      futures.add(readByteStream(byteStream).then((bytes) {
+                        return api.task.create(torrentBytes: bytes);
+                      }));
+                    });
+                    if (_formModel['url'] != null) {
+                      futures.add(api.task.create(uris: _formModel['url']));
+                    }
+                    Future.wait(futures).then((value) {
+                      Navigator.of(context).pop(l10n.taskCreated);
+                    }, onError: () {
+                      setState(() {
+                        _submitBtn = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        duration: Duration(seconds: 3),
+                        content: Text(l10n.taskCreateFailed),
+                      ));
+                    });
+                  },
           )
         ],
       ),
@@ -124,16 +117,17 @@ class AddTaskFormState extends State<AddTaskForm> {
                       height: 0,
                     ),
                     Padding(
-                        padding: EdgeInsets.only(top: 15, bottom: 15),
-                        child: Container(child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.nThings(_torrentFiles.length, l10n.torrentFile),
-                              style: textSeparatorStyle,
-                            ),
-                          ],
-                        )),
+                      padding: EdgeInsets.only(top: 15, bottom: 15),
+                      child: Container(
+                          child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            l10n.nThings(_torrentFiles.length, l10n.torrentFile),
+                            style: textSeparatorStyle,
+                          ),
+                        ],
+                      )),
                     ),
                     ListView.separated(
                         physics: NeverScrollableScrollPhysics(),

@@ -4,17 +4,15 @@ import 'package:animations/animations.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../main.dart';
 import '../model/model.dart';
 import '../page/task_details.dart';
-import '../util/const.dart';
-import '../util/extension.dart';
 import '../util/format.dart';
 import '../util/utils.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class TaskList extends ConsumerWidget {
   final UserSettings settings;

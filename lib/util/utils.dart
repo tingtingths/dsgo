@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:synoapi/synoapi.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
+import 'package:synoapi/synoapi.dart';
 
 void copyToClipboard(String? text, BuildContext context) {
   if (text == null) return;
@@ -55,15 +54,16 @@ bool isEmpty(String? str, {bool trim = false}) {
 
 String taskStatusNameLocalized(TaskStatus status, AppLocalizations l10n) {
   return {
-    TaskStatus.waiting: l10n.taskStatusWaiting,
-    TaskStatus.downloading: l10n.taskStatusDownloading,
-    TaskStatus.paused: l10n.taskStatusPaused,
-    TaskStatus.finishing: l10n.taskStatusFinishing,
-    TaskStatus.finished: l10n.taskStatusFinished,
-    TaskStatus.hash_checking: l10n.taskStatusHashChecking,
-    TaskStatus.seeding: l10n.taskStatusSeeding,
-    TaskStatus.filehosting_waiting: l10n.taskStatusFilehostingWaiting,
-    TaskStatus.extracting: l10n.taskStatusExtracting,
-    TaskStatus.error: l10n.taskStatusError
-  }[status] ?? '';
+        TaskStatus.waiting: l10n.taskStatusWaiting,
+        TaskStatus.downloading: l10n.taskStatusDownloading,
+        TaskStatus.paused: l10n.taskStatusPaused,
+        TaskStatus.finishing: l10n.taskStatusFinishing,
+        TaskStatus.finished: l10n.taskStatusFinished,
+        TaskStatus.hash_checking: l10n.taskStatusHashChecking,
+        TaskStatus.seeding: l10n.taskStatusSeeding,
+        TaskStatus.filehosting_waiting: l10n.taskStatusFilehostingWaiting,
+        TaskStatus.extracting: l10n.taskStatusExtracting,
+        TaskStatus.error: l10n.taskStatusError
+      }[status] ??
+      '';
 }

@@ -5,6 +5,7 @@ import 'package:dsgo/datasource/connection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
@@ -15,7 +16,6 @@ import '../page/connection.dart';
 import '../page/drawer.dart';
 import '../page/tasks.dart';
 import '../util/utils.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class MainScaffold extends StatefulWidget {
   final UserSettings settings;

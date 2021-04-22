@@ -47,26 +47,26 @@ class SettingsPageState extends State<SettingsPage> {
                     ),
                   )),
               ListTile(
-                  title: Text(l10n.theme),
-                  leading: Icon(Icons.lightbulb_outline),
-                  trailing: DropdownButton(
-                    value: settings.themeMode,
-                    items: ThemeMode.values.map((val) {
-                      return DropdownMenuItem<ThemeMode>(
-                        value: val,
-                        child: Text({
-                          ThemeMode.system: l10n.settingsThemeSystem,
-                          ThemeMode.dark: l10n.settingsThemeDark,
-                          ThemeMode.light: l10n.settingsThemeLight,
-                        }[val]!),
-                      );
-                    }).toList(),
-                    onChanged: (dynamic val) {
-                      settings.themeMode = val;
-                      context.read(userSettingsDatastoreProvider).set(settings);
-                      context.read(userSettingsProvider).state = settings;
-                    },
-                  ),
+                title: Text(l10n.theme),
+                leading: Icon(Icons.lightbulb_outline),
+                trailing: DropdownButton(
+                  value: settings.themeMode,
+                  items: ThemeMode.values.map((val) {
+                    return DropdownMenuItem<ThemeMode>(
+                      value: val,
+                      child: Text({
+                        ThemeMode.system: l10n.settingsThemeSystem,
+                        ThemeMode.dark: l10n.settingsThemeDark,
+                        ThemeMode.light: l10n.settingsThemeLight,
+                      }[val]!),
+                    );
+                  }).toList(),
+                  onChanged: (dynamic val) {
+                    settings.themeMode = val;
+                    context.read(userSettingsDatastoreProvider).set(settings);
+                    context.read(userSettingsProvider).state = settings;
+                  },
+                ),
               ),
               ListTile(
                   title: Text(l10n.displayLanguage),
@@ -84,13 +84,13 @@ class SettingsPageState extends State<SettingsPage> {
                       settings.locale = {
                         'System': null,
                         Locale('en').toString(): Locale('en'),
-                        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant').toString(): Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
+                        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant').toString():
+                            Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
                       }[val];
                       context.read(userSettingsDatastoreProvider).set(settings);
                       context.read(userSettingsProvider).state = settings;
                     },
-                  )
-              ),
+                  )),
             ],
           ),
         ),

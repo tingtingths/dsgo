@@ -2,13 +2,12 @@ import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../main.dart';
 import '../model/model.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 
 class ConnectionEditForm extends StatefulWidget {
   final int? _idx;
@@ -37,12 +36,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
   @override
   void initState() {
-    fieldFocus = {
-      'uri': FocusNode(),
-      'user': FocusNode(),
-      'password': FocusNode(),
-      'connectBtn': FocusNode()
-    };
+    fieldFocus = {'uri': FocusNode(), 'user': FocusNode(), 'password': FocusNode(), 'connectBtn': FocusNode()};
     super.initState();
   }
 

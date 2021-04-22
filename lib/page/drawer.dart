@@ -139,7 +139,8 @@ class AppDrawer extends ConsumerWidget {
               closedColor: Colors.transparent,
               closedElevation: 0,
               closedBuilder: (context, action) {
-                return ListTile(leading: Icon(Icons.settings), title: Text(AppLocalizations.of(context)!.settings), onTap: action);
+                return ListTile(
+                    leading: Icon(Icons.settings), title: Text(AppLocalizations.of(context)!.settings), onTap: action);
               },
               openBuilder: (context, action) {
                 return SettingsPage();
