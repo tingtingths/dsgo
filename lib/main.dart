@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:dsgo/datasource/connection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
 
@@ -48,6 +51,7 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
+
   @override
   void initState() {
     // load configurations from storage
@@ -67,6 +71,8 @@ class AppState extends State<App> {
   Widget build(BuildContext context) {
     return Consumer(builder: (context, watch, _) {
       var settings = watch(userSettingsProvider).state;
+      final locale = settings.locale ?? PlatformDispatcher.instance.locale;
+
       return MaterialApp(
         home: Material(child: MainScaffold(settings)),
         themeMode: settings.themeMode,
@@ -90,9 +96,10 @@ class AppState extends State<App> {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: [
-          const Locale('en'), // English, no country code
-          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'), // 'zh_Hant_HK'
+          const Locale('en'),
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
         ],
+        locale: locale
       );
     });
   }

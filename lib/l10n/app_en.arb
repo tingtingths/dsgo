@@ -41,6 +41,19 @@
   "@settingsThemeLight": {
     "description": "Theme setting light option"
   },
+  "displayLanguage": "Display Language",
+  "settingsDisplayLangSystem": "System",
+  "@settingsDisplayLangSystem": {
+    "description": "Display language setting system option"
+  },
+  "settingsDisplayLangEN": "English",
+  "@settingsDisplayLangEN": {
+    "description": "Display language setting English option"
+  },
+  "settingsDisplayLangZhHant": "Traditional Chinese",
+  "@settingsDisplayLangZhHant": {
+    "description": "Display language setting TC option"
+  },
   "searchBarText": "Search",
   "@searchBarText": {
     "description": "Search bar text"

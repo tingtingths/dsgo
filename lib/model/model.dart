@@ -69,17 +69,31 @@ class Connection {
 class UserSettings {
   int apiRequestFrequency = 5000; // ms
   ThemeMode themeMode = ThemeMode.system;
+  Locale? locale;
 
-  UserSettings({int? apiRequestFrequency, ThemeMode? themeMode}) {
+  UserSettings({int? apiRequestFrequency, ThemeMode? themeMode, Locale? locale}) {
     if (apiRequestFrequency != null) this.apiRequestFrequency = apiRequestFrequency;
     if (themeMode != null) this.themeMode = themeMode;
+    if (locale != null) this.locale = locale;
   }
 
   UserSettings.fromJson(Map<String, dynamic>? json) {
     apiRequestFrequency = mapGet(json, 'apiRequestFrequency');
     var themeModeStr = mapGet(json, 'themeMode');
     themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeStr);
+    locale = Locale.fromSubtags(
+      languageCode: mapGet(mapGet(json, 'locale'), 'languageCode'),
+      scriptCode: mapGet(mapGet(json, 'locale'), 'scriptCode'),
+      countryCode: mapGet(mapGet(json, 'locale'), 'countryCode')
+    );
   }
 
-  Map<String, dynamic> toJson() => {'apiRequestFrequency': apiRequestFrequency, 'themeMode': themeMode.toString()};
+  Map<String, dynamic> toJson() => {
+    'apiRequestFrequency': apiRequestFrequency, 'themeMode': themeMode.toString(),
+    'locale': {
+      'languageCode': locale?.languageCode,
+      'scriptCode': locale?.scriptCode,
+      'countryCode': locale?.countryCode,
+    }
+  };
 }
