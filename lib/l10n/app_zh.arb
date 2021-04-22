@@ -36,6 +36,8 @@
   "newTaskFormURLHint": "換行分隔",
   "torrentFile": "Torrent 檔案",
   "nThings": "{count,plural, =0{{thing}} other{{count} {thing}}}",
+  "nTaskRemoved": "{count,plural, =1{1 任務已删除} other{{count} 任務已删除}}",
+  "undo": "復原",
   "placeholderText": "...",
   "pausing": "暫停中...",
   "resuming": "繼續中...",
