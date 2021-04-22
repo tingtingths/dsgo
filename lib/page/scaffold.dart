@@ -15,6 +15,7 @@ import '../page/connection.dart';
 import '../page/drawer.dart';
 import '../page/tasks.dart';
 import '../util/utils.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class MainScaffold extends StatefulWidget {
   final UserSettings settings;
@@ -68,6 +69,7 @@ class MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     var apiContext = context.read(apiContextProvider).state;
     if (apiContext != null && !apiContext.hasSid(Syno.DownloadStation.name) && !isLoginInProgress) {
       isLoginInProgress = true;
@@ -121,7 +123,7 @@ class MainScaffoldState extends State<MainScaffold> {
                         title: TextField(
                           textInputAction: TextInputAction.search,
                           controller: searchController,
-                          decoration: InputDecoration(hintText: 'Search tasks', border: InputBorder.none),
+                          decoration: InputDecoration(hintText: l10n.search_bar_text, border: InputBorder.none),
                         )),
                   ),
                   TaskList(settings),

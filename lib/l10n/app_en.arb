@@ -1,0 +1,51 @@
+{
+  "login": "Login",
+  "logout": "Logout",
+  "settings": "Settings",
+  "add_connection": "Add Connection",
+  "@add_connection": {
+    "description": "Add Connection page header"
+  },
+  "edit_connection": "Edit Connection",
+  "@edit_connection": {
+    "description": "Edit Connection page header"
+  },
+  "uri": "URI",
+  "connection_form_uri_hint": "Server URI, e.g. https://ds:5001/myds",
+  "@connection_form_uri_hint": {
+    "description": "Connection form URI input hint"
+  },
+  "username": "Username",
+  "password": "Password",
+  "connect": "Connect",
+  "input_warning_empty": "Cannot be empty",
+  "@input_warning_empty": {
+    "description": "Warning text for empty mandatory input"
+  },
+  "settings_request_interval": "Data request interval",
+  "@settings_request_interval": {
+    "description": "Data request setting text"
+  },
+  "theme": "Theme",
+  "settings_theme_system": "System",
+  "@settings_theme_system": {
+    "description": "Theme setting system option"
+  },
+  "settings_theme_dark": "Dark",
+  "@settings_theme_dark": {
+    "description": "Theme setting dark option"
+  },
+  "settings_theme_light": "Light",
+  "@settings_theme_light": {
+    "description": "Theme setting light option"
+  },
+  "search_bar_text": "Search",
+  "@search_bar_text": {
+    "description": "Search bar text"
+  },
+  "connecting": "Connecting",
+  "login_success": "Login Success",
+  "login_failed": "Login Failed",
+  "one_time_password": "One-time password",
+  "submit": "Submit"
+}

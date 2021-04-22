@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../datasource/user_settings.dart';
 import '../util/const.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -18,11 +19,12 @@ class SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer(builder: (context, watch, _) {
       var settings = watch(userSettingsProvider).state;
       return Scaffold(
         appBar: AppBar(
-          title: Text('Settings'),
+          title: Text(l10n.settings),
         ),
         body: GestureDetector(
           onTap: () {
@@ -31,7 +33,7 @@ class SettingsPageState extends State<SettingsPage> {
           child: ListView(
             children: <Widget>[
               ListTile(
-                  title: Text('Data request interval'),
+                  title: Text(l10n.settings_request_interval),
                   leading: Icon(Icons.repeat),
                   trailing: Container(
                     width: 50,
@@ -46,7 +48,7 @@ class SettingsPageState extends State<SettingsPage> {
                     ),
                   )),
               ListTile(
-                  title: Text('Dark Mode'),
+                  title: Text(l10n.theme),
                   leading: Icon(Icons.lightbulb_outline),
                   trailing: Container(
                       width: 100,
@@ -55,7 +57,11 @@ class SettingsPageState extends State<SettingsPage> {
                         items: ThemeMode.values.map((val) {
                           return DropdownMenuItem<ThemeMode>(
                             value: val,
-                            child: Text(val.text),
+                            child: Text({
+                              ThemeMode.system: l10n.settings_theme_system,
+                              ThemeMode.dark: l10n.settings_theme_dark,
+                              ThemeMode.light: l10n.settings_theme_light,
+                            }[val]!),
                           );
                         }).toList(),
                         onChanged: (dynamic val) {

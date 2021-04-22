@@ -1,11 +1,13 @@
 import 'package:dsgo/datasource/connection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:synoapi/synoapi.dart';
 
 import 'datasource/user_settings.dart';
 import 'model/model.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'page/scaffold.dart';
 
 final userSettingsProvider = StateProvider<UserSettings>((ref) => UserSettings());
@@ -80,6 +82,17 @@ class AppState extends State<App> {
         darkTheme: ThemeData.dark().copyWith(
           appBarTheme: AppBarTheme(color: Color(0xff404040))
         ),
+        // localization
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('en'), // English, no country code
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'), // 'zh_Hant_HK'
+        ],
       );
     });
   }
