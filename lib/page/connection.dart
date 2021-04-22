@@ -142,7 +142,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                   children: [
                     ElevatedButton(
                       focusNode: fieldFocus['connectBtn'],
-                      child: Text(l10n.connect),
+                      child: Text(l10n.login),
                       onPressed: isEmpty(_connection.uri) || isTestingConnection
                           ? null
                           : () {

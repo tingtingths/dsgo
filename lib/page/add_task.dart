@@ -105,9 +105,9 @@ class AddTaskFormState extends State<AddTaskForm> {
                       maxLines: 10,
                       decoration: InputDecoration(
                         icon: Icon(Icons.link),
-                        labelText: l10n.newTaskFormMagnetTitle,
+                        labelText: l10n.newTaskFormURLTitle,
                         hintStyle: TextStyle(),
-                        hintText: l10n.newTaskFormMagnetHint,
+                        hintText: l10n.newTaskFormURLHint,
                         counterText: l10n.nThings(urlCount, 'URL'),
                         alignLabelWithHint: true,
                       ),

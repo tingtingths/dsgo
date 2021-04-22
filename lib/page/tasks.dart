@@ -165,8 +165,8 @@ class TaskList extends ConsumerWidget {
                           height: 5,
                         ),
                         Text((['seeding', 'finished'].contains(task.status!.name.toLowerCase())
-                            ? '${task.status!.name.capitalize()}'
-                            : '$progressText% | ${task.status!.name.capitalize()}' +
+                            ? '${taskStatusNameLocalized(task.status!, l10n)}'
+                            : '$progressText% | ${taskStatusNameLocalized(task.status!, l10n)}' +
                                 (remainingTime == null || remainingTime.isEmpty ? '' : ' | ~$remainingTime'))),
                         Text('$downloaded of $totalSize'),
                         Row(

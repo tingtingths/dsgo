@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "login": "Login",
   "logout": "Logout",
   "settings": "Settings",
@@ -41,7 +40,7 @@
   "@settingsThemeLight": {
     "description": "Theme setting light option"
   },
-  "displayLanguage": "Display Language",
+  "displayLanguage": "Display language",
   "settingsDisplayLangSystem": "System",
   "@settingsDisplayLangSystem": {
     "description": "Display language setting system option"
@@ -50,7 +49,7 @@
   "@settingsDisplayLangEN": {
     "description": "Display language setting English option"
   },
-  "settingsDisplayLangZhHant": "Traditional Chinese",
+  "settingsDisplayLangZhHant": "繁體中文",
   "@settingsDisplayLangZhHant": {
     "description": "Display language setting TC option"
   },
@@ -73,13 +72,13 @@
   "cancel": "Cancel",
   "warningClipboardEmpty": "No Uri in clipboard",
   "newTask": "New Task",
-  "newTaskFormMagnetTitle": "Paste the URL(s) here",
-  "@newTaskFormMagnetTitle": {
-    "description": "New task form magnet links input title"
+  "newTaskFormURLTitle": "Paste the URL(s) here",
+  "@newTaskFormURLTitle": {
+    "description": "New task form URL input title"
   },
-  "newTaskFormMagnetHint": "Separate with new line...",
-  "@newTaskFormMagnetHint": {
-    "description": "New task form magnet links input hint"
+  "newTaskFormURLHint": "Separate with new line...",
+  "@newTaskFormURLHint": {
+    "description": "New task form URL input hint"
   },
   "torrentFile": "Torrent File",
   "nThings": "{count,plural, =0{No {thing}} other{{count} {thing}s}}",
@@ -97,7 +96,7 @@
   "taskDetailsDestinationSubtitle": "Destination",
   "taskDetailsSizeSubtitle": "Size",
   "taskDetailsOwnerSubtitle": "Owner",
-  "taskDetailsURISubtitle": "URI",
+  "taskDetailsURLSubtitle": "URL",
   "taskDetailsCreatedTimeSubtitle": "Created Time",
   "taskDetailsCompletedTimeSubtitle": "Completed Time",
   "taskDetailsTransferredSubtitle": "Transferred (UL / DL)",
@@ -119,5 +118,15 @@
   "taskDetailsPeerProgressAndSpeed": "Progress | Speed (UL / DL)",
   "taskDetailsFilename": "Filename",
   "taskDetailsFileDownloaded": "Downloaded",
-  "taskDetailsFilePriority": "Priority"
+  "taskDetailsFilePriority": "Priority",
+  "taskStatusWaiting": "Waiting",
+  "taskStatusDownloading": "Downloading",
+  "taskStatusPaused": "Paused",
+  "taskStatusFinishing": "Finishing",
+  "taskStatusFinished": "Finished",
+  "taskStatusHashChecking": "Checking",
+  "taskStatusSeeding": "Seeding",
+  "taskStatusFilehostingWaiting": "Filehost Waiting",
+  "taskStatusExtracting": "Extracting",
+  "taskStatusError": "Error"
 }

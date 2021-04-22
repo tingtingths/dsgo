@@ -181,7 +181,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
                 subtitle: Text(l10n.taskDetailsTitleSubtitle),
               ),
               ListTile(
-                title: Text(task.status!.name.capitalize()),
+                title: Text(taskStatusNameLocalized(task.status!, l10n)),
                 subtitle: Text(l10n.taskDetailsStatusSubtitle),
               ),
               ListTile(
@@ -201,7 +201,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
               ListTile(
                 onTap: () => copyToClipboard(task.additional?.detail?.uri, context),
                 title: Text(task.additional?.detail?.uri ?? UNKNOWN),
-                subtitle: Text(l10n.taskDetailsURISubtitle),
+                subtitle: Text(l10n.taskDetailsURLSubtitle),
               ),
               ListTile(
                 title: Text(task.additional?.detail?.createTime == null
@@ -293,12 +293,12 @@ class TransferInfoTab extends ConsumerWidget {
         ),
         ListTile(
           title: Text('${task.additional?.detail?.connectedPeers ?? UNKNOWN}'),
-          subtitle: Text(l10n.taskDetailsOwnerSubtitle),
+          subtitle: Text(l10n.taskDetailsConnectedPeersSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.transfer?.downloadedPieces ?? 0} / ' +
               '${task.additional?.detail?.totalPieces ?? UNKNOWN}'),
-          subtitle: Text(l10n.taskDetailsURISubtitle),
+          subtitle: Text(l10n.taskDetailsURLSubtitle),
         ),
         ListTile(
           title: Text('${humanifySeconds(task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
