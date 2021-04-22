@@ -36,7 +36,7 @@ dependencies:
   package_info_plus : ^1.0.0
   synoapi:
     git:
-      url: git@github.com:tingtingths/synoapi.git
+      url: https://github.com/tingtingths/synoapi.git
   collection: ^1.15.0-nullsafety.4
   logging: ^1.0.0
   flutter_riverpod: ^0.14.0
