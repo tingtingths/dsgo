@@ -196,6 +196,7 @@ class TaskList extends ConsumerWidget {
   }
 
   void removeTaskFromModel(BuildContext context, String? taskId) {
+    final l10n = AppLocalizations.of(context)!;
     var taskInfo = context.read(tasksInfoProvider).state;
     var found = taskInfo!.tasks.firstWhereOrNull((t) => t.id == taskId);
 
@@ -219,11 +220,11 @@ class TaskList extends ConsumerWidget {
         ..removeCurrentSnackBar()
         ..showSnackBar(
           buildSnackBar(
-            '${pendingRemove.length} Task${pendingRemove.length > 1 ? 's' : ''} removed.',
+            '${l10n.nTaskRemoved(pendingRemove.length)}',
             duration: confirmDuration,
             showProgressIndicator: false,
             action: SnackBarAction(
-              label: 'Undo',
+              label: l10n.undo,
               onPressed: () {
                 pendingRemoveCountdown?.cancel();
                 pendingRemoveCountdown = null;
