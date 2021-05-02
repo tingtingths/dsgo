@@ -1,4 +1,5 @@
 import 'package:dsgo/main.dart';
+import 'package:dsgo/util/const.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,9 +12,30 @@ class SettingsPage extends StatefulWidget {
 }
 
 class SettingsPageState extends State<SettingsPage> {
+  final requestIntervalFieldController = TextEditingController();
+  final requestIntervalFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
+
+    requestIntervalFocusNode.addListener(() {
+      if (!requestIntervalFocusNode.hasFocus) {
+        // lost focus, check value
+        var value;
+        try {
+          value = int.parse(requestIntervalFieldController.text);
+        } catch (ignored) {}
+        if (value == null || value < REQUEST_INTERVAL_MIN) {
+          requestIntervalFieldController.text = REQUEST_INTERVAL_MIN.toRadixString(10);
+          value = REQUEST_INTERVAL_MIN;
+        }
+        var settings = context.read(userSettingsProvider).state;
+        settings.apiRequestFrequency = value;
+        context.read(userSettingsDatastoreProvider).set(settings);
+        context.read(userSettingsProvider).state = settings;
+      }
+    });
   }
 
   @override
@@ -21,6 +43,8 @@ class SettingsPageState extends State<SettingsPage> {
     final l10n = AppLocalizations.of(context)!;
     return Consumer(builder: (context, watch, _) {
       var settings = watch(userSettingsProvider).state;
+      if (requestIntervalFieldController.text.isEmpty)
+        requestIntervalFieldController.text = settings.apiRequestFrequency.toRadixString(10);
       return Scaffold(
         appBar: AppBar(
           title: Text(l10n.settings),
@@ -37,13 +61,9 @@ class SettingsPageState extends State<SettingsPage> {
                   trailing: Container(
                     width: 80,
                     child: TextFormField(
-                      initialValue: settings.apiRequestFrequency.toRadixString(10),
+                      focusNode: requestIntervalFocusNode,
+                      controller: requestIntervalFieldController,
                       keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        settings.apiRequestFrequency = int.parse(value);
-                        context.read(userSettingsDatastoreProvider).set(settings);
-                        context.read(userSettingsProvider).state = settings;
-                      },
                     ),
                   )),
               ListTile(

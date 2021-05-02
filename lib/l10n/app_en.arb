@@ -60,6 +60,8 @@
   "connecting": "Connecting",
   "loginSuccess": "Login Success",
   "loginFailed": "Login Failed",
+  "connectionFailed": "Connection Failed",
+  "failed": "Failed",
   "oneTimePassword": "One-time password",
   "submit": "Submit",
   "taskResumed": "Tasks resumed",

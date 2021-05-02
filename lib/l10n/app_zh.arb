@@ -21,6 +21,8 @@
   "connecting": "連接中",
   "loginSuccess": "登入成功",
   "loginFailed": "登入失敗",
+  "connectionFailed": "連接失敗",
+  "failed": "失敗",
   "oneTimePassword": "一次性密碼",
   "submit": "提交",
   "taskResumed": "繼續下載任務",

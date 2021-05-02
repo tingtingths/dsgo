@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
@@ -134,49 +135,65 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                 ),
                 Row(
                   children: [
-                    ElevatedButton(
-                      focusNode: fieldFocus['connectBtn'],
-                      child: Text(l10n.login),
-                      onPressed: isEmpty(_connection.uri) || isTestingConnection
-                          ? null
-                          : () {
-                              if (!_formKey.currentState!.validate()) {
-                                return;
-                              }
-                              setState(() {
-                                isTestingConnection = true;
-                              });
-                              ScaffoldMessenger.of(context)
-                                ..removeCurrentSnackBar()
-                                ..showSnackBar(buildSnackBar(l10n.connecting));
-                              _formKey.currentState!.save();
-
-                              // test connection
-                              var apiContext = APIContext.uri(_connection.uri!);
-                              apiContext.authApp(Syno.DownloadStation.name, _connection.user!, _connection.password!,
-                                  otpCallback: () async {
-                                return await showOTPDialog(context) ?? '';
-                              }).then((authOK) {
-                                ScaffoldMessenger.of(context)
-                                  ..removeCurrentSnackBar()
-                                  ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
-                                      duration: Duration(seconds: 3), showProgressIndicator: false));
-                                if (authOK) {
-                                  _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
-                                  context.read(connectionProvider).state = _connection;
-                                  if (_idx != null && _idx! >= 0) {
-                                    context.read(connectionDatastoreProvider).replace(_idx!, _connection);
-                                  } else {
-                                    context.read(connectionDatastoreProvider).add(_connection);
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: ElevatedButton(
+                          focusNode: fieldFocus['connectBtn'],
+                          child: Text(l10n.login),
+                          onPressed: isEmpty(_connection.uri) || isTestingConnection
+                              ? null
+                              : () {
+                                  if (!_formKey.currentState!.validate()) {
+                                    return;
                                   }
-                                  Navigator.pop(context, _connection);
-                                } else {
                                   setState(() {
-                                    isTestingConnection = false;
+                                    isTestingConnection = true;
                                   });
-                                }
-                              });
-                            },
+                                  ScaffoldMessenger.of(context)
+                                    ..removeCurrentSnackBar()
+                                    ..showSnackBar(buildSnackBar(l10n.connecting));
+                                  _formKey.currentState!.save();
+
+                                  // test connection
+                                  var apiContext = APIContext.uri(_connection.uri!);
+                                  apiContext
+                                      .authApp(Syno.DownloadStation.name, _connection.user!, _connection.password!,
+                                          otpCallback: () async {
+                                    return await showOTPDialog(context) ?? '';
+                                  }).then((authOK) {
+                                    ScaffoldMessenger.of(context)
+                                      ..removeCurrentSnackBar()
+                                      ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
+                                          duration: Duration(seconds: 3), showProgressIndicator: false));
+                                    if (authOK) {
+                                      _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
+                                      context.read(connectionProvider).state = _connection;
+                                      if (_idx != null && _idx! >= 0) {
+                                        context.read(connectionDatastoreProvider).replace(_idx!, _connection);
+                                      } else {
+                                        context.read(connectionDatastoreProvider).add(_connection);
+                                      }
+                                      Navigator.pop(context, _connection);
+                                    } else {
+                                      setState(() {
+                                        isTestingConnection = false;
+                                      });
+                                    }
+                                  }, onError: (err, stack) {
+                                    ScaffoldMessenger.of(context)
+                                      ..removeCurrentSnackBar()
+                                      ..showSnackBar(buildSnackBar(
+                                          err is DioError ? l10n.connectionFailed : '${l10n.failed} ${err.error}',
+                                          showProgressIndicator: false,
+                                          duration: Duration(seconds: 4)));
+                                    setState(() {
+                                      isTestingConnection = false;
+                                    });
+                                  });
+                                },
+                        ),
+                      ),
                     ),
                   ],
                 ),

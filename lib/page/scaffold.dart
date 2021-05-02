@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:animations/animations.dart';
 import 'package:dsgo/datasource/connection.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:neat_periodic_task/neat_periodic_task.dart';
 import 'package:synoapi/synoapi.dart';
 
 import '../main.dart';
@@ -29,16 +28,18 @@ class MainScaffold extends StatefulWidget {
 class MainScaffoldState extends State<MainScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final searchController = TextEditingController();
-  final List<StreamSubscription> subscriptions = [];
-  final UserSettings settings;
+  UserSettings settings;
   final otpProvider = StateProvider((ref) => '');
   bool isLoginInProgress = false;
+  NeatPeriodicTaskScheduler? apiTasksScheduler;
+  NeatPeriodicTaskScheduler? statisticScheduler;
 
   MainScaffoldState(this.settings);
 
   @override
   void dispose() {
-    subscriptions.forEach((e) => e.cancel());
+    apiTasksScheduler?.stop();
+    statisticScheduler?.stop();
     super.dispose();
   }
 
@@ -47,24 +48,54 @@ class MainScaffoldState extends State<MainScaffold> {
     searchController.addListener(() {
       context.read(searchTextProvider).state = searchController.text;
     });
-
-    // periodically retrieve overall tasks info from server
-    subscriptions.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) async {
-      var apiContext = context.read(apiContextProvider).state;
-      if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
-
-      var api = context.read(dsAPIProvider);
-      if (api != null) {
-        api.task.list(additional: ['transfer']).then((resp) {
-          context.read(tasksInfoProvider).state = resp.data;
-        });
-        api.statistic.getInfo().then((resp) {
-          context.read(statsInfoProvider).state = resp.data;
-        });
-      }
-    }));
-
+    context.read(userSettingsProvider).addListener((newSettings) {
+      settings = newSettings;
+      setupSchedulers();
+    });
+    setupSchedulers();
     super.initState();
+  }
+
+  void setupSchedulers() {
+    apiTasksScheduler?.stop();
+    statisticScheduler?.stop();
+
+    l.info('init scheduler, ${settings.apiRequestFrequency}');
+    apiTasksScheduler = NeatPeriodicTaskScheduler(
+      name: 'Task list',
+      interval: Duration(milliseconds: settings.apiRequestFrequency),
+      task: () async {
+        var apiContext = context.read(apiContextProvider).state;
+        if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
+
+        var api = context.read(dsAPIProvider);
+        if (api != null) {
+          final resp = await api.task.list(additional: ['transfer']);
+          if (resp.success) context.read(tasksInfoProvider).state = resp.data;
+        }
+      },
+      timeout: Duration(seconds: 30),
+      minCycle: Duration(milliseconds: 250),
+    );
+    apiTasksScheduler?.start();
+
+    statisticScheduler = NeatPeriodicTaskScheduler(
+      name: 'Task list',
+      interval: Duration(milliseconds: settings.apiRequestFrequency),
+      task: () async {
+        var apiContext = context.read(apiContextProvider).state;
+        if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
+
+        var api = context.read(dsAPIProvider);
+        if (api != null) {
+          final resp = await api.statistic.getInfo();
+          if (resp.success) context.read(statsInfoProvider).state = resp.data;
+        }
+      },
+      timeout: Duration(seconds: 30),
+      minCycle: Duration(milliseconds: 250),
+    );
+    statisticScheduler?.start();
   }
 
   @override

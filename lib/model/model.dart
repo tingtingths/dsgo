@@ -1,3 +1,4 @@
+import 'package:dsgo/util/const.dart';
 import 'package:dsgo/util/utils.dart';
 import 'package:flutter/material.dart';
 
@@ -67,7 +68,7 @@ class Connection {
 }
 
 class UserSettings {
-  int apiRequestFrequency = 5000; // ms
+  int apiRequestFrequency = REQUEST_INTERVAL_DEFAULT; // ms
   ThemeMode themeMode = ThemeMode.system;
   Locale? locale;
 
