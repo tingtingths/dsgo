@@ -31,6 +31,7 @@ class MainScaffoldState extends State<MainScaffold> {
   UserSettings settings;
   final otpProvider = StateProvider((ref) => '');
   bool isLoginInProgress = false;
+  bool isLoginFailed = false;
   NeatPeriodicTaskScheduler? apiTasksScheduler;
   NeatPeriodicTaskScheduler? statisticScheduler;
 
@@ -52,6 +53,9 @@ class MainScaffoldState extends State<MainScaffold> {
       settings = newSettings;
       setupSchedulers();
     });
+    context.read(connectionProvider).addListener((state) {
+      this.isLoginFailed = false;
+    });
     setupSchedulers();
     super.initState();
   }
@@ -65,13 +69,47 @@ class MainScaffoldState extends State<MainScaffold> {
       name: 'Task list',
       interval: Duration(milliseconds: settings.apiRequestFrequency),
       task: () async {
+        if (isLoginFailed) return;
+
+        final l10n = AppLocalizations.of(context)!;
         var apiContext = context.read(apiContextProvider).state;
         if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
 
         var api = context.read(dsAPIProvider);
         if (api != null) {
           final resp = await api.task.list(additional: ['transfer']);
-          if (resp.success) context.read(tasksInfoProvider).state = resp.data;
+          if (resp.success) {
+            context.read(tasksInfoProvider).state = resp.data;
+          } else {
+            l.warning("Error retrieving task list, ${resp.error}");
+            // failed to get updates from server due to auth failure?
+            // if so, pause the request and redirect to login page
+            if ([105, 106, 107].contains(resp.error?['code'])) {
+              isLoginFailed = true;
+              ScaffoldMessenger.of(context)
+                ..removeCurrentSnackBar()
+                ..showSnackBar(buildSnackBar(
+                    '${l10n.loginFailed}',
+                    duration: Duration(seconds: 8),
+                    showProgressIndicator: false,
+                  action: SnackBarAction(label: '${l10n.login}', onPressed: () {
+                    final connectionContext = context.read(connectionProvider).state;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ConnectionEditForm.edit(0, connectionContext)),
+                    );
+                  })
+                ));
+            } else {
+              ScaffoldMessenger.of(context)
+                ..removeCurrentSnackBar()
+                ..showSnackBar(buildSnackBar(
+                    '${l10n.failed}. ${resp.error}',
+                    duration: Duration(seconds: 3),
+                    showProgressIndicator: false
+                ));
+            }
+          }
         }
       },
       timeout: Duration(seconds: 30),
