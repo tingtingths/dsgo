@@ -26,6 +26,7 @@ dependencies:
   synoapi:
     git:
       url: https://github.com/tingtingths/synoapi.git
+      ref: 0.1.1
   collection: ^1.15.0-nullsafety.4
   logging: ^1.0.0
   flutter_riverpod: ^0.14.0
