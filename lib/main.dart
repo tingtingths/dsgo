@@ -36,7 +36,7 @@ final searchTextProvider = StateProvider((ref) => '');
 void main() {
   // logger configuration
   hierarchicalLoggingEnabled = true;
-  Logger.root.level = Level.FINEST;
+  Logger.root.level = Level.INFO;
   Logger.root.onRecord.listen((l) {
     print('${l.time} ${l.level} ${l.loggerName} | ${l.message}${l.error ?? ''}${l.stackTrace ?? ''}');
   });
