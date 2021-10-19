@@ -97,4 +97,7 @@ class UserSettings {
           'countryCode': locale?.countryCode,
         }
       };
+
+  UserSettings clone() =>
+      UserSettings(apiRequestFrequency: this.apiRequestFrequency, themeMode: this.themeMode, locale: this.locale);
 }

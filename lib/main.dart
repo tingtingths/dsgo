@@ -35,11 +35,13 @@ final searchTextProvider = StateProvider((ref) => '');
 
 void main() {
   // logger configuration
-  Logger.root.level = Level.INFO;
+  hierarchicalLoggingEnabled = true;
+  Logger.root.level = Level.FINEST;
   Logger.root.onRecord.listen((l) {
     print('${l.time} ${l.level} ${l.loggerName} | ${l.message}${l.error ?? ''}${l.stackTrace ?? ''}');
   });
   Logger.detached('SynoAPI').level = Level.WARNING;
+  Logger('neat_periodic_task').level = Level.WARNING;
 
   runApp(ProviderScope(child: App()));
 }
@@ -50,6 +52,8 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
+  final l = Logger('AppState');
+
   @override
   void initState() {
     // load configurations from storage
