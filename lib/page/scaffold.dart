@@ -88,26 +88,23 @@ class MainScaffoldState extends State<MainScaffold> {
               isLoginFailed = true;
               ScaffoldMessenger.of(context)
                 ..removeCurrentSnackBar()
-                ..showSnackBar(buildSnackBar(
-                    '${l10n.loginFailed}',
+                ..showSnackBar(buildSnackBar('${l10n.loginFailed}',
                     duration: Duration(seconds: 8),
                     showProgressIndicator: false,
-                  action: SnackBarAction(label: '${l10n.login}', onPressed: () {
-                    final connectionContext = context.read(connectionProvider).state;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ConnectionEditForm.edit(0, connectionContext)),
-                    );
-                  })
-                ));
+                    action: SnackBarAction(
+                        label: '${l10n.login}',
+                        onPressed: () {
+                          final connectionContext = context.read(connectionProvider).state;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ConnectionEditForm.edit(0, connectionContext)),
+                          );
+                        })));
             } else {
               ScaffoldMessenger.of(context)
                 ..removeCurrentSnackBar()
-                ..showSnackBar(buildSnackBar(
-                    '${l10n.failed}. ${resp.error}',
-                    duration: Duration(seconds: 3),
-                    showProgressIndicator: false
-                ));
+                ..showSnackBar(buildSnackBar('${l10n.failed}. ${resp.error}',
+                    duration: Duration(seconds: 3), showProgressIndicator: false));
             }
           }
         }
