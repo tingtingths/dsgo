@@ -87,6 +87,7 @@ class WebConnectionDatasource extends ConnectionDatasource {
   @override
   Future<List<Connection>> getAll() {
     return _storage.ready.then((ready) {
+      if (_storage.getItem(_key) == null) return List.empty();
       var json = _storage.getItem(_key) as String;
       return decodeJson(json);
     });

@@ -1,8 +1,10 @@
 import 'package:dsgo/main.dart';
+import 'package:dsgo/model/model.dart';
 import 'package:dsgo/util/const.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 
 import '../datasource/user_settings.dart';
 
@@ -12,6 +14,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class SettingsPageState extends State<SettingsPage> {
+  final l = Logger("SettingsPageState");
   final requestIntervalFieldController = TextEditingController();
   final requestIntervalFocusNode = FocusNode();
 
@@ -84,7 +87,7 @@ class SettingsPageState extends State<SettingsPage> {
                   onChanged: (dynamic val) {
                     settings.themeMode = val;
                     context.read(userSettingsDatastoreProvider).set(settings);
-                    context.read(userSettingsProvider).state = settings;
+                    context.read(userSettingsProvider).state = settings.clone();
                   },
                 ),
               ),
@@ -108,7 +111,7 @@ class SettingsPageState extends State<SettingsPage> {
                             Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
                       }[val];
                       context.read(userSettingsDatastoreProvider).set(settings);
-                      context.read(userSettingsProvider).state = settings;
+                      context.read(userSettingsProvider).state = settings.clone();
                     },
                   )),
             ],
