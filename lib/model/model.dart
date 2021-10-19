@@ -82,10 +82,17 @@ class UserSettings {
     apiRequestFrequency = mapGet(json, 'apiRequestFrequency');
     var themeModeStr = mapGet(json, 'themeMode');
     themeMode = ThemeMode.values.firstWhere((e) => e.toString() == themeModeStr);
-    locale = Locale.fromSubtags(
-        languageCode: mapGet(mapGet(json, 'locale'), 'languageCode'),
-        scriptCode: mapGet(mapGet(json, 'locale'), 'scriptCode'),
-        countryCode: mapGet(mapGet(json, 'locale'), 'countryCode'));
+    var langCode = mapGet(mapGet(json, 'locale'), 'languageCode');
+    var scriptCode = mapGet(mapGet(json, 'locale'), 'scriptCode');
+    var countryCode = mapGet(mapGet(json, 'locale'), 'countryCode');
+    if (langCode != null || scriptCode != null || countryCode != null) {
+      locale = Locale.fromSubtags(
+          languageCode: langCode,
+          scriptCode: scriptCode,
+          countryCode: countryCode);
+    } else {
+      locale = null;
+    }
   }
 
   Map<String, dynamic> toJson() => {
