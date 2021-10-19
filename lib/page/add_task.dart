@@ -195,12 +195,13 @@ class AddTaskFormState extends State<AddTaskForm> {
 
   void _openFilePicker() async {
     try {
-      FilePickerResult filePickerResult = await (FilePicker.platform.pickFiles(
+      FilePickerResult? filePickerResult = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['torrent'],
         withData: false,
         withReadStream: true,
-      ) as FutureOr<FilePickerResult>);
+      );
+      if (filePickerResult == null) return;
       List<PlatformFile> files = filePickerResult.files;
 
       if (mounted) {
