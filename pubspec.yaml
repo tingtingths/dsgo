@@ -3,7 +3,7 @@ description: Control your Synology Download Station on the go!
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.2.12
+version: 0.2.13-SNAPSHOT
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
