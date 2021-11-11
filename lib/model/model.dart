@@ -86,10 +86,7 @@ class UserSettings {
     var scriptCode = mapGet(mapGet(json, 'locale'), 'scriptCode');
     var countryCode = mapGet(mapGet(json, 'locale'), 'countryCode');
     if (langCode != null || scriptCode != null || countryCode != null) {
-      locale = Locale.fromSubtags(
-          languageCode: langCode,
-          scriptCode: scriptCode,
-          countryCode: countryCode);
+      locale = Locale.fromSubtags(languageCode: langCode, scriptCode: scriptCode, countryCode: countryCode);
     } else {
       locale = null;
     }
