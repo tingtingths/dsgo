@@ -275,19 +275,19 @@ class TransferInfoTab extends ConsumerWidget {
       children: [
         ListTile(
           title: Text('${humanifySize(upSize)}' + ' / ${humanifySize(downSize)}' + ' (${fmtNum(pct)}%)'),
-          subtitle: Text(l10n.taskDetailsTitleSubtitle),
+          subtitle: Text(l10n.taskDetailsTransferredSubtitle),
         ),
         ListTile(
           title: Text('${fmtNum(progress * 100)}%'),
-          subtitle: Text(l10n.taskDetailsStatusSubtitle),
+          subtitle: Text(l10n.taskDetailsProgressSubtitle),
         ),
         ListTile(
           title: Text('$upSpeed / $downSpeed'),
-          subtitle: Text(l10n.taskDetailsDestinationSubtitle),
+          subtitle: Text(l10n.taskDetailsSpeedSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.totalPeers ?? UNKNOWN}'),
-          subtitle: Text(l10n.taskDetailsSizeSubtitle),
+          subtitle: Text(l10n.taskDetailsTotalPeersSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.connectedPeers ?? UNKNOWN}'),
@@ -296,25 +296,25 @@ class TransferInfoTab extends ConsumerWidget {
         ListTile(
           title: Text('${task.additional?.transfer?.downloadedPieces ?? 0} / ' +
               '${task.additional?.detail?.totalPieces ?? UNKNOWN}'),
-          subtitle: Text(l10n.taskDetailsURLSubtitle),
+          subtitle: Text(l10n.taskDetailsDownloadedBlocksSubtitle),
         ),
         ListTile(
           title: Text('${humanifySeconds(task.additional?.detail?.seedElapsed, accuracy: 60, defaultStr: "-")}'),
-          subtitle: Text(l10n.taskDetailsCreatedTimeSubtitle),
+          subtitle: Text(l10n.taskDetailsSeedingDurationSubtitle),
         ),
         ListTile(
           title: Text('${task.additional?.detail?.connectedSeeders} / ${task.additional?.detail?.connectedLeechers}'),
-          subtitle: Text(l10n.taskDetailsCompletedTimeSubtitle),
+          subtitle: Text(l10n.taskDetailsSeedsAndLeechersSubtitle),
         ),
         ListTile(
           title: Text(task.additional?.detail?.startedTime == null
               ? UNKNOWN
               : '${_dtFmt.format(task.additional!.detail!.startedTime!)}'),
-          subtitle: Text(l10n.taskDetailsTransferredSubtitle),
+          subtitle: Text(l10n.taskDetailsCreatedTimeSubtitle),
         ),
         ListTile(
           title: Text(remainingTime),
-          subtitle: Text(l10n.taskDetailsProgressSubtitle),
+          subtitle: Text(l10n.taskDetailsTimeLeftSubtitle),
         ),
       ],
     );

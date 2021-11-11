@@ -50,6 +50,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_idx == null ? l10n.addConnection : l10n.editConnection),
@@ -208,6 +209,7 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
 
 Future<String?> showOTPDialog(context) {
   final l10n = AppLocalizations.of(context)!;
+  final FocusNode submitBtnFocus = FocusNode();
   String _value = '';
   return showDialog<String>(
       context: context,
@@ -222,10 +224,14 @@ Future<String?> showOTPDialog(context) {
               onChanged: (value) {
                 _value = value;
               },
+              onFieldSubmitted: (value) {
+                submitBtnFocus.requestFocus();
+              },
             ),
             actions: [
               TextButton(
                 child: Text(l10n.submit),
+                focusNode: submitBtnFocus,
                 onPressed: () {
                   Navigator.of(context).pop(_value);
                 },
