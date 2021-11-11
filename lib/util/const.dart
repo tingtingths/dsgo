@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-final String STYLED_APP_NAME = 'DS Go';
-final int REQUEST_INTERVAL_DEFAULT = 5000;
-final int REQUEST_INTERVAL_MIN = 500;
+const String STYLED_APP_NAME = 'DS Go';
+const int REQUEST_INTERVAL_DEFAULT = 5000;
+const int REQUEST_INTERVAL_MIN = 500;
 
 enum StorageKey { Connections, DefaultConnectionIndex, UserSettings }
 

@@ -15,7 +15,7 @@ import 'page/scaffold.dart';
 final userSettingsProvider = StateProvider<UserSettings>((ref) => UserSettings());
 final connectionProvider = StateProvider<Connection?>((ref) => null);
 final apiContextProvider = StateProvider<APIContext?>((ref) {
-  var connection = ref.watch(connectionProvider).state;
+  var connection = ref.watch(connectionProvider);
   if (connection == null || connection.uri == null) return null;
   if (connection.sid == null)
     return APIContext.uri(connection.uri!);
@@ -23,7 +23,7 @@ final apiContextProvider = StateProvider<APIContext?>((ref) {
     return APIContext.uri(connection.uri!, sid: {Syno.DownloadStation.name: connection.sid!});
 });
 final dsAPIProvider = Provider<DownloadStationAPI?>((ref) {
-  var context = ref.watch(apiContextProvider).state;
+  var context = ref.watch(apiContextProvider);
   if (context == null) return null;
   return DownloadStationAPI(context);
 });
@@ -46,23 +46,23 @@ void main() {
   runApp(ProviderScope(child: App()));
 }
 
-class App extends StatefulWidget {
+class App extends ConsumerStatefulWidget {
   @override
-  State<StatefulWidget> createState() => AppState();
+  ConsumerState<App> createState() => AppState();
 }
 
-class AppState extends State<App> {
+class AppState extends ConsumerState<App> {
   final l = Logger('AppState');
 
   @override
   void initState() {
     // load configurations from storage
-    context.read(userSettingsDatastoreProvider).get().then((userSettings) {
-      context.read(userSettingsProvider).state = userSettings;
+    ref.read(userSettingsDatastoreProvider).get().then((userSettings) {
+      ref.read(userSettingsProvider.state).state = userSettings;
     });
-    context.read(connectionDatastoreProvider).getAll().then((connections) {
+    ref.read(connectionDatastoreProvider).getAll().then((connections) {
       if (connections.length > 0) {
-        context.read(connectionProvider).state = connections[0];
+        ref.read(connectionProvider.state).state = connections[0];
       }
     });
 
@@ -72,7 +72,7 @@ class AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, watch, _) {
-      var settings = watch(userSettingsProvider).state;
+      var settings = ref.watch(userSettingsProvider.state).state;
       final locale = settings.locale ?? PlatformDispatcher.instance.locale;
 
       return MaterialApp(

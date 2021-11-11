@@ -16,16 +16,16 @@ import '../page/drawer.dart';
 import '../page/tasks.dart';
 import '../util/utils.dart';
 
-class MainScaffold extends StatefulWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   final UserSettings settings;
 
   MainScaffold(this.settings);
 
   @override
-  State<StatefulWidget> createState() => MainScaffoldState(settings);
+  ConsumerState<MainScaffold> createState() => MainScaffoldState(settings);
 }
 
-class MainScaffoldState extends State<MainScaffold> {
+class MainScaffoldState extends ConsumerState<MainScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final searchController = TextEditingController();
   UserSettings settings;
@@ -47,13 +47,13 @@ class MainScaffoldState extends State<MainScaffold> {
   @override
   void initState() {
     searchController.addListener(() {
-      context.read(searchTextProvider).state = searchController.text;
+      ref.read(searchTextProvider.state).state = searchController.text;
     });
-    context.read(userSettingsProvider).addListener((newSettings) {
+    ref.read(userSettingsProvider.state).addListener((newSettings) {
       settings = newSettings;
       setupSchedulers();
     });
-    context.read(connectionProvider).addListener((state) {
+    ref.read(connectionProvider.state).addListener((state) {
       this.isLoginFailed = false;
     });
     setupSchedulers();
@@ -72,14 +72,14 @@ class MainScaffoldState extends State<MainScaffold> {
         if (isLoginFailed) return;
 
         final l10n = AppLocalizations.of(context)!;
-        var apiContext = context.read(apiContextProvider).state;
+        var apiContext = ref.read(apiContextProvider.state).state;
         if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
 
-        var api = context.read(dsAPIProvider);
+        var api = ref.read(dsAPIProvider);
         if (api != null) {
           final resp = await api.task.list(additional: ['transfer']);
           if (resp.success) {
-            context.read(tasksInfoProvider).state = resp.data;
+            ref.read(tasksInfoProvider.state).state = resp.data;
           } else {
             l.warning("Error retrieving task list, ${resp.error}");
             // failed to get updates from server due to auth failure?
@@ -94,7 +94,7 @@ class MainScaffoldState extends State<MainScaffold> {
                     action: SnackBarAction(
                         label: '${l10n.login}',
                         onPressed: () {
-                          final connectionContext = context.read(connectionProvider).state;
+                          final connectionContext = ref.read(connectionProvider.state).state;
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => ConnectionEditForm.edit(0, connectionContext)),
@@ -118,13 +118,13 @@ class MainScaffoldState extends State<MainScaffold> {
       name: 'Task list',
       interval: Duration(milliseconds: settings.apiRequestFrequency),
       task: () async {
-        var apiContext = context.read(apiContextProvider).state;
+        var apiContext = ref.read(apiContextProvider.state).state;
         if (apiContext == null || !apiContext.hasSid(Syno.DownloadStation.name)) return;
 
-        var api = context.read(dsAPIProvider);
+        var api = ref.read(dsAPIProvider);
         if (api != null) {
           final resp = await api.statistic.getInfo();
-          if (resp.success) context.read(statsInfoProvider).state = resp.data;
+          if (resp.success) ref.read(statsInfoProvider.state).state = resp.data;
         }
       },
       timeout: Duration(seconds: 30),
@@ -136,18 +136,18 @@ class MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    var apiContext = context.read(apiContextProvider).state;
+    var apiContext = ref.read(apiContextProvider.state).state;
     if (apiContext != null && !apiContext.hasSid(Syno.DownloadStation.name) && !isLoginInProgress) {
       isLoginInProgress = true;
-      var connection = context.read(connectionProvider).state!;
+      var connection = ref.read(connectionProvider.state).state!;
       apiContext.authApp(Syno.DownloadStation.name, connection.user ?? '', connection.password ?? '',
           otpCallback: () async {
         return await showOTPDialog(context) ?? '';
       }).then((authOK) {
         isLoginInProgress = false;
         connection.sid = apiContext.getSid(Syno.DownloadStation.name);
-        context.read(connectionProvider).state = connection;
-        context.read(connectionDatastoreProvider).replace(0, connection);
+        ref.read(connectionProvider.state).state = connection;
+        ref.read(connectionDatastoreProvider).replace(0, connection);
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar('${authOK ? l10n.loginSuccess : l10n.loginFailed}',
@@ -239,8 +239,8 @@ class MainScaffoldState extends State<MainScaffold> {
                       IconButton(
                         icon: Icon(Icons.play_arrow),
                         onPressed: () {
-                          var api = context.read(dsAPIProvider);
-                          var tasksInfo = context.read(tasksInfoProvider).state;
+                          var api = ref.read(dsAPIProvider);
+                          var tasksInfo = ref.read(tasksInfoProvider.state).state;
                           if (api != null && tasksInfo?.tasks.isNotEmpty == true) {
                             api.task.resume(tasksInfo!.tasks.map((t) => t.id).toList() as List<String>).then((resp) {
                               if (resp.success) {
@@ -254,8 +254,8 @@ class MainScaffoldState extends State<MainScaffold> {
                         icon: Icon(Icons.pause),
                         onPressed: () {
                           // pause all tasks
-                          var api = context.read(dsAPIProvider);
-                          var tasksInfo = context.read(tasksInfoProvider).state;
+                          var api = ref.read(dsAPIProvider);
+                          var tasksInfo = ref.read(tasksInfoProvider.state).state;
                           if (api != null && tasksInfo?.tasks.isNotEmpty == true) {
                             api.task.pause(tasksInfo!.tasks.map((t) => t.id).toList() as List<String>).then((resp) {
                               if (resp.success) {
@@ -268,7 +268,7 @@ class MainScaffoldState extends State<MainScaffold> {
                       IconButton(
                         icon: Icon(Icons.content_paste),
                         onPressed: () {
-                          var api = context.read(dsAPIProvider);
+                          var api = ref.read(dsAPIProvider);
                           if (api == null) return;
                           Clipboard.getData('text/plain').then((data) {
                             var text = data?.text ?? '';
@@ -280,16 +280,16 @@ class MainScaffoldState extends State<MainScaffold> {
                                       title: Text(l10n.clipboard),
                                       content: Text(text),
                                       actions: <Widget>[
-                                        FlatButton(
+                                        TextButton(
                                           child: Text(l10n.cancel),
                                           onPressed: () {
                                             Navigator.of(context).pop();
                                           },
                                         ),
-                                        FlatButton(
+                                        TextButton(
                                           child: Text(l10n.add),
                                           onPressed: () {
-                                            var api = context.read(dsAPIProvider);
+                                            var api = ref.read(dsAPIProvider);
                                             if (api == null) return;
                                             // submit task
                                             Navigator.of(context).pop();

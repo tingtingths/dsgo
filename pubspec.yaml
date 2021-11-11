@@ -29,7 +29,7 @@ dependencies:
       ref: 0.1.1
   collection: ^1.15.0-nullsafety.4
   logging: ^1.0.0
-  flutter_riverpod: ^0.14.0
+  flutter_riverpod: ^1.0.0
   url_launcher: ^6.0.0
   chunked_stream: ^1.4.0
   neat_periodic_task: ^2.0.0

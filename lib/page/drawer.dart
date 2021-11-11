@@ -67,9 +67,9 @@ class _AppDrawerHeaderState extends State<_AppDrawerHeader> {
 
 class AppDrawer extends ConsumerWidget {
   @override
-  Widget build(BuildContext context, watch) {
-    var connection = watch(connectionProvider).state;
-    return watch(packageInfoProvider).when(
+  Widget build(BuildContext context, ref) {
+    var connection = ref.watch(connectionProvider.state).state;
+    return ref.watch(packageInfoProvider).when(
         data: (packageInfo) {
           var drawerItems = <Widget>[_AppDrawerHeader()];
 
@@ -93,7 +93,7 @@ class AppDrawer extends ConsumerWidget {
               onClosed: (Connection? updatedConnection) {
                 if (updatedConnection == null) return;
                 // save connection
-                context.read(connectionProvider).state = updatedConnection;
+                ref.read(connectionProvider.state).state = updatedConnection;
               },
               openBuilder: (context, CloseContainerActionCallback<Connection?> action) {
                 return ConnectionEditForm.edit(0, connection);
@@ -115,15 +115,15 @@ class AppDrawer extends ConsumerWidget {
                     leading: Icon(Icons.logout),
                     title: Text(AppLocalizations.of(context)!.logout),
                     onTap: () {
-                      context.read(connectionDatastoreProvider).removeAll();
-                      watch(connectionProvider).state = null;
+                      ref.read(connectionDatastoreProvider).removeAll();
+                      ref.read(connectionProvider.state).state = null;
                     });
               }
             },
             onClosed: (Connection? updatedConnection) {
               if (updatedConnection == null) return;
               // save connection
-              context.read(connectionProvider).state = updatedConnection;
+              ref.read(connectionProvider.state).state = updatedConnection;
             },
             openBuilder: (context, CloseContainerActionCallback<Connection?> action) {
               return ConnectionEditForm();

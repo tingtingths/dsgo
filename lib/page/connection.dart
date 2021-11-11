@@ -10,7 +10,7 @@ import 'package:synoapi/synoapi.dart';
 import '../main.dart';
 import '../model/model.dart';
 
-class ConnectionEditForm extends StatefulWidget {
+class ConnectionEditForm extends ConsumerStatefulWidget {
   final int? _idx;
   final Connection? _connection;
 
@@ -21,10 +21,10 @@ class ConnectionEditForm extends StatefulWidget {
         _connection = null;
 
   @override
-  State<StatefulWidget> createState() => _ConnectionEditFormState(_idx, _connection);
+  ConsumerState<ConnectionEditForm> createState() => _ConnectionEditFormState(_idx, _connection);
 }
 
-class _ConnectionEditFormState extends State<ConnectionEditForm> {
+class _ConnectionEditFormState extends ConsumerState<ConnectionEditForm> {
   final _formKey = GlobalKey<FormState>();
   int? _idx;
   Connection _connection;
@@ -169,11 +169,11 @@ class _ConnectionEditFormState extends State<ConnectionEditForm> {
                                           duration: Duration(seconds: 3), showProgressIndicator: false));
                                     if (authOK) {
                                       _connection.sid = apiContext.getSid(Syno.DownloadStation.name);
-                                      context.read(connectionProvider).state = _connection;
+                                      ref.read(connectionProvider.state).state = _connection;
                                       if (_idx != null && _idx! >= 0) {
-                                        context.read(connectionDatastoreProvider).replace(_idx!, _connection);
+                                        ref.read(connectionDatastoreProvider).replace(_idx!, _connection);
                                       } else {
-                                        context.read(connectionDatastoreProvider).add(_connection);
+                                        ref.read(connectionDatastoreProvider).add(_connection);
                                       }
                                       Navigator.pop(context, _connection);
                                     } else {

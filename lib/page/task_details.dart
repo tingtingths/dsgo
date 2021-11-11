@@ -16,17 +16,17 @@ import '../util/utils.dart';
 
 final DateFormat _dtFmt = DateFormat.yMd().add_jm();
 
-class TaskDetailsPage extends StatefulWidget {
+class TaskDetailsPage extends ConsumerStatefulWidget {
   final Task task;
   final UserSettings settings;
 
   TaskDetailsPage(this.task, this.settings);
 
   @override
-  State<StatefulWidget> createState() => TaskDetailsPageState(task, settings);
+  ConsumerState<TaskDetailsPage> createState() => TaskDetailsPageState(task, settings);
 }
 
-class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderStateMixin {
+class TaskDetailsPageState extends ConsumerState<TaskDetailsPage> with TickerProviderStateMixin {
   Task _task;
   late List<Tab> tabs;
   TabController? tabController;
@@ -59,8 +59,8 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
 
     _subs.add(Stream.periodic(Duration(milliseconds: settings.apiRequestFrequency)).listen((event) {
       if (!_fetching) {
-        var api = context.read(dsAPIProvider)!;
-        var task = context.read(taskProvider).state;
+        var api = ref.read(dsAPIProvider)!;
+        var task = ref.read(taskProvider.state).state;
         api.task.getInfo([task.id!]).then((resp) {
           _fetching = false;
           if (!resp.success) return;
@@ -77,7 +77,7 @@ class TaskDetailsPageState extends State<TaskDetailsPage> with TickerProviderSta
             if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
             return;
           } else {
-            context.read(taskProvider).state = task;
+            ref.read(taskProvider.state).state = task;
           }
         }, onError: (err, stack) {
           l.warning('task.getInfo failed', err, stack);
@@ -122,10 +122,10 @@ class GeneralTaskInfoTab extends ConsumerWidget {
   GeneralTaskInfoTab(this.taskProvider);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    var task = watch(taskProvider).state;
-    var api = context.read(dsAPIProvider)!;
+    var task = ref.watch(taskProvider.state).state;
+    var api = ref.read(dsAPIProvider)!;
     Widget playPauseBtn = _buildCircleIconBtn(Icon(Icons.play_arrow));
 
     if (task.status == TaskStatus.downloading) {
@@ -134,7 +134,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar(l10n.pausing));
         api.task.pause([task.id!]).then((resp) {
-          context.read(taskProvider).state..status = TaskStatus.paused;
+          ref.read(taskProvider.state).state..status = TaskStatus.paused;
         });
       });
     }
@@ -144,7 +144,7 @@ class GeneralTaskInfoTab extends ConsumerWidget {
           ..removeCurrentSnackBar()
           ..showSnackBar(buildSnackBar(l10n.resuming));
         api.task.resume([task.id!]).then((resp) {
-          context.read(taskProvider).state..status = TaskStatus.downloading;
+          ref.read(taskProvider.state).state..status = TaskStatus.downloading;
         });
       });
     }
@@ -247,9 +247,9 @@ class TransferInfoTab extends ConsumerWidget {
   TransferInfoTab(this.taskProvider);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    var task = watch(taskProvider).state;
+    var task = ref.watch(taskProvider.state).state;
     int? downSize = task.additional?.transfer?.sizeDownloaded;
     int? upSize = task.additional?.transfer?.sizeUploaded;
     double pct = (upSize ?? 0) / (downSize ?? 0) * 100;
@@ -327,9 +327,9 @@ class TrackerInfoTab extends ConsumerWidget {
   TrackerInfoTab(this.taskProvider);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    var task = watch(taskProvider).state;
+    var task = ref.watch(taskProvider.state).state;
     var trackers = task.additional?.tracker ?? [];
     trackers.sort((x, y) => x.url!.compareTo(y.url!));
 
@@ -357,7 +357,7 @@ class TrackerInfoTab extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${trackers.length}',
-                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.secondary.withOpacity(1)),
                   ),
                 ),
                 Column(
@@ -395,9 +395,9 @@ class PeerInfoTab extends ConsumerWidget {
   PeerInfoTab(this.taskProvider);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    var task = watch(taskProvider).state;
+    var task = ref.watch(taskProvider.state).state;
     var peer = task.additional?.peer ?? [];
     peer.sort((x, y) => x.address!.compareTo(y.address!));
 
@@ -425,7 +425,7 @@ class PeerInfoTab extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${peer.length}',
-                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.secondary.withOpacity(1)),
                   ),
                 ),
                 Column(
@@ -461,9 +461,9 @@ class FileInfoTab extends ConsumerWidget {
   FileInfoTab(this.taskProvider);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    var task = watch(taskProvider).state;
+    var task = ref.watch(taskProvider.state).state;
     var files = task.additional?.file ?? [];
     files.sort((x, y) => x.filename!.compareTo(y.filename!));
 
@@ -494,7 +494,7 @@ class FileInfoTab extends ConsumerWidget {
                   padding: EdgeInsets.fromLTRB(0, 5, 5, 0),
                   child: Text(
                     '#${idx + 1}/${files.length}',
-                    style: TextStyle(color: Theme.of(context).accentColor.withOpacity(1)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.secondary.withOpacity(1)),
                   ),
                 ),
                 Column(
