@@ -23,12 +23,12 @@ class TaskList extends ConsumerWidget {
   TaskList(this.settings);
 
   @override
-  Widget build(BuildContext context, watch) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     var textTheme = Theme.of(context).textTheme;
-    var tasksInfo = watch(tasksInfoProvider).state;
-    var searchText = watch(searchTextProvider).state;
-    var api = watch(dsAPIProvider);
+    var tasksInfo = ref.watch(tasksInfoProvider.state).state;
+    var searchText = ref.watch(searchTextProvider.state).state;
+    var api = ref.watch(dsAPIProvider);
 
     if (api == null) {
       return SliverFillRemaining(
@@ -94,15 +94,15 @@ class TaskList extends ConsumerWidget {
         if (TaskStatus.downloading == task.status) {
           // pause it
           api.task.pause([task.id!]);
-          var tasksInfo = context.read(tasksInfoProvider).state;
+          var tasksInfo = ref.read(tasksInfoProvider.state).state;
           tasksInfo!.tasks.where((t) => t.id == task.id).first.status = TaskStatus.paused;
-          context.read(tasksInfoProvider).state = tasksInfo;
+          ref.read(tasksInfoProvider.state).state = tasksInfo;
         } else if (TaskStatus.paused == task.status) {
           // resume it
           api.task.resume([task.id!]);
-          var tasksInfo = context.read(tasksInfoProvider).state;
+          var tasksInfo = ref.read(tasksInfoProvider.state).state;
           tasksInfo!.tasks.where((t) => t.id == task.id).first.status = TaskStatus.waiting;
-          context.read(tasksInfoProvider).state = tasksInfo;
+          ref.read(tasksInfoProvider.state).state = tasksInfo;
         }
       }, onLongPress: () {
         // TODO : trigger multiple selection here
@@ -140,7 +140,7 @@ class TaskList extends ConsumerWidget {
                 onClosed: (Map<String, String>? result) {
                   if (result == null) return;
                   if (result['action'] == 'remove') {
-                    removeTaskFromModel(context, result['taskId']);
+                    removeTaskFromModel(context, ref, result['taskId']);
                   }
                 },
                 closedBuilder: (context, action) {
@@ -189,22 +189,22 @@ class TaskList extends ConsumerWidget {
           ],
         ),
         onDismissed: (direction) {
-          removeTaskFromModel(context, task.id);
+          removeTaskFromModel(context, ref, task.id);
         },
       );
     }, childCount: count));
   }
 
-  void removeTaskFromModel(BuildContext context, String? taskId) {
+  void removeTaskFromModel(BuildContext context, WidgetRef ref, String? taskId) {
     final l10n = AppLocalizations.of(context)!;
-    var taskInfo = context.read(tasksInfoProvider).state;
+    var taskInfo = ref.read(tasksInfoProvider.state).state;
     var found = taskInfo!.tasks.firstWhereOrNull((t) => t.id == taskId);
 
     if (found != null) {
       pendingRemove.add(found);
       var confirmDuration = Duration(seconds: 4);
 
-      var api = context.read(dsAPIProvider)!;
+      var api = ref.read(dsAPIProvider)!;
       pendingRemoveCountdown?.cancel(); // reset timer
       pendingRemoveCountdown = Timer(confirmDuration, () {
         var ids = pendingRemove.map((task) => task.id!).map((e) => e.toString()).toList();
@@ -214,7 +214,7 @@ class TaskList extends ConsumerWidget {
 
       taskInfo.tasks.remove(found);
       taskInfo.total -= 1;
-      context.read(tasksInfoProvider).state = taskInfo;
+      ref.read(tasksInfoProvider.state).state = taskInfo;
 
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()

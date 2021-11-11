@@ -12,12 +12,12 @@ import 'package:synoapi/synoapi.dart';
 
 import '../util/utils.dart';
 
-class AddTaskForm extends StatefulWidget {
+class AddTaskForm extends ConsumerStatefulWidget {
   @override
-  State<StatefulWidget> createState() => AddTaskFormState();
+  ConsumerState<AddTaskForm> createState() => AddTaskFormState();
 }
 
-class AddTaskFormState extends State<AddTaskForm> {
+class AddTaskFormState extends ConsumerState<AddTaskForm> {
   final l = Logger('AddTaskFormState');
 
   final _formKey = GlobalKey<FormState>();
@@ -45,7 +45,7 @@ class AddTaskFormState extends State<AddTaskForm> {
             onPressed: !_submitBtn
                 ? null
                 : () {
-                    var api = context.read(dsAPIProvider);
+                    var api = ref.read(dsAPIProvider);
                     if (api == null) {
                       ScaffoldMessenger.of(_scaffoldKey.currentState!.context)
                           .showSnackBar(buildSnackBar(l10n.taskCreateFailed, duration: Duration(seconds: 3)));
@@ -69,7 +69,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                     }
                     Future.wait(futures).then((value) {
                       Navigator.of(context).pop(l10n.taskCreated);
-                    }, onError: () {
+                    }, onError: (e) {
                       setState(() {
                         _submitBtn = true;
                       });
@@ -140,7 +140,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                         },
                         itemBuilder: (context, idx) {
                           var filepath = _torrentFiles.keys.toList()[idx]!;
-                          var entry = _torrentFiles[filepath]!;
+                          //var entry = _torrentFiles[filepath]!;
 
                           return Dismissible(
                             direction: DismissDirection.horizontal,

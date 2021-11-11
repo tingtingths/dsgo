@@ -17,8 +17,6 @@ String humanifySize(int? sizeBytes, {int p: 1}) {
     }
     i += 1;
   }
-
-  return '?';
 }
 
 String humanifySeconds(int? duration, {int accuracy: 0, int? maxUnits, int currentUnit: 1, String defaultStr: ''}) {
@@ -48,8 +46,6 @@ String humanifySeconds(int? duration, {int accuracy: 0, int? maxUnits, int curre
     }
     i += 1;
   }
-
-  return '?';
 }
 
 String fmtNum(num n, {int p: 1}) {

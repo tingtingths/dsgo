@@ -7,12 +7,12 @@ import 'package:logging/logging.dart';
 
 import '../datasource/user_settings.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   @override
-  State<StatefulWidget> createState() => SettingsPageState();
+  ConsumerState<SettingsPage> createState() => SettingsPageState();
 }
 
-class SettingsPageState extends State<SettingsPage> {
+class SettingsPageState extends ConsumerState<SettingsPage> {
   final l = Logger("SettingsPageState");
   final requestIntervalFieldController = TextEditingController();
   final requestIntervalFocusNode = FocusNode();
@@ -32,10 +32,10 @@ class SettingsPageState extends State<SettingsPage> {
           requestIntervalFieldController.text = REQUEST_INTERVAL_MIN.toRadixString(10);
           value = REQUEST_INTERVAL_MIN;
         }
-        var settings = context.read(userSettingsProvider).state;
+        var settings = ref.read(userSettingsProvider.state).state;
         settings.apiRequestFrequency = value;
-        context.read(userSettingsDatastoreProvider).set(settings);
-        context.read(userSettingsProvider).state = settings;
+        ref.read(userSettingsDatastoreProvider).set(settings);
+        ref.read(userSettingsProvider.state).state = settings;
       }
     });
   }
@@ -44,7 +44,7 @@ class SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Consumer(builder: (context, watch, _) {
-      var settings = watch(userSettingsProvider).state;
+      var settings = ref.watch(userSettingsProvider.state).state;
       if (requestIntervalFieldController.text.isEmpty)
         requestIntervalFieldController.text = settings.apiRequestFrequency.toRadixString(10);
       return Scaffold(
@@ -85,8 +85,8 @@ class SettingsPageState extends State<SettingsPage> {
                   }).toList(),
                   onChanged: (dynamic val) {
                     settings.themeMode = val;
-                    context.read(userSettingsDatastoreProvider).set(settings);
-                    context.read(userSettingsProvider).state = settings.clone();
+                    ref.read(userSettingsDatastoreProvider).set(settings);
+                    ref.read(userSettingsProvider.state).state = settings.clone();
                   },
                 ),
               ),
@@ -109,8 +109,8 @@ class SettingsPageState extends State<SettingsPage> {
                         Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant').toString():
                             Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
                       }[val];
-                      context.read(userSettingsDatastoreProvider).set(settings);
-                      context.read(userSettingsProvider).state = settings.clone();
+                      ref.read(userSettingsDatastoreProvider).set(settings);
+                      ref.read(userSettingsProvider.state).state = settings.clone();
                     },
                   )),
             ],
