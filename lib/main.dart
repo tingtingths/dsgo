@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:dsgo/datasource/connection.dart';
+import 'package:dsgo/page/add_task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -76,26 +77,55 @@ class AppState extends ConsumerState<App> {
       final locale = settings.locale ?? PlatformDispatcher.instance.locale;
 
       return MaterialApp(
-          home: Material(child: MainScaffold(settings)),
-          themeMode: settings.themeMode,
-          theme: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal),
-            appBarTheme: ThemeData.light().appBarTheme.copyWith(color: Colors.teal),
-            iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
-          ),
-          darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
-          // localization
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: [
-            const Locale('en'),
-            const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
-          ],
-          locale: locale);
+        home: Material(child: MainScaffold(settings)),
+        themeMode: settings.themeMode,
+        theme: ThemeData.light().copyWith(
+          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal),
+          appBarTheme: ThemeData.light().appBarTheme.copyWith(color: Colors.teal),
+          iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
+        ),
+        darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
+        // localization
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          const Locale('en'),
+          const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+        ],
+        locale: locale,
+        onGenerateRoute: (settings) {
+          String? route;
+          Map? queryParameters;
+          Uri? uriData;
+          if (settings.name != null) {
+            uriData = Uri.parse(settings.name!);
+            route = uriData.path;
+            queryParameters = uriData.queryParameters;
+          }
+
+          if (route == "/add-task") {
+            const prefix = "/add-task?magnet=";
+            String? magnet;
+            if (settings.name!.startsWith(prefix)) {
+              // has magnet url provided, extract it
+              magnet = Uri.decodeFull(settings.name!.substring(prefix.length));
+            }
+
+            return MaterialPageRoute(
+              builder: (context) {
+                return AddTaskForm(magnet: magnet);
+              },
+              settings: settings,
+            );
+          }
+
+          return null;
+        },
+      );
     });
   }
 }

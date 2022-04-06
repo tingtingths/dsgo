@@ -13,8 +13,12 @@ import 'package:synoapi/synoapi.dart';
 import '../util/utils.dart';
 
 class AddTaskForm extends ConsumerStatefulWidget {
+  var magnet;
+
   @override
   ConsumerState<AddTaskForm> createState() => AddTaskFormState();
+
+  AddTaskForm({this.magnet});
 }
 
 class AddTaskFormState extends ConsumerState<AddTaskForm> {
@@ -25,6 +29,13 @@ class AddTaskFormState extends ConsumerState<AddTaskForm> {
   Map<String?, Stream<List<int>>> _torrentFiles = {};
   bool _submitBtn = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    if (widget.magnet != null) {
+      _formModel['url'] = _splitAndTrim('\n', widget.magnet);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +123,7 @@ class AddTaskFormState extends ConsumerState<AddTaskForm> {
                         _formModel['url'] = _splitAndTrim('\n', val);
                         setState(() {});
                       },
+                      initialValue: widget.magnet,
                     ),
                     Divider(
                       height: 0,
