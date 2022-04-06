@@ -19,5 +19,11 @@
             "sizes": "512x512",
             "type": "image/png"
         }
+    ],
+    "protocol_handlers": [
+        {
+            "protocol": "magnet",
+            "url": "/#/add-task?magnet=%s"
+        }
     ]
 }
