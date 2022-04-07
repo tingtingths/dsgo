@@ -1,7 +1,10 @@
+import 'dart:html' as html;
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:dsgo/datasource/connection.dart';
 import 'package:dsgo/page/add_task.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -33,6 +36,12 @@ final dsAPIProvider = Provider<DownloadStationAPI?>((ref) {
 final tasksInfoProvider = StateProvider<ListTaskInfo?>((ref) => null);
 final statsInfoProvider = StateProvider<DownloadStationStatisticGetInfo?>((ref) => null);
 final searchTextProvider = StateProvider((ref) => '');
+
+// TODO : workaround for iOS 15 webkit bug.
+// https://github.com/flutter/flutter/issues/93140
+bool isIOS15Web() {
+  return kIsWeb && html.window.navigator.userAgent.contains('OS 15_');
+}
 
 void main() {
   // logger configuration
@@ -76,15 +85,20 @@ class AppState extends ConsumerState<App> {
       var settings = ref.watch(userSettingsProvider.state).state;
       final locale = settings.locale ?? PlatformDispatcher.instance.locale;
 
+      final lightTheme =
+          isIOS15Web() ? ThemeData(brightness: Brightness.light, fontFamily: '--apple-system') : ThemeData.light();
+      final darkTheme =
+          isIOS15Web() ? ThemeData(brightness: Brightness.dark, fontFamily: '--apple-system') : ThemeData.dark();
+
       return MaterialApp(
         home: Material(child: MainScaffold(settings)),
         themeMode: settings.themeMode,
-        theme: ThemeData.light().copyWith(
+        theme: lightTheme.copyWith(
           colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal),
           appBarTheme: ThemeData.light().appBarTheme.copyWith(color: Colors.teal),
           iconTheme: IconThemeData(color: Color(0xff4f4f4f)),
         ),
-        darkTheme: ThemeData.dark().copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
+        darkTheme: darkTheme.copyWith(appBarTheme: AppBarTheme(color: Color(0xff404040))),
         // localization
         localizationsDelegates: [
           AppLocalizations.delegate,
